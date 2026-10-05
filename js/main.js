@@ -58,6 +58,20 @@ if (fondo && !movimientoReducido) {
     luz.style.setProperty("--maxo", (0.35 + Math.random() * 0.55).toFixed(2));
     fondo.appendChild(luz);
   }
+
+  // Volutas de vapor de perfume que ascienden
+  for (let i = 0; i < 6; i++) {
+    const voluta = document.createElement("span");
+    voluta.className = "vapor";
+    const base = 170 + Math.random() * 260;
+    voluta.style.width = base.toFixed(0) + "px";
+    voluta.style.height = (base * 1.6).toFixed(0) + "px";
+    voluta.style.left = (Math.random() * 96).toFixed(2) + "%";
+    voluta.style.setProperty("--duracion-v", (32 + Math.random() * 26).toFixed(1) + "s");
+    voluta.style.setProperty("--retraso-v", (-Math.random() * 58).toFixed(1) + "s");
+    voluta.style.setProperty("--deriva-v", ((Math.random() * 240 - 120).toFixed(0)) + "px");
+    fondo.appendChild(voluta);
+  }
 }
 
 // Aparición suave de elementos
