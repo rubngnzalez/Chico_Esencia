@@ -1,0 +1,6 @@
+# Renders completos de páginas del PDF (no se usan en la web)
+shaddai-web/img/pages/
+
+# Archivos del sistema
+Thumbs.db
+.DS_Store
