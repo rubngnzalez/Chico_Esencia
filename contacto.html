@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacto — SHADDAI · Esencia de Umbral</title>
+  <meta name="description" content="Escríbenos para conocer SHADDAI, Esencia de Umbral: fragancia artesanal para el alma, hecha a mano con resinas y aceites ancestrales.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="contacto">
+
+  <header class="cabecera">
+    <div class="barra">
+      <a href="index.html" class="marca">
+        <span class="shin">ש</span>
+        <span class="nombre">SHADDAI<small>Esencia de Umbral</small></span>
+      </a>
+      <button class="menu-boton" aria-label="Abrir menú">&#9776;</button>
+      <nav class="navegacion">
+        <ul>
+          <li><a href="index.html" data-pagina="inicio">Inicio</a></li>
+          <li><a href="concepto.html" data-pagina="concepto">Concepto</a></li>
+          <li><a href="producto.html" data-pagina="producto">Producto</a></li>
+          <li><a href="ritual.html" data-pagina="ritual">Ritual</a></li>
+          <li><a href="contacto.html" data-pagina="contacto">Contacto</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="cabecera-pagina">
+      <div class="contenedor">
+        <span class="etiqueta">Escríbenos</span>
+        <h1>Contacto</h1>
+        <p class="entradilla">Cuéntanos qué buscas y te acompañamos en el camino hacia tu umbral.</p>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor">
+        <form class="formulario revelar" autocomplete="off">
+          <div class="campo">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" name="nombre" placeholder="Tu nombre" required>
+          </div>
+          <div class="campo">
+            <label for="email">Correo electrónico</label>
+            <input type="email" id="email" name="email" placeholder="tu@correo.com" required>
+          </div>
+          <div class="campo">
+            <label for="mensaje">Mensaje</label>
+            <textarea id="mensaje" name="mensaje" placeholder="Cuéntanos cómo podemos acompañarte…" required></textarea>
+          </div>
+          <div class="centrar">
+            <button type="submit" class="boton boton-lleno">Enviar mensaje</button>
+          </div>
+          <p class="aviso-formulario centrar" aria-live="polite"></p>
+        </form>
+
+        <div class="rejilla rejilla-3" style="margin-top: 4rem;">
+          <article class="tarjeta revelar">
+            <span class="icono">✉</span>
+            <h3>Correo</h3>
+            <p><a href="mailto:hola@shaddai.es">hola@shaddai.es</a></p>
+          </article>
+          <article class="tarjeta revelar">
+            <span class="icono">ש</span>
+            <h3>La esencia</h3>
+            <p>Fragancia de bolsillo para el alma. Hecha a mano, en formatos de 30 y 50 ml.</p>
+          </article>
+          <article class="tarjeta revelar">
+            <span class="icono">✦</span>
+            <h3>Inhalar · Exhalar&trade;</h3>
+            <p>Encuentra la paz interior y el equilibrio en tu ritual diario.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cita" style="background-image: url('img/altar-bosque.jpg');">
+      <div class="contenedor revelar">
+        <blockquote>&ldquo;Que nos busquen por dentro&rdquo;</blockquote>
+        <p class="autor">SHADDAI · Esencia de Umbral</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="columnas">
+        <div>
+          <a href="index.html" class="marca">
+            <span class="shin">ש</span>
+            <span class="nombre">SHADDAI<small>Esencia de Umbral</small></span>
+          </a>
+          <p style="margin-top: 1rem;">Fragancia de bolsillo para el alma. Hecha a mano, con resinas y aceites ancestrales.</p>
+        </div>
+        <div>
+          <h4>Explorar</h4>
+          <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="concepto.html">Concepto</a></li>
+            <li><a href="producto.html">Producto</a></li>
+            <li><a href="ritual.html">Ritual</a></li>
+            <li><a href="contacto.html">Contacto</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contacto</h4>
+          <ul>
+            <li><a href="mailto:hola@shaddai.es">hola@shaddai.es</a></li>
+            <li>Inhalar &middot; Exhalar&trade;</li>
+            <li>Hecho a mano &middot; 30 / 50 ml</li>
+          </ul>
+        </div>
+      </div>
+      <div class="base">© 2026 SHADDAI · Esencia de Umbral · Todos los derechos reservados</div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
