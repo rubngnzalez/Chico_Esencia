@@ -15,15 +15,18 @@ py -m http.server 8734 --directory shaddai-web
 
 ```
 SHADDAI final.pdf      Documento de marca original
+SHADDAI (13).pdf       Documento de marca ampliado (Eau de Parfum Neurosensorial)
 shaddai-web/
-├── index.html         Inicio: héroe, manifiesto, beneficios, cita
-├── concepto.html      El nombre Shaddai y la letra hebrea Shin (ש)
-├── producto.html      Presentación, notas olfativas, ficha y galería
-├── ritual.html        Los 4 pasos del ritual e inhalar/exhalar
-├── contacto.html      Formulario de contacto
+├── index.html         Inicio: héroe, manifiesto, escenas, pausa líquida y reserva
+├── carta.html         El Origen — Carta del Autor
+├── concepto.html      El Umbral — concepto de Shaddai y la Alquimia de la Shin (ש)
+├── producto.html      La Alquimia — presentación, neurobiología, notas y edición limitada
+├── ritual.html        El Protocolo del Umbral — 4 pasos, audio meditación, inhala/exhala
+├── politica.html      Política de Envío Consciente
+├── contacto.html      Contacto directo y Altar de Adquisición (reserva)
 ├── css/estilos.css    Identidad visual (verde bosque, dorado, serif)
-├── js/main.js         Navegación, menú móvil y animaciones
-└── img/               Imágenes extraídas del PDF
+├── js/main.js         Navegación, menú móvil, animaciones y boletín
+└── img/               Imágenes extraídas de los PDF
 ```
 
 ## Actualizar la web

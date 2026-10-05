@@ -780,3 +780,251 @@ p + p {
     gap: 1.2rem;
   }
 }
+
+/* ---------- Escenas (Presencia, Equilibrio, Claridad, Desconexión) ---------- */
+.rejilla-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.2rem;
+}
+
+.escena {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(201, 164, 95, 0.25);
+}
+
+.escena img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.45s ease;
+}
+
+.escena:hover img {
+  transform: scale(1.05);
+}
+
+.escena figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1.6rem 1.1rem 0.9rem;
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  color: var(--crema);
+  background: linear-gradient(transparent, rgba(15, 25, 17, 0.88));
+}
+
+/* ---------- Carta del Autor ---------- */
+.carta-panel {
+  max-width: 47rem;
+  margin-inline: auto;
+  background: var(--verde-2);
+  border: 1px solid rgba(201, 164, 95, 0.3);
+  padding: clamp(2.5rem, 6vw, 4.5rem);
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 1.18rem;
+  line-height: 1.9;
+  color: var(--crema);
+}
+
+.carta-panel .saludo {
+  font-size: 1.5rem;
+  color: var(--oro);
+  margin-bottom: 1.6rem;
+}
+
+.carta-panel p + p {
+  margin-top: 1.4rem;
+}
+
+.carta-panel .firma {
+  margin-top: 2.4rem;
+  font-size: 1.4rem;
+  font-style: italic;
+  color: var(--oro);
+}
+
+/* ---------- Boletín del Umbral (pie) ---------- */
+.boletin {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.boletin input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(243, 238, 226, 0.06);
+  border: 1px solid rgba(201, 164, 95, 0.4);
+  color: var(--crema);
+  padding: 0.65rem 0.9rem;
+  font-family: var(--sans);
+  font-size: 0.92rem;
+}
+
+.boletin input:focus {
+  outline: none;
+  border-color: var(--oro);
+}
+
+.boletin button {
+  background: var(--oro);
+  color: var(--verde);
+  border: none;
+  padding: 0.65rem 1.3rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.boletin button:hover {
+  background: var(--oro-claro);
+}
+
+.aviso-boletin {
+  min-height: 1.2rem;
+  font-size: 0.8rem;
+  color: var(--oro-claro);
+  margin-top: 0.5rem;
+}
+
+/* ---------- Nota de audio meditación ---------- */
+.panel-nota {
+  border: 1px dashed rgba(201, 164, 95, 0.5);
+  background: rgba(201, 164, 95, 0.06);
+  padding: 1.6rem 1.8rem;
+  margin-top: 1.8rem;
+}
+
+.panel-nota h3 {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  color: var(--oro);
+  margin-bottom: 0.4rem;
+}
+
+@media (max-width: 900px) {
+  .rejilla-4 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .rejilla-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .escena img {
+    height: 220px;
+  }
+
+  .boletin {
+    flex-direction: column;
+  }
+}
+
+/* ---------- Cabeceras compactas ---------- */
+.cabecera-pagina {
+  padding: 7.2rem 0 2.4rem;
+  background: linear-gradient(180deg, rgba(29, 51, 37, 0.92) 0%, rgba(22, 38, 27, 0.75) 70%, var(--verde) 100%);
+  border-bottom: 1px solid rgba(201, 164, 95, 0.18);
+  position: relative;
+  isolation: isolate;
+}
+
+.cabecera-pagina .etiqueta {
+  margin-bottom: 0.5rem;
+}
+
+.cabecera-pagina h1 {
+  font-size: clamp(2rem, 4.2vw, 2.9rem);
+  letter-spacing: 0.1em;
+}
+
+.cabecera-pagina .entradilla {
+  margin-top: 0.55rem;
+  font-size: 1.12rem;
+}
+
+/* ---------- Fondo mágico: luciérnagas y niebla del umbral ---------- */
+.fondo-magico {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Niebla que se desplaza despacio */
+.fondo-magico::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(42% 34% at 18% 28%, rgba(201, 164, 95, 0.09) 0%, transparent 70%),
+    radial-gradient(46% 38% at 82% 68%, rgba(120, 160, 120, 0.08) 0%, transparent 70%),
+    radial-gradient(30% 26% at 55% 15%, rgba(201, 164, 95, 0.06) 0%, transparent 70%);
+  animation: niebla 70s ease-in-out infinite alternate;
+}
+
+/* Resplandor que respira, como el sello de la Shin */
+.fondo-magico::after {
+  content: "";
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  width: 60vmin;
+  height: 60vmin;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(201, 164, 95, 0.13) 0%, rgba(201, 164, 95, 0.05) 40%, transparent 68%);
+  border-radius: 50%;
+  animation: respirar 9s ease-in-out infinite;
+}
+
+.luz {
+  position: absolute;
+  bottom: -4vh;
+  width: var(--tamano, 3px);
+  height: var(--tamano, 3px);
+  border-radius: 50%;
+  background: var(--oro);
+  filter: blur(0.6px) drop-shadow(0 0 6px rgba(201, 164, 95, 0.9));
+  opacity: 0;
+  animation: subir-luz var(--duracion, 20s) linear var(--retraso, 0s) infinite;
+}
+
+@keyframes subir-luz {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  10%  { opacity: var(--maxo, 0.75); }
+  82%  { opacity: var(--maxo, 0.75); }
+  100% { transform: translate3d(var(--deriva, 40px), -112vh, 0); opacity: 0; }
+}
+
+@keyframes niebla {
+  0%   { transform: translate3d(-3%, -2%, 0) scale(1); }
+  50%  { transform: translate3d(2%, 3%, 0) scale(1.06); }
+  100% { transform: translate3d(-2%, 1%, 0) scale(1.02); }
+}
+
+@keyframes respirar {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.94); }
+  50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fondo-magico::before,
+  .fondo-magico::after,
+  .luz {
+    animation: none;
+  }
+  .fondo-magico::before {
+    opacity: 0.7;
+  }
+}
