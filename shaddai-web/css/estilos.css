@@ -1028,3 +1028,134 @@ p + p {
     opacity: 0.7;
   }
 }
+
+/* ---------- Vapor de perfume en el fondo global ---------- */
+.vapor {
+  position: absolute;
+  bottom: -30vh;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(201, 164, 95, 0.10) 0%, rgba(163, 196, 160, 0.07) 55%, transparent 78%);
+  filter: blur(24px);
+  opacity: 0;
+  animation: vapor-lento var(--duracion-v, 40s) ease-in-out var(--retraso-v, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes vapor-lento {
+  0%   { transform: translate3d(0, 0, 0) scale(0.7) rotate(0deg); opacity: 0; }
+  18%  { opacity: 0.9; }
+  55%  { opacity: 0.55; }
+  100% { transform: translate3d(var(--deriva-v, 90px), -128vh, 0) scale(1.6) rotate(26deg); opacity: 0; }
+}
+
+/* ---------- Cabeceras con presencia: vapor, Shin y brillo de oro ---------- */
+.cabecera-pagina {
+  overflow: hidden;
+}
+
+/* Volutas de esencia que ascienden dentro de la cabecera */
+.cabecera-pagina::before,
+.cabecera-pagina::after {
+  content: "";
+  position: absolute;
+  bottom: -35%;
+  width: 44%;
+  height: 240%;
+  background: radial-gradient(closest-side, rgba(201, 164, 95, 0.15) 0%, rgba(163, 196, 160, 0.08) 55%, transparent 78%);
+  filter: blur(30px);
+  border-radius: 50%;
+  animation: vapor-cabecera 16s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.cabecera-pagina::before {
+  left: 4%;
+}
+
+.cabecera-pagina::after {
+  right: 2%;
+  animation-duration: 21s;
+  animation-delay: 8s;
+  background: radial-gradient(closest-side, rgba(163, 196, 160, 0.13) 0%, rgba(201, 164, 95, 0.07) 55%, transparent 78%);
+}
+
+@keyframes vapor-cabecera {
+  0%   { transform: translateY(45%) scale(0.75) rotate(-5deg); opacity: 0; }
+  28%  { opacity: 0.9; }
+  62%  { opacity: 0.5; }
+  100% { transform: translateY(-75%) scale(1.35) rotate(6deg); opacity: 0; }
+}
+
+/* Titulo con brillo de oro en movimiento */
+.cabecera-pagina h1 {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(100deg, #b9944f 25%, #f3e2b8 42%, #e8cd93 50%, #f3e2b8 58%, #b9944f 75%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: brillo-oro 7s linear infinite, aparecer-arriba 0.9s ease 0.12s both;
+}
+
+@keyframes brillo-oro {
+  to { background-position: 220% center; }
+}
+
+/* Marca de agua de la Shin tras el titulo */
+.cabecera-pagina h1::before {
+  content: "\05E9";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -54%);
+  font-family: var(--serif);
+  font-size: 7.5rem;
+  line-height: 1;
+  color: rgba(201, 164, 95, 0.13);
+  -webkit-text-fill-color: rgba(201, 164, 95, 0.13);
+  z-index: -1;
+  animation: none;
+}
+
+/* Entrada escalonada y adorno */
+.cabecera-pagina .etiqueta {
+  display: block;
+  animation: aparecer-arriba 0.8s ease both;
+}
+
+.cabecera-pagina .entradilla {
+  animation: aparecer-arriba 0.9s ease 0.26s both;
+}
+
+.cabecera-pagina .entradilla::after {
+  content: "\2726";
+  display: block;
+  margin-top: 0.85rem;
+  color: var(--oro);
+  font-size: 0.75rem;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  animation: latir-adorno 3.2s ease-in-out infinite;
+}
+
+@keyframes latir-adorno {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; text-shadow: 0 0 14px rgba(201, 164, 95, 0.8); }
+}
+
+@keyframes aparecer-arriba {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vapor { animation: none; opacity: 0.4; }
+  .cabecera-pagina::before,
+  .cabecera-pagina::after { animation: none; opacity: 0.5; }
+  .cabecera-pagina h1 { animation: none; }
+  .cabecera-pagina .etiqueta,
+  .cabecera-pagina .entradilla { animation: none; }
+  .cabecera-pagina .entradilla::after { animation: none; }
+}
