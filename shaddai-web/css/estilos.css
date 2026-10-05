@@ -1230,3 +1230,90 @@ p + p {
 @media (prefers-reduced-motion: reduce) {
   .carta-divisor span { animation: none; }
 }
+/* ---------- Marcos del umbral: arcos, auras y motas doradas ---------- */
+
+/* Imagen principal de cada seccion: forma de arco-umbral con doble marco */
+.dos-columnas .columna-imagen img {
+  border-color: rgba(201, 164, 95, 0.5);
+  border-radius: 50% 50% 14px 14px / 26% 26% 14px 14px;
+  outline: 1px solid rgba(201, 164, 95, 0.28);
+  outline-offset: 10px;
+  animation: brillo-marco 7s ease-in-out infinite;
+}
+
+@keyframes brillo-marco {
+  0%, 100% { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 26px rgba(201, 164, 95, 0.10); }
+  50%      { box-shadow: 0 26px 64px rgba(0, 0, 0, 0.5), 0 0 54px rgba(201, 164, 95, 0.22); }
+}
+
+/* Aura difusa que respira detras del marco */
+.marco-imagen::before {
+  content: "";
+  position: absolute;
+  inset: -9%;
+  z-index: -2;
+  background:
+    radial-gradient(58% 48% at 28% 18%, rgba(201, 164, 95, 0.17) 0%, transparent 70%),
+    radial-gradient(52% 46% at 78% 82%, rgba(163, 196, 160, 0.13) 0%, transparent 70%);
+  filter: blur(16px);
+  animation: aura-respira 8s ease-in-out infinite;
+}
+
+@keyframes aura-respira {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.05); }
+}
+
+/* Motas doradas flotando junto al marco (sustituyen al marco desplazado) */
+.marco-imagen::after {
+  content: "";
+  position: absolute;
+  inset: -9%;
+  z-index: -1;
+  border: 0;
+  background-image:
+    radial-gradient(circle 2px at 10% 22%, rgba(227, 201, 143, 0.9) 99%, transparent),
+    radial-gradient(circle 1.5px at 88% 12%, rgba(201, 164, 95, 0.85) 99%, transparent),
+    radial-gradient(circle 2px at 92% 78%, rgba(227, 201, 143, 0.75) 99%, transparent),
+    radial-gradient(circle 1.5px at 6% 84%, rgba(201, 164, 95, 0.8) 99%, transparent),
+    radial-gradient(circle 1.5px at 50% 2%, rgba(227, 201, 143, 0.7) 99%, transparent);
+  animation: deriva-motas 9s ease-in-out infinite alternate;
+}
+
+@keyframes deriva-motas {
+  from { transform: translateY(6px); }
+  to   { transform: translateY(-14px); }
+}
+
+/* Escenas de portada: arquitas de capilla */
+.escena {
+  border-radius: 50% 50% 12px 12px / 30% 30% 12px 12px;
+  outline: 1px solid rgba(201, 164, 95, 0.3);
+  outline-offset: 6px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), 0 0 26px rgba(201, 164, 95, 0.1);
+}
+
+.escena img {
+  border-radius: 50% 50% 10px 10px / 30% 30% 10px 10px;
+}
+
+/* Galeria: piedras organicas alternadas */
+.galeria img {
+  outline: 1px solid rgba(201, 164, 95, 0.26);
+  outline-offset: 6px;
+  animation: brillo-marco 9s ease-in-out infinite;
+}
+
+.galeria img:nth-child(4n+1) { border-radius: 26px 8px 24px 10px / 10px 24px 8px 26px; }
+.galeria img:nth-child(4n+2) { border-radius: 10px 26px 8px 24px / 24px 10px 26px 8px; }
+.galeria img:nth-child(4n+3) { border-radius: 24px 10px 26px 8px / 8px 26px 10px 24px; }
+.galeria img:nth-child(4n)   { border-radius: 8px 24px 10px 26px / 26px 8px 24px 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marco-imagen::before,
+  .marco-imagen::after,
+  .dos-columnas .columna-imagen img,
+  .galeria img {
+    animation: none;
+  }
+}
