@@ -1159,3 +1159,74 @@ p + p {
   .cabecera-pagina .entradilla { animation: none; }
   .cabecera-pagina .entradilla::after { animation: none; }
 }
+
+/* ---------- Carta poética: figuras y divisores entrelazados ---------- */
+.carta-panel {
+  position: relative;
+  background:
+    radial-gradient(130% 80% at 50% 0%, rgba(201, 164, 95, 0.07) 0%, transparent 58%),
+    radial-gradient(120% 90% at 50% 100%, rgba(163, 196, 160, 0.05) 0%, transparent 60%),
+    var(--verde-2);
+}
+
+.carta-panel::before {
+  content: "";
+  position: absolute;
+  inset: 13px;
+  border: 1px solid rgba(201, 164, 95, 0.26);
+  pointer-events: none;
+}
+
+.carta-divisor {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin: 2.1rem auto 2.3rem;
+  max-width: 15rem;
+  color: var(--oro);
+}
+
+.carta-divisor::before,
+.carta-divisor::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+}
+
+.carta-divisor::before {
+  background: linear-gradient(90deg, transparent, rgba(201, 164, 95, 0.55));
+}
+
+.carta-divisor::after {
+  background: linear-gradient(270deg, transparent, rgba(201, 164, 95, 0.55));
+}
+
+.carta-divisor span {
+  font-size: 0.8rem;
+  text-shadow: 0 0 12px rgba(201, 164, 95, 0.7);
+  animation: latir-adorno 3.2s ease-in-out infinite;
+}
+
+.carta-figura {
+  margin: 2.3rem auto;
+  max-width: var(--ancho, 300px);
+  transform: rotate(var(--giro, -1.5deg));
+  transition: transform 0.5s ease;
+}
+
+.carta-figura:hover {
+  transform: rotate(0deg) scale(1.04);
+}
+
+.carta-figura img {
+  width: 100%;
+  display: block;
+  border-radius: 3px;
+  -webkit-mask-image: radial-gradient(125% 125% at 50% 50%, #000 52%, transparent 96%);
+  mask-image: radial-gradient(125% 125% at 50% 50%, #000 52%, transparent 96%);
+  filter: saturate(0.94) sepia(0.06) brightness(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carta-divisor span { animation: none; }
+}
