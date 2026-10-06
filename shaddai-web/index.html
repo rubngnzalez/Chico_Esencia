@@ -7,7 +7,7 @@
   <meta name="description" content="SHADDAI, Esencia de Umbral: Eau de Parfum Neurosensorial hecho a mano. Una pausa líquida para el alma que disuelve el piloto automático y ancla al momento presente.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body data-pagina="inicio">
@@ -17,7 +17,7 @@
   <header class="cabecera">
     <div class="barra">
       <a href="index.html" class="marca">
-        <span class="shin">ש</span>
+        <span class="shin"><img src="img/shin-logo.png" alt=""></span>
         <span class="nombre">SHADDAI<small>Eau de Parfum Neurosensorial</small></span>
       </a>
       <button class="menu-boton" aria-label="Abrir menú">&#9776;</button>
@@ -36,12 +36,17 @@
   <main>
 
     <!-- Héroe -->
-    <section class="heroe" style="background-image: url('img/estuche-bosque.jpg');">
+    <section class="heroe">
+      <div class="carrusel" aria-hidden="true">
+        <div class="carrusel-capa activa" style="background-image: url('img/portada-1.jpg');"></div>
+        <div class="carrusel-capa" style="background-image: url('img/portada-2.jpg');"></div>
+        <div class="carrusel-capa" style="background-image: url('img/portada-3.jpg');"></div>
+        <div class="carrusel-niebla"></div>
+      </div>
       <div class="contenedor">
-        <div class="shin-hero">ש</div>
         <h1>SHADDAI</h1>
         <p class="subtitulo">Esencia de Umbral</p>
-        <p class="lema">Eau de Parfum Neurosensorial &middot; Inhalar &middot; Exhalar&trade; — Una pausa líquida para el alma.</p>
+        <p class="lema">Eau de Parfum Neurosensorial &middot; Inhalar &middot; Exhalar&trade;</p>
         <div class="acciones">
           <a class="boton boton-lleno" href="producto.html">Descubrir la alquimia</a>
           <a class="boton" href="ritual.html">Vivir el ritual</a>
@@ -70,25 +75,21 @@
     <section class="seccion">
       <div class="contenedor">
         <div class="centrar revelar">
-          <span class="etiqueta">Un instante para ti</span>
+          <span class="etiqueta etiqueta-grande">Un instante para ti</span>
           <h2 class="titulo">Estés donde <span class="oro">estés</span></h2>
         </div>
-        <div class="rejilla-4" style="margin-top: 2.4rem;">
+        <div class="rejilla rejilla-3" style="margin-top: 2.4rem;">
           <figure class="escena revelar">
-            <img src="img/escena-presencia.jpg" alt="Madre en presencia plena mientras sus hijos juegan" loading="lazy">
-            <figcaption>Presencia</figcaption>
+            <img src="img/escena-oficina.jpg" alt="Mujer desconectando del ruido en su oficina con su esencia SHADDAI" loading="lazy">
+            <figcaption>Desconexión</figcaption>
           </figure>
           <figure class="escena revelar">
-            <img src="img/escena-equilibrio.jpg" alt="Hombre sereno en el metro con su esencia SHADDAI" loading="lazy">
-            <figcaption>Equilibrio</figcaption>
-          </figure>
-          <figure class="escena revelar">
-            <img src="img/escena-claridad.jpg" alt="Hombre encontrando claridad en su cocina" loading="lazy">
+            <img src="img/escena-claridad.jpg" alt="Hombre encontrando claridad en su cocina al inhalar y exhalar la esencia" loading="lazy">
             <figcaption>Claridad</figcaption>
           </figure>
           <figure class="escena revelar">
-            <img src="img/escena-desconexion.jpg" alt="Mujer desconectando del ruido en su oficina" loading="lazy">
-            <figcaption>Desconexión</figcaption>
+            <img src="img/escena-serenidad.jpg" alt="Mujer serena en su cocina inhalando su esencia SHADDAI" loading="lazy">
+            <figcaption>Serenidad</figcaption>
           </figure>
         </div>
       </div>
@@ -106,10 +107,10 @@
     <section class="seccion">
       <div class="contenedor dos-columnas inversa">
         <div class="columna-imagen marco-imagen revelar">
-          <img src="img/pausa-liquida.jpg" alt="SHADDAI, una pausa líquida para el alma, hecho a mano 50 ml">
+          <img src="img/pausa-liquida.jpg?v=2" alt="Frasco de SHADDAI con resinas y mujer meditando: reserva tu Primera Edición Limitada">
         </div>
         <div class="revelar">
-          <span class="etiqueta">Una pausa líquida</span>
+          <span class="etiqueta">Una pausa para ti</span>
           <h2 class="titulo">Rompe el piloto <span class="oro">automático</span></h2>
           <p>Diseñado para romper el piloto automático, equilibrar tus neuro-moduladores y anclarte en el momento presente. Hecho a mano &middot; 50 ml.</p>
           <p>Nace como una <strong>edición limitada y numerada</strong>: reserva tu frasco antes de que se agote la asignación exclusiva de lanzamiento.</p>
@@ -128,7 +129,7 @@
       <div class="columnas">
         <div>
           <a href="index.html" class="marca">
-            <span class="shin">ש</span>
+            <span class="shin"><img src="img/shin-logo.png" alt=""></span>
             <span class="nombre">SHADDAI<small>Eau de Parfum Neurosensorial</small></span>
           </a>
           <p style="margin-top: 1rem;">Inhala &middot; Exhala&trade; — Que nos busquen por dentro.<br>Edición Artesanal Limitada.</p>
