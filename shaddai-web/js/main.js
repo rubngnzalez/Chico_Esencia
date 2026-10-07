@@ -147,6 +147,8 @@ if (fondo && !movimientoReducido) {
   };
 
   const punteroTactil = window.matchMedia("(pointer: coarse)").matches;
+  // Tonos de estrellas e hilos: dorados, como las letras del sello
+  const tonos = { estrellaA: [227, 201, 143], estrellaB: [243, 238, 226], hilo: "201, 164, 95" };
   const lienzo = document.createElement("canvas");
   lienzo.id = "universo-umbral";
   fondo.insertBefore(lienzo, fondo.firstChild);
@@ -163,10 +165,12 @@ if (fondo && !movimientoReducido) {
   const desliz = UNIVERSO.planos.map(() => ({ x: 0, y: 0 }));
 
   const tonoEstrella = (mezcla, alfa) => {
-    const r = Math.round(227 + (243 - 227) * mezcla);
-    const g = Math.round(201 + (238 - 201) * mezcla);
-    const b = Math.round(143 + (226 - 143) * mezcla);
-    return `rgba(${r}, ${g}, ${b}, ${alfa})`;
+    const a = tonos.estrellaA;
+    const b = tonos.estrellaB;
+    const r = Math.round(a[0] + (b[0] - a[0]) * mezcla);
+    const g = Math.round(a[1] + (b[1] - a[1]) * mezcla);
+    const v = Math.round(a[2] + (b[2] - a[2]) * mezcla);
+    return `rgba(${r}, ${g}, ${v}, ${alfa})`;
   };
 
   const contarEstrellas = () => {
@@ -261,8 +265,8 @@ if (fondo && !movimientoReducido) {
         cursor.y,
         UNIVERSO.radioConstelacion
       );
-      halo.addColorStop(0, "rgba(201, 164, 95, 0.10)");
-      halo.addColorStop(1, "rgba(201, 164, 95, 0)");
+      halo.addColorStop(0, `rgba(${tonos.hilo}, 0.10)`);
+      halo.addColorStop(1, `rgba(${tonos.hilo}, 0)`);
       contexto.fillStyle = halo;
       contexto.beginPath();
       contexto.arc(cursor.x, cursor.y, UNIVERSO.radioConstelacion, 0, Math.PI * 2);
@@ -275,7 +279,7 @@ if (fondo && !movimientoReducido) {
         const distancia = Math.hypot(x - cursor.x, y - cursor.y);
         if (distancia < UNIVERSO.radioConstelacion) {
           const alfa = (1 - distancia / UNIVERSO.radioConstelacion) * 0.45;
-          contexto.strokeStyle = `rgba(201, 164, 95, ${alfa.toFixed(3)})`;
+          contexto.strokeStyle = `rgba(${tonos.hilo}, ${alfa.toFixed(3)})`;
           contexto.beginPath();
           contexto.moveTo(cursor.x, cursor.y);
           contexto.lineTo(x, y);
