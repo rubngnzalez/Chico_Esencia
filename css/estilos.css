@@ -62,6 +62,11 @@ a {
   margin-bottom: 1.1rem;
 }
 
+.etiqueta-grande {
+  font-size: clamp(0.95rem, 2.5vw, 1.25rem);
+  letter-spacing: 0.34em;
+}
+
 .titulo {
   font-family: var(--serif);
   font-weight: 600;
@@ -98,8 +103,9 @@ p + p {
   border: 1px solid var(--oro);
   color: var(--oro-claro);
   font-family: var(--sans);
-  font-size: 0.85rem;
-  letter-spacing: 0.28em;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   transition: background 0.35s ease, color 0.35s ease;
   background: transparent;
@@ -151,15 +157,28 @@ p + p {
 }
 
 .marca .shin {
-  font-family: var(--serif);
-  font-size: 1.9rem;
-  color: var(--oro);
   border: 1px solid rgba(201, 164, 95, 0.55);
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 3.6rem;
+  height: 3.6rem;
   display: grid;
   place-items: center;
   border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.marca .shin img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.4);
+}
+
+.pie .marca .shin {
+  font-family: var(--serif);
+  font-size: 1.9rem;
+  color: var(--oro);
 }
 
 .marca .nombre {
@@ -228,15 +247,8 @@ p + p {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 1;
   background: linear-gradient(180deg, rgba(15, 25, 17, 0.78) 0%, rgba(15, 25, 17, 0.55) 45%, rgba(22, 38, 27, 0.95) 100%);
-}
-
-.heroe .shin-hero {
-  font-family: var(--serif);
-  font-size: clamp(3rem, 7vw, 4.6rem);
-  color: var(--oro);
-  margin-bottom: 0.5rem;
 }
 
 .heroe h1 {
@@ -361,6 +373,17 @@ p + p {
   font-size: 0.98rem;
 }
 
+/* ---------- Franja de las tres notas ---------- */
+.notas-franja {
+  margin: 2.6rem auto 0;
+  max-width: 1160px;
+}
+
+.notas-franja img {
+  width: 100%;
+  display: block;
+}
+
 /* ---------- Cita ---------- */
 .cita {
   background: var(--verde-3);
@@ -413,15 +436,26 @@ p + p {
 
 .paso {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   gap: 2rem;
   padding: 2.4rem 0;
   border-bottom: 1px solid rgba(201, 164, 95, 0.22);
-  align-items: baseline;
+  align-items: center;
 }
 
 .paso:last-child {
   border-bottom: none;
+}
+
+.paso-imagen {
+  width: clamp(15rem, 32vw, 27rem);
+  aspect-ratio: 548 / 232;
+  object-fit: cover;
+  border: 1px solid rgba(201, 164, 95, 0.4);
+  border-radius: 12px;
+  outline: 1px solid rgba(201, 164, 95, 0.22);
+  outline-offset: 5px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
 }
 
 .paso .numero {
@@ -581,6 +615,15 @@ p + p {
   margin: 1.2rem auto 0;
   font-family: var(--serif);
   font-size: 1.3rem;
+  color: var(--crema);
+}
+
+.cabecera-pagina .subtitulo-cabecera {
+  margin: 0.6rem auto 0;
+  font-family: var(--sans);
+  font-size: clamp(1rem, 2.2vw, 1.3rem);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
   color: var(--crema);
 }
 
@@ -779,6 +822,11 @@ p + p {
     grid-template-columns: auto 1fr;
     gap: 1.2rem;
   }
+
+  .paso-imagen {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
 }
 
 /* ---------- Escenas (Presencia, Equilibrio, Claridad, Desconexión) ---------- */
@@ -796,7 +844,8 @@ p + p {
 
 .escena img {
   width: 100%;
-  height: 240px;
+  height: auto;
+  aspect-ratio: 4 / 5;
   object-fit: cover;
   display: block;
   transition: transform 0.45s ease;
@@ -827,14 +876,15 @@ p + p {
   padding: clamp(2.5rem, 6vw, 4.5rem);
   text-align: center;
   font-family: var(--serif);
-  font-size: 1.18rem;
+  font-size: 1.32rem;
   line-height: 1.9;
-  color: var(--crema);
+  color: #faf6ec;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
 }
 
 .carta-panel .saludo {
-  font-size: 1.5rem;
-  color: var(--oro);
+  font-size: 1.7rem;
+  color: var(--oro-claro);
   margin-bottom: 1.6rem;
 }
 
@@ -844,9 +894,9 @@ p + p {
 
 .carta-panel .firma {
   margin-top: 2.4rem;
-  font-size: 1.4rem;
+  font-size: 1.55rem;
   font-style: italic;
-  color: var(--oro);
+  color: var(--oro-claro);
 }
 
 /* ---------- Boletín del Umbral (pie) ---------- */
@@ -921,10 +971,6 @@ p + p {
     grid-template-columns: 1fr;
   }
 
-  .escena img {
-    height: 220px;
-  }
-
   .boletin {
     flex-direction: column;
   }
@@ -944,13 +990,13 @@ p + p {
 }
 
 .cabecera-pagina h1 {
-  font-size: clamp(2rem, 4.2vw, 2.9rem);
+  font-size: clamp(2.6rem, 5.2vw, 3.8rem);
   letter-spacing: 0.1em;
 }
 
 .cabecera-pagina .entradilla {
   margin-top: 0.55rem;
-  font-size: 1.12rem;
+  font-size: 1.25rem;
 }
 
 /* ---------- Fondo mágico: luciérnagas y niebla del umbral ---------- */
@@ -962,6 +1008,14 @@ p + p {
   pointer-events: none;
 }
 
+/* Universo del Umbral: estrellas interactivas (canvas bajo las luciérnagas) */
+#universo-umbral {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
 /* Niebla que se desplaza despacio */
 .fondo-magico::before {
   content: "";
@@ -969,8 +1023,8 @@ p + p {
   inset: -20%;
   background:
     radial-gradient(42% 34% at 18% 28%, rgba(201, 164, 95, 0.09) 0%, transparent 70%),
-    radial-gradient(46% 38% at 82% 68%, rgba(120, 160, 120, 0.08) 0%, transparent 70%),
-    radial-gradient(30% 26% at 55% 15%, rgba(201, 164, 95, 0.06) 0%, transparent 70%);
+    radial-gradient(46% 38% at 82% 68%, rgba(201, 164, 95, 0.08) 0%, transparent 70%),
+    radial-gradient(30% 26% at 55% 15%, rgba(227, 201, 143, 0.07) 0%, transparent 70%);
   animation: niebla 70s ease-in-out infinite alternate;
 }
 
@@ -1034,7 +1088,7 @@ p + p {
   position: absolute;
   bottom: -30vh;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(201, 164, 95, 0.10) 0%, rgba(163, 196, 160, 0.07) 55%, transparent 78%);
+  background: radial-gradient(closest-side, rgba(201, 164, 95, 0.10) 0%, rgba(227, 201, 143, 0.07) 55%, transparent 78%);
   filter: blur(24px);
   opacity: 0;
   animation: vapor-lento var(--duracion-v, 40s) ease-in-out var(--retraso-v, 0s) infinite;
@@ -1175,6 +1229,23 @@ p + p {
   inset: 13px;
   border: 1px solid rgba(201, 164, 95, 0.26);
   pointer-events: none;
+  z-index: 2;
+}
+
+/* Carta del Autor: imagen del producto de bienestar como fondo del panel */
+.carta-panel.fondo-producto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(14, 22, 16, 0.86), rgba(14, 22, 16, 0.9)),
+    url("../img/estuche-bosque.jpg") center 38% / cover no-repeat;
+  pointer-events: none;
+}
+
+.carta-panel.fondo-producto > * {
+  position: relative;
+  z-index: 1;
 }
 
 .carta-divisor {
@@ -1205,6 +1276,15 @@ p + p {
   font-size: 0.8rem;
   text-shadow: 0 0 12px rgba(201, 164, 95, 0.7);
   animation: latir-adorno 3.2s ease-in-out infinite;
+}
+
+.carta-divisor img {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(201, 164, 95, 0.4);
+  box-shadow: 0 0 18px rgba(201, 164, 95, 0.35);
 }
 
 .carta-figura {
@@ -1285,16 +1365,30 @@ p + p {
   to   { transform: translateY(-14px); }
 }
 
-/* Escenas de portada: arquitas de capilla */
+/* Escenas de portada: marcos suaves para fotografias reales */
 .escena {
-  border-radius: 50% 50% 12px 12px / 30% 30% 12px 12px;
+  border-radius: 20px;
   outline: 1px solid rgba(201, 164, 95, 0.3);
   outline-offset: 6px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), 0 0 26px rgba(201, 164, 95, 0.1);
 }
 
 .escena img {
-  border-radius: 50% 50% 10px 10px / 30% 30% 10px 10px;
+  border-radius: 16px;
+}
+
+.ritual-collage {
+  margin: 2.4rem auto 0;
+  max-width: 900px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(201, 164, 95, 0.35);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), 0 0 26px rgba(201, 164, 95, 0.1);
+}
+
+.ritual-collage img {
+  width: 100%;
+  display: block;
 }
 
 /* Galeria: piedras organicas alternadas */
@@ -1313,7 +1407,70 @@ p + p {
   .marco-imagen::before,
   .marco-imagen::after,
   .dos-columnas .columna-imagen img,
+  .carrusel-capa.activa,
   .galeria img {
     animation: none;
   }
+}
+
+/* ---------- Carrusel del héroe: brote de niebla pulverizada ---------- */
+.heroe .contenedor {
+  position: relative;
+  z-index: 2;
+}
+
+.heroe .bajar {
+  z-index: 2;
+}
+
+.carrusel {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.carrusel-capa {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transform: scale(1.1);
+  filter: blur(16px);
+  transition: opacity 2s ease, filter 2s ease;
+  will-change: opacity, transform, filter;
+}
+
+.carrusel-capa.activa {
+  opacity: 1;
+  filter: blur(0);
+  animation: kenburns 9s ease-out forwards;
+}
+
+@keyframes kenburns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.09); }
+}
+
+.carrusel-niebla {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 36% at 28% 58%, rgba(227, 201, 143, 0.30), transparent 70%),
+    radial-gradient(38% 32% at 72% 38%, rgba(243, 238, 226, 0.24), transparent 70%),
+    radial-gradient(30% 26% at 52% 68%, rgba(201, 164, 95, 0.22), transparent 75%);
+  filter: blur(8px);
+}
+
+.carrusel-niebla.brote {
+  animation: brote-niebla 2.1s ease-out;
+}
+
+@keyframes brote-niebla {
+  0%   { opacity: 0; transform: scale(0.94); }
+  35%  { opacity: 0.9; }
+  100% { opacity: 0; transform: scale(1.16); }
 }
