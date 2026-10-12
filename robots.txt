@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /news/admin
+
+# Buscadores generativos (GEO): permitidos
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://omshaddai.com/news/sitemap.xml
