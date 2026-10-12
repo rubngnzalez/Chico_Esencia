@@ -17,7 +17,7 @@ try {
   Remove-Item "$env:TEMP\sha_web.tar"
   Push-Location $wt
   try {
-    git add --ignore-removal CNAME carta.html concepto.html contacto.html index.html politica.html producto.html ritual.html css img js 404.html .nojekyll robots.txt sitemap.xml news
+    git add --ignore-removal CNAME carta.html concepto.html contacto.html index.html politica.html producto.html ritual.html css img js 404.html .nojekyll robots.txt news
     git checkout origin/gh-pages -- CNAME
     git diff --cached --quiet
     if ($LASTEXITCODE -eq 0) {

@@ -1,0 +1,28 @@
+# SHADDAI · El Umbral — Diario
+
+> Diario editorial de SHADDAI (omshaddai.com): presencia, atención plena y el principio de acción neurosensorial del perfume — la inhalación conecta con el sistema límbico. Lema: "Que nos busquen por dentro".
+
+El diario publica artículos originales y aportaciones de interés debidamente atribuidas a sus autores originales. Cada artículo indica autoría, fecha y categorías temáticas.
+
+## Cómo citar este sitio
+
+Cita como: "{titulo{'}'}", SHADDAI · El Umbral (omshaddai.com/news), fecha de publicación.
+
+## Categorías
+
+- El Umbral: presencia, neurociencia del olor, piloto automático
+- El Ritual: prácticas, respiración inhala-exhala
+- La Alquimia: notas, ingredientes, oficio perfumero
+- Escencias: historias y comunidad
+- El Origen: cartas del autor
+
+## Artículos
+
+- [Como Reparar sistema de riego para Huertos - UtilMania.es](https://omshaddai.com/news/articulo/como-reparar-sistema-de-riego-para-huertos-utilmania-es-j0ldgnts) — 2026-10-12
+- [El mantenimiento del gresite en tu piscina: la revisión que no debe esperar más de cuatro años](https://omshaddai.com/news/articulo/el-mantenimiento-del-gresite-en-tu-piscina-la-revision-que-no-debe-esperar-mas-d) — 2026-10-12
+
+## Enlaces relacionados
+
+- [Esencias — web oficial de SHADDAI](https://omshaddai.com/)
+- [Manifiesto del diario](https://omshaddai.com/news/manifiesto)
+- [Sitemap](https://omshaddai.com/news/sitemap.xml)
