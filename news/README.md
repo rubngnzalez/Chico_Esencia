@@ -26,25 +26,13 @@ El sitio se sirve desde la rama **`gh-pages`** (copia de `shaddai-web/` en la ra
 
 1. `npm run build` en `news/` (genera `shaddai-web/news/` + `shaddai-web/404.html`).
 2. Commit + push del código en `main`.
-3. Espejo a producción (se renombra el código para no borrar `node_modules`; NUNCA se
-   borran los assets antiguos: los HTML cacheados de los visitantes deben seguir funcionando):
+3. Espejo a producción (automatizado, conserva assets antiguos y el `.env`/`node_modules`):
    ```powershell
-   Rename-Item news news_src_tmp
-   git checkout -B gh-pages origin/gh-pages
-   git restore --source=main -- shaddai-web
-   tar -C shaddai-web -cf $env:TEMP\web.tar .
-   tar -C . -xf $env:TEMP\web.tar
-   Remove-Item $env:TEMP\web.tar
-   git add --ignore-removal CNAME carta.html concepto.html contacto.html index.html politica.html producto.html ritual.html css img js 404.html .nojekyll news
-   git checkout origin/gh-pages -- CNAME
-   git commit -m "Publicacion"
-   git push origin gh-pages
-   Remove-Item -Recurse -Force -LiteralPath @('css','img','js','news','carta.html','concepto.html','contacto.html','index.html','politica.html','producto.html','ritual.html','CNAME','404.html','.nojekyll','shaddai-web')
-   Rename-Item news_src_tmp news
-   git checkout main
+   powershell -ExecutionPolicy Bypass -File news\scripts\publicar.ps1 -Mensaje "Descripcion del cambio"
    ```
-   (En `gh-pages`, `news/` es solo el build; el código vive en `main`. De vez en cuando,
-   limpiar a mano los assets con hash antiguo que ya no référence ningún HTML.)
+   El script mata los procesos `esbuild` que bloquean el renombrado y devuelve el
+   árbol a `main` al terminar. En `gh-pages`, `news/` es solo el build; el código
+   vive en `main`. De vez en cuando, limpiar a mano los assets con hash antiguo.
 
 ## Migraciones
 
