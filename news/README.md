@@ -26,8 +26,9 @@ El sitio se sirve desde la rama **`gh-pages`** (copia de `shaddai-web/` en la ra
 
 1. `npm run build` en `news/` (genera `shaddai-web/news/` + `shaddai-web/404.html`).
 2. Commit + push del código en `main`.
-3. Espejo a producción:
+3. Espejo a producción (se renombra el código para no borrar `node_modules`):
    ```powershell
+   Rename-Item news news_src_tmp
    git checkout -B gh-pages origin/gh-pages
    git rm -rq .
    git restore --source=main -- shaddai-web
@@ -35,11 +36,14 @@ El sitio se sirve desde la rama **`gh-pages`** (copia de `shaddai-web/` en la ra
    tar -C . -xf $env:TEMP\web.tar
    Remove-Item $env:TEMP\web.tar
    git add CNAME carta.html concepto.html contacto.html index.html politica.html producto.html ritual.html css img js 404.html .nojekyll news
+   git checkout origin/gh-pages -- CNAME
    git commit -m "Publicacion"
    git push origin gh-pages
+   Remove-Item -Recurse -Force -LiteralPath @('css','img','js','news','carta.html','concepto.html','contacto.html','index.html','politica.html','producto.html','ritual.html','CNAME','404.html','.nojekyll','shaddai-web')
+   Rename-Item news_src_tmp news
    git checkout main
    ```
-   (No arrastrar `news/` de código ni `node_modules`: en `gh-pages`, `news/` es solo el build.)
+   (En `gh-pages`, `news/` es solo el build; el código vive en `main`.)
 
 ## Migraciones
 
