@@ -22,12 +22,31 @@ npm run build      # typecheck + build hacia ../shaddai-web/news + postbuild 404
 
 ## Publicar
 
-1. `npm run build` en `news/`.
-2. Commit + push (GitHub Pages publica automáticamente).
-3. Si hay migraciones nuevas en `news/supabase/migrations/`: el proyecto ARENA13 es
-   compartido y su historial de migraciones pertenece a otro proyecto, así que se
-   aplican con `npx supabase db query --linked -f supabase/migrations/XXXX.sql`
-   (con `SUPABASE_ACCESS_TOKEN` en el entorno). No usar `db push` aquí.
+El sitio se sirve desde la rama **`gh-pages`** (copia de `shaddai-web/` en la raíz).
+
+1. `npm run build` en `news/` (genera `shaddai-web/news/` + `shaddai-web/404.html`).
+2. Commit + push del código en `main`.
+3. Espejo a producción:
+   ```powershell
+   git checkout -B gh-pages origin/gh-pages
+   git rm -rq .
+   git restore --source=main -- shaddai-web
+   tar -C shaddai-web -cf $env:TEMP\web.tar .
+   tar -C . -xf $env:TEMP\web.tar
+   Remove-Item $env:TEMP\web.tar
+   git add CNAME carta.html concepto.html contacto.html index.html politica.html producto.html ritual.html css img js 404.html .nojekyll news
+   git commit -m "Publicacion"
+   git push origin gh-pages
+   git checkout main
+   ```
+   (No arrastrar `news/` de código ni `node_modules`: en `gh-pages`, `news/` es solo el build.)
+
+## Migraciones
+
+El proyecto ARENA13 es compartido y su historial de migraciones pertenece a otro
+proyecto, así que las migraciones de `news/supabase/migrations/` se aplican con
+`npx supabase db query --linked -f supabase/migrations/XXXX.sql` (con
+`SUPABASE_ACCESS_TOKEN` en el entorno). No usar `db push` aquí.
 
 ## Edge functions (proyecto ARENA13)
 
