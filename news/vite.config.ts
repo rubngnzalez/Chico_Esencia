@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/news/',
   build: {
     outDir: '../shaddai-web/news',
-    emptyOutDir: true,
+    emptyOutDir: false,
     rollupOptions: {
       output: {
         manualChunks: {
