@@ -47,6 +47,7 @@ export default function AdminLayout() {
         <div className="admin-sidebar-pie">
           <Link to="/" className="admin-ver-blog">← Ver el diario</Link>
           <button onClick={() => signOut()} className="admin-salir">Cerrar sesión</button>
+          <span className="admin-version">Diario v1.1 · Importador con rastreo</span>
         </div>
       </aside>
       <div className="admin-contenido">

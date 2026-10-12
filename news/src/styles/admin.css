@@ -69,6 +69,7 @@
   font-size: 0.85rem;
 }
 .admin-salir:hover { background: rgba(201, 164, 95, 0.15); }
+.admin-version { font-size: 0.68rem; color: rgba(201, 164, 95, 0.7); letter-spacing: 0.06em; }
 
 /* ---------- Contenido ---------- */
 
