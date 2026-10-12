@@ -4,3 +4,11 @@ shaddai-web/img/pages/
 # Archivos del sistema
 Thumbs.db
 .DS_Store
+
+# Proyecto blog (news/): dependencias y secretos locales
+news/node_modules/
+news/.env
+news/*.local
+news/supabase/.temp/
+news/supabase/.branches/
+news/supabase/.temp

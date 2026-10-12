@@ -1,0 +1,4 @@
+project_id = "zjzqbugpdpfuttdwagai"
+
+[functions.sha-social-sync]
+verify_jwt = false
