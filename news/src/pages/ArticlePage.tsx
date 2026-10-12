@@ -8,7 +8,7 @@ import FavoriteButton from '../components/FavoriteButton'
 import ShareBar from '../components/ShareBar'
 import WidgetRenderer from '../components/WidgetRenderer'
 import { fetchArticleBySlug, queryArticles } from '../lib/queries'
-import { setSeo } from '../lib/seo'
+import { jsonLdArticulo, setSeo } from '../lib/seo'
 import { supabase } from '../lib/supabase'
 import { formatDate, stripHtml } from '../lib/utils'
 import type { Article } from '../lib/types'
@@ -29,12 +29,30 @@ export default function ArticlePage() {
       setCargando(false)
       if (!a) return
       const url = `${location.origin}/news/articulo/${a.slug}`
+      const descripcion = a.seo_description || a.excerpt || stripHtml(a.content).slice(0, 160)
       setSeo({
         title: a.seo_title || a.title,
-        description: a.seo_description || a.excerpt || stripHtml(a.content).slice(0, 160),
+        description: descripcion,
         image: a.og_image || a.cover_image_url,
         url,
-        author: a.show_author ? a.author?.display_name : null
+        author: a.show_author ? a.author?.display_name : null,
+        publishedTime: a.published_at,
+        modifiedTime: a.updated_at,
+        section: a.category?.name ?? null,
+        tags: a.tags,
+        jsonLd: jsonLdArticulo({
+          titulo: a.seo_title || a.title,
+          descripcion,
+          imagen: (a.og_image || a.cover_image_url || '/img/shin-logo.png').startsWith('http')
+            ? (a.og_image || a.cover_image_url)!
+            : location.origin + (a.og_image || a.cover_image_url || '/img/shin-logo.png'),
+          url,
+          autor: a.show_author ? a.author?.display_name ?? null : null,
+          publicado: a.published_at,
+          modificado: a.updated_at,
+          seccion: a.category?.name ?? null,
+          tags: a.tags
+        })
       })
       const clave = `sha_vista_${a.id}`
       if (!sessionStorage.getItem(clave)) {

@@ -56,6 +56,14 @@ export default function ArticleEditorPage() {
   })
 
   useEffect(() => {
+    const aviso = sessionStorage.getItem('sha_aviso_sin_portada')
+    if (aviso) {
+      sessionStorage.removeItem('sha_aviso_sin_portada')
+      setMensaje(aviso)
+    }
+  }, [])
+
+  useEffect(() => {
     supabase.from('sha_categories').select('*').eq('active', true).order('position')
       .then(({ data }) => setCategorias((data ?? []) as Category[]))
   }, [])

@@ -1,4 +1,4 @@
-import { corsHeaders, errorJson, json, requireStaff, restFetch } from '../_shared/mod.ts'
+import { corsHeaders, errorJson, json, requireStaff, restFetch, serviceAdmin, storageJwt } from '../_shared/mod.ts'
 
 /** Rutas que casi nunca son artículos: categorías, tags, feeds, legales, tienda… */
 const NO_ARTICULO = /\/(category|categories|tag|tags|author|autor|feed|feeds|rss|wp-json|wp-content|wp-admin|page\/|comment|comments|search|busqueda|about|acerca|contact|contacto|aviso-legal|politica|privacidad|cookies|carrito|checkout|mi-cuenta|shop|tienda|producto|catalogo|sitemap)(\/|$|\?)|\.(jpg|jpeg|png|gif|webp|svg|ico|pdf|zip|mp4|mp3)(\?|$)/i
@@ -56,6 +56,39 @@ async function fetchPage(url: string, timeoutMs = 15000): Promise<string> {
   })
   if (!res.ok) throw new Error(`La web respondió ${res.status}`)
   return await res.text()
+}
+
+/** Descarga la imagen original y la sube a nuestro bucket para no depender de la web origen. */
+async function rehostarImagen(imageUrl: string): Promise<string> {
+  const fuentes = [
+    imageUrl,
+    `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&n=-1`
+  ]
+  for (const fuente of fuentes) {
+    try {
+      if (!/^https?:\/\//i.test(fuente)) continue
+      const res = await fetch(fuente, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36' },
+        signal: AbortSignal.timeout(15000)
+      })
+      if (!res.ok) continue
+      const tipo = (res.headers.get('content-type') ?? 'image/jpeg').split(';')[0].trim()
+      if (!tipo.startsWith('image/')) continue
+      const buf = await res.arrayBuffer()
+      if (buf.byteLength < 1024 || buf.byteLength > 10 * 1024 * 1024) continue
+      const ext = tipo === 'image/png' ? 'png' : tipo === 'image/webp' ? 'webp' : tipo === 'image/gif' ? 'gif' : 'jpg'
+      const path = `importados/${crypto.randomUUID()}.${ext}`
+      const { url: base } = serviceAdmin()
+      const up = await fetch(`${base}/storage/v1/object/sha-blog/${path}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${storageJwt()}`, 'Content-Type': tipo },
+        body: buf
+      })
+      if (!up.ok) continue
+      return `${base}/storage/v1/object/public/sha-blog/${path}`
+    } catch { /* siguiente fuente */ }
+  }
+  return imageUrl
 }
 
 /** Extrae enlaces internos de una página: url limpia → texto del enlace. */
@@ -204,6 +237,7 @@ Deno.serve(async (req) => {
       return errorJson(`No se pudo descargar la página: ${(e as Error).message}`, 502)
     }
     const extraido = extraerDeHtml(html, link.url)
+    if (extraido.image) extraido.image = await rehostarImagen(extraido.image)
     await restFetch(`sha_import_links?id=eq.${link.id}`, {
       method: 'PATCH',
       body: JSON.stringify({ title: extraido.title ?? link.title, extracted: extraido })
@@ -222,6 +256,7 @@ Deno.serve(async (req) => {
   }
 
   const extraido = extraerDeHtml(html, url)
+  if (extraido.image) extraido.image = await rehostarImagen(extraido.image)
   if (extraido.text.length < 200) {
     return errorJson('No se pudo extraer un artículo legible de esa URL. Prueba con "Rastrear web" si es una portada.', 422)
   }
@@ -267,17 +302,45 @@ function extraerDeHtml(html: string, url: string) {
     /"datePublished"\s*:\s*"([^"]+)"/i,
     /<time[^>]+datetime=["']([^"']+)["']/i
   ])
-  const image = meta(html, [
+  let image = meta(html, [
     /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i
+    /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+    /<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i
   ])
+  if (!image) {
+    const scopeImg = (html.match(/<article[\s\S]*?<\/article>/i) ?? [html])[0]
+    const img = scopeImg.match(/<img[^>]+src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i)
+      ?? scopeImg.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i)
+    if (img?.[1]) {
+      try {
+        image = new URL(decodeEntities(img[1]), url).toString()
+      } catch { /* img inválida */ }
+    }
+  }
+
+  const etiquetas = new Set<string>()
+  for (const m of html.matchAll(/<meta[^>]+property=["']article:tag["'][^>]+content=["']([^"']+)["']/gi)) {
+    etiquetas.add(decodeEntities(m[1]).trim())
+  }
+  const keywords = meta(html, [
+    /<meta[^>]+name=["']keywords["'][^>]+content=["']([^"']+)["']/i,
+    /"keywords"\s*:\s*"([^"]+)"/i
+  ])
+  if (keywords) {
+    for (const k of keywords.split(/[,;|]/)) {
+      const t = k.trim()
+      if (t.length >= 3 && t.length <= 40) etiquetas.add(t)
+    }
+  }
+
   const text = extractArticle(html)
   return {
     source_url: url,
     title,
     author,
     published_at: publishedAt,
-    image,
+    image: image ?? null,
+    tags: [...etiquetas].slice(0, 12),
     text,
     word_count: text.split(/\s+/).filter(Boolean).length
   }

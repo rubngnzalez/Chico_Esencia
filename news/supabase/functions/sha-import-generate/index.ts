@@ -23,10 +23,13 @@ const SYSTEM_PROMPT = `Eres el editor del diario "SHADDAI · El Umbral". Recibes
 3. Mantenga una extensión similar al original.
 4. Respete fielmente la temática del original: habla de lo que habla el artículo, con redacción clara, elegante y cercana. NO fuerces referencias a la marca, al perfume, al ritual, a inhalar/exhalar, a la presencia ni a ningún simbolismo del diario: sólo si el tema del original es directamente bienestar, atención plena o perfumería (y siempre con mucha mesura).
 5. NO añadas iconos, emojis, símbolos, sellos, categorías ni secciones que no existan en el contenido original.
-6. El HTML de salida usa sólo etiquetas <p>, <h2>, <h3>, <blockquote>, <ul>, <li>, <strong>, <em>. Sin <h1>. Sin emojis.
+6. Optimización para buscadores y para buscadores generativos (GEO): empieza el artículo respondiendo de forma directa a qué trata; usa frases completas y autosuficientes que se puedan citar tal cual; estructura en secciones <h2> descriptivas; lenguaje natural, concreto y sin relleno.
+7. El HTML de salida usa sólo etiquetas <p>, <h2>, <h3>, <blockquote>, <ul>, <li>, <strong>, <em>. Sin <h1>. Sin emojis.
 
 Responde EXCLUSIVAMENTE con un objeto JSON válido con esta forma:
-{"title": "título atractivo y propio", "excerpt": "entradilla de 1-2 frases", "html": "cuerpo del artículo en HTML"}`
+{"title": "título atractivo y propio", "excerpt": "entradilla de 1-2 frases", "html": "cuerpo del artículo en HTML", "tags": ["etiqueta en minúscula", "..."]}
+
+Las "tags" deben ser de 3 a 6, en minúsculas, útiles para buscadores: mezcla las etiquetas del original (si existen) con otras nuevas relevantes al tema.`
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -64,7 +67,7 @@ Deno.serve(async (req) => {
   const links = await linkRes.json() as {
     id: string; url: string; title: string | null; extracted: {
       source_url: string; title: string | null; author: string | null
-      published_at: string | null; image: string | null; text: string
+      published_at: string | null; image: string | null; tags?: string[]; text: string
     } | null
   }[]
   const link = links[0]
@@ -78,7 +81,7 @@ Fecha original: ${origen.published_at ?? 'desconocida'}
 CONTENIDO ORIGINAL:
 ${origen.text.slice(0, 24000)}`
 
-  let contenido: { title?: string; excerpt?: string; html?: string }
+  let contenido: { title?: string; excerpt?: string; html?: string; tags?: string[] }
   try {
     const res = await fetch(`${glmUrl}/chat/completions`, {
       method: 'POST',
@@ -91,7 +94,8 @@ ${origen.text.slice(0, 24000)}`
         ],
         temperature: 0.75,
         max_tokens: 8000,
-        response_format: { type: 'json_object' }
+        response_format: { type: 'json_object' },
+        thinking: { type: 'disabled' }
       }),
       signal: AbortSignal.timeout(120000)
     })
@@ -105,6 +109,10 @@ ${origen.text.slice(0, 24000)}`
 
   if (!contenido.title || !contenido.html) return errorJson('La IA no devolvió un artículo válido', 502)
 
+  const etiquetasOriginales = Array.isArray(origen.tags) ? origen.tags : []
+  const etiquetasIa = Array.isArray(contenido.tags) ? contenido.tags.filter((t): t is string => typeof t === 'string').map(t => t.trim().toLowerCase()).filter(Boolean) : []
+  const tags = [...new Set([...etiquetasIa, ...etiquetasOriginales.map(t => t.trim().toLowerCase())])].slice(0, 8)
+
   const slug = `${slugify(contenido.title)}-${Math.random().toString(36).slice(2, 8)}`
   const ins = await restFetch('sha_articles', {
     method: 'POST',
@@ -116,6 +124,7 @@ ${origen.text.slice(0, 24000)}`
       content: contenido.html,
       cover_image_url: origen.image ?? null,
       og_image: origen.image ?? null,
+      tags,
       status: 'draft',
       provenance: 'imported_ai',
       original_source_url: link.url,

@@ -164,6 +164,7 @@ export default function ImporterPage() {
         excerpt: excerptFrom(parrafos),
         content: parrafos || '<p></p>',
         cover_image_url: extraido?.image ?? null,
+        tags: (extraido?.tags ?? []).slice(0, 12),
         status: 'draft',
         provenance: 'imported_copy',
         original_author: extraido?.author ?? 'Autor original',
@@ -182,6 +183,9 @@ export default function ImporterPage() {
     await supabase.from('sha_import_links').update({
       status: 'copied', rights_confirmed: true, article_id: (articulo as Article).id
     }).eq('id', link.id)
+    if (!extraido?.image) {
+      sessionStorage.setItem('sha_aviso_sin_portada', 'El artículo copiado no tiene imagen detectada: añade una portada en el bloque "Portada" del editor.')
+    }
     setTrabajando(null)
     navigate(`/admin/articulos/${(articulo as Article).id}/editar`)
   }

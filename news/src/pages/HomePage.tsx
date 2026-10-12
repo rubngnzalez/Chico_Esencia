@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import ArticleCard from '../components/ArticleCard'
 import WidgetRenderer from '../components/WidgetRenderer'
 import { queryArticles } from '../lib/queries'
-import { setSeo } from '../lib/seo'
+import { jsonLdWebSite, setSeo } from '../lib/seo'
 import { useFavorites } from '../lib/favorites'
 import type { Article } from '../lib/types'
 
@@ -17,7 +17,7 @@ export default function HomePage() {
   const { ids: favIds } = useFavorites()
 
   useEffect(() => {
-    setSeo({ title: 'SHADDAI · El Umbral — Diario', type: 'website', url: location.origin + '/news/' })
+    setSeo({ title: 'SHADDAI · El Umbral — Diario', type: 'website', url: location.origin + '/news/', jsonLd: jsonLdWebSite() })
     let vivo = true
     Promise.all([
       queryArticles({ featuredOnly: true, limit: 1 }),

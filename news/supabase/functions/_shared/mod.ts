@@ -22,6 +22,11 @@ export function serviceAdmin(): { url: string; key: string } {
   return { url, key }
 }
 
+/** JWT legacy para el servicio de Storage (acepta JWT firmado, no claves sb_secret). */
+export function storageJwt(): string {
+  return Deno.env.get('STORAGE_JWT') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SERVICE_KEY') ?? ''
+}
+
 export function tableUrl(path: string): string {
   return `${serviceAdmin().url}/rest/v1/${path}`
 }

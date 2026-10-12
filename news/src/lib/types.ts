@@ -132,6 +132,7 @@ export interface Extracted {
   author: string | null
   published_at: string | null
   image: string | null
+  tags?: string[]
   text: string
   word_count: number
 }

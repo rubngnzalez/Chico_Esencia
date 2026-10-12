@@ -95,4 +95,59 @@ ${articulos.map(a => `  <url><loc>${ORIGEN}/news/articulo/${a.slug}</loc>${a.pub
 </urlset>`
 writeFileSync(resolve(webNews, 'sitemap.xml'), sitemap)
 
-console.log(`SEO generado: ${articulos.length} stubs de artículo + sitemap.xml`)
+writeFileSync(resolve(webRoot, 'robots.txt'), `User-agent: *
+Allow: /
+Disallow: /news/admin
+
+# Buscadores generativos (GEO): permitidos
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: ${ORIGEN}/news/sitemap.xml
+`)
+
+const resumen = articulos.slice(0, 50).map(a => {
+  const fecha = a.published_at ? new Date(a.published_at).toISOString().slice(0, 10) : ''
+  return `- [${a.title}](${ORIGEN}/news/articulo/${a.slug})${fecha ? ` — ${fecha}` : ''}`
+}).join('\n')
+
+const llms = `# SHADDAI · El Umbral — Diario
+
+> ${'Diario editorial de SHADDAI (omshaddai.com): presencia, atención plena y el principio de acción neurosensorial del perfume — la inhalación conecta con el sistema límbico. Lema: "Que nos busquen por dentro".'}
+
+El diario publica artículos originales y aportaciones de interés debidamente atribuidas a sus autores originales. Cada artículo indica autoría, fecha y categorías temáticas.
+
+## Cómo citar este sitio
+
+Cita como: "${'{'}titulo{'}'}", SHADDAI · El Umbral (omshaddai.com/news), fecha de publicación.
+
+## Categorías
+
+- El Umbral: presencia, neurociencia del olor, piloto automático
+- El Ritual: prácticas, respiración inhala-exhala
+- La Alquimia: notas, ingredientes, oficio perfumero
+- Escencias: historias y comunidad
+- El Origen: cartas del autor
+
+## Artículos
+
+${resumen || '- (todavía sin artículos publicados)'}
+
+## Enlaces relacionados
+
+- [Esencias — web oficial de SHADDAI](${ORIGEN}/)
+- [Manifiesto del diario](${ORIGEN}/news/manifiesto)
+- [Sitemap](${ORIGEN}/news/sitemap.xml)
+`
+writeFileSync(resolve(webNews, 'llms.txt'), llms)
+
+console.log(`SEO generado: ${articulos.length} stubs de artículo + sitemap.xml + robots.txt + llms.txt`)
