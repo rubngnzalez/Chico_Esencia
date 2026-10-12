@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/store'
@@ -13,7 +13,7 @@ const ESTADO_ETIQUETA: Record<string, string> = {
 }
 
 export default function ImporterPage() {
-  const [url, setUrl] = useState('')
+  const urlRef = useRef<HTMLInputElement>(null)
   const [cola, setCola] = useState<ImportLink[]>([])
   const [historial, setHistorial] = useState<ImportLink[]>([])
   const [pestana, setPestana] = useState<'pendientes' | 'historial'>('pendientes')
@@ -43,7 +43,8 @@ export default function ImporterPage() {
 
   async function analizar(e: React.FormEvent) {
     e.preventDefault()
-    if (!url.trim() || !session) return
+    const valor = urlRef.current?.value.trim() ?? ''
+    if (!valor || !session) return
     setAnalizando(true)
     setError(null)
     setMensaje(null)
@@ -51,11 +52,11 @@ export default function ImporterPage() {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sha-import-extract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ url: url.trim() })
+        body: JSON.stringify({ url: valor })
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'No se pudo analizar el enlace')
-      setUrl('')
+      if (urlRef.current) urlRef.current.value = ''
       setMensaje(`Enlace analizado: ${json.link?.title ?? 'contenido extraído'}`)
       await cargar()
     } catch (err) {
@@ -66,7 +67,8 @@ export default function ImporterPage() {
 
   async function rastrear(e: React.FormEvent) {
     e.preventDefault()
-    if (!url.trim() || !session) return
+    const valor = urlRef.current?.value.trim() ?? ''
+    if (!valor || !session) return
     setRastreando(true)
     setError(null)
     setMensaje(null)
@@ -75,14 +77,14 @@ export default function ImporterPage() {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sha-import-extract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ url: url.trim(), mode: 'discover' })
+        body: JSON.stringify({ url: valor, mode: 'discover' })
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'No se pudo rastrear la web')
-      setOrigenRastro(String(json.origen ?? url))
+      setOrigenRastro(String(json.origen ?? valor))
       setEncontrados(json.encontrados ?? [])
       setMensaje(`Rastreo completo: ${json.total ?? 0} artículos localizados. Marca los que quieras añadir a la cola.`)
-      setUrl('')
+      if (urlRef.current) urlRef.current.value = ''
     } catch (err) {
       setError(`Error al rastrear: ${(err as Error).message}`)
     }
@@ -230,15 +232,15 @@ export default function ImporterPage() {
 
       <form className="importador-forma" onSubmit={analizar}>
         <input
-          value={url}
-          onChange={e => setUrl(e.target.value)}
+          ref={urlRef}
           placeholder="https://… (portada de la web o artículo concreto)"
           inputMode="url"
+          autoComplete="off"
         />
-        <button className="boton" disabled={analizando || rastreando} onClick={rastrear}>
+        <button type="button" className="boton" disabled={analizando || rastreando} onClick={rastrear}>
           {rastreando ? 'Rastreando…' : 'Rastrear web'}
         </button>
-        <button className="boton lleno" disabled={analizando || rastreando}>
+        <button type="submit" className="boton lleno" disabled={analizando || rastreando}>
           {analizando ? 'Analizando…' : 'Analizar artículo'}
         </button>
       </form>
