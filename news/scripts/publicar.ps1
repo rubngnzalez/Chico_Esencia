@@ -24,7 +24,7 @@ try {
       Write-Host 'Sin cambios que publicar.'
     } else {
       git commit -m $Mensaje
-      git push origin gh-pages
+      git push origin HEAD:gh-pages
       if ($LASTEXITCODE -ne 0) { throw 'git push fallo' }
       Write-Host 'Publicado en gh-pages. GitHub Pages tardara 1-2 minutos en servirlo.'
     }
