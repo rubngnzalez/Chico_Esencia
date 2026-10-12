@@ -35,8 +35,16 @@ Deno.serve(async (req) => {
   const staff = await requireStaff(req)
   if (staff instanceof Response) return staff
 
-  const apiKey = Deno.env.get('GLM_API_KEY')
-  if (!apiKey) return errorJson('GLM_API_KEY no está configurada en el servidor', 500)
+  // La clave de GLM se lee primero de Ajustes del panel (secret_glm_api_key)
+  // y, si no está, del secreto del servidor.
+  let apiKey = ''
+  try {
+    const settingsRes = await restFetch('sha_settings?key=eq.secret_glm_api_key&select=value&limit=1')
+    const rows = await settingsRes.json() as { value?: { api_key?: string } }[]
+    apiKey = rows[0]?.value?.api_key ?? ''
+  } catch { /* sin ajustes en BD */ }
+  if (!apiKey) apiKey = Deno.env.get('GLM_API_KEY') ?? ''
+  if (!apiKey) return errorJson('No hay clave de GLM configurada (Ajustes del panel o secreto GLM_API_KEY)', 500)
 
   let linkId = ''
   try {
