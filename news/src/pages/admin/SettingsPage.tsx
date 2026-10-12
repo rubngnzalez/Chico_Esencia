@@ -9,17 +9,19 @@ export default function SettingsPage() {
   const [social, setSocial] = useState<SocialLinks>({ facebook: '', instagram: '', x: '', youtube: '', email: '' })
   const [defaults, setDefaults] = useState({ show_author: true, allow_share: true, allow_comments: true })
   const [glmKey, setGlmKey] = useState('')
+  const [glmUrl, setGlmUrl] = useState('')
   const [mensaje, setMensaje] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
-    supabase.from('sha_settings').select('key, value').in('key', ['site', 'social_links', 'defaults', 'secret_glm_api_key'])
+    supabase.from('sha_settings').select('key, value').in('key', ['site', 'social_links', 'defaults', 'secret_glm_api_key', 'secret_glm_base_url'])
       .then(({ data }) => {
         for (const row of data ?? []) {
           if (row.key === 'site') setSite(s => ({ ...s, ...(row.value as SiteSettings) }))
           if (row.key === 'social_links') setSocial(s => ({ ...s, ...(row.value as SocialLinks) }))
           if (row.key === 'defaults') setDefaults(d => ({ ...d, ...(row.value as typeof defaults) }))
           if (row.key === 'secret_glm_api_key') setGlmKey(((row.value as { api_key?: string }).api_key) ?? '')
+          if (row.key === 'secret_glm_base_url') setGlmUrl(((row.value as { base_url?: string }).base_url) ?? '')
         }
       })
   }, [])
@@ -33,6 +35,7 @@ export default function SettingsPage() {
       { key: 'defaults', value: defaults }
     ]
     if (glmKey.trim()) filas.push({ key: 'secret_glm_api_key', value: { api_key: glmKey.trim() } })
+    if (glmUrl.trim()) filas.push({ key: 'secret_glm_base_url', value: { base_url: glmUrl.trim() } })
     const { error } = await supabase.from('sha_settings').upsert(filas)
     setGuardando(false)
     if (error) { setMensaje(`Error: ${error.message}`); return }
@@ -109,9 +112,19 @@ export default function SettingsPage() {
             autoComplete="off"
           />
         </label>
+        <label className="campo">
+          Endpoint de IA (opcional)
+          <input
+            value={glmUrl}
+            onChange={e => setGlmUrl(e.target.value)}
+            placeholder="https://api.z.ai/api/paas/v4"
+            autoComplete="off"
+          />
+        </label>
         <p className="campo-nota">
-          Se guarda de forma privada (sólo la ve el personal del panel) y se aplica al instante,
-          sin redeploys. Consíguela en platform.z.ai → API Keys.
+          Se guardan de forma privada (sólo los ve el personal del panel) y se aplican al instante,
+          sin redeploys. Clave en platform.z.ai → API Keys. Si tu clave es del GLM Coding Plan,
+          usa el endpoint https://api.z.ai/api/coding/paas/v4
         </p>
       </section>
 

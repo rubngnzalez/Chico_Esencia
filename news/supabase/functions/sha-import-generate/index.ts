@@ -1,6 +1,6 @@
 import { corsHeaders, errorJson, json, requireStaff, restFetch } from '../_shared/mod.ts'
 
-const GLM_URL = 'https://api.z.ai/api/paas/v4/chat/completions'
+const GLM_URL_POR_DEFECTO = 'https://api.z.ai/api/paas/v4'
 
 function slugify(text: string): string {
   return text
@@ -35,15 +35,20 @@ Deno.serve(async (req) => {
   const staff = await requireStaff(req)
   if (staff instanceof Response) return staff
 
-  // La clave de GLM se lee primero de Ajustes del panel (secret_glm_api_key)
-  // y, si no está, del secreto del servidor.
+  // La clave y el endpoint se leen primero de Ajustes del panel
+  // (secret_glm_api_key / secret_glm_base_url) y, si no, de los secretos del servidor.
   let apiKey = ''
+  let glmUrl = ''
   try {
-    const settingsRes = await restFetch('sha_settings?key=eq.secret_glm_api_key&select=value&limit=1')
-    const rows = await settingsRes.json() as { value?: { api_key?: string } }[]
-    apiKey = rows[0]?.value?.api_key ?? ''
+    const settingsRes = await restFetch('sha_settings?key=in.(secret_glm_api_key,secret_glm_base_url)&select=key,value')
+    const rows = await settingsRes.json() as { key: string; value?: { api_key?: string; base_url?: string } }[]
+    for (const row of rows) {
+      if (row.key === 'secret_glm_api_key' && row.value?.api_key) apiKey = row.value.api_key
+      if (row.key === 'secret_glm_base_url' && row.value?.base_url) glmUrl = row.value.base_url
+    }
   } catch { /* sin ajustes en BD */ }
   if (!apiKey) apiKey = Deno.env.get('GLM_API_KEY') ?? ''
+  if (!glmUrl) glmUrl = Deno.env.get('GLM_BASE_URL') ?? GLM_URL_POR_DEFECTO
   if (!apiKey) return errorJson('No hay clave de GLM configurada (Ajustes del panel o secreto GLM_API_KEY)', 500)
 
   let linkId = ''
@@ -75,7 +80,7 @@ ${origen.text.slice(0, 24000)}`
 
   let contenido: { title?: string; excerpt?: string; html?: string }
   try {
-    const res = await fetch(GLM_URL, {
+    const res = await fetch(`${glmUrl}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -92,7 +97,8 @@ ${origen.text.slice(0, 24000)}`
     })
     if (!res.ok) return errorJson(`GLM respondió ${res.status}: ${await res.text()}`, 502)
     const data = await res.json()
-    contenido = JSON.parse(stripFences(data.choices?.[0]?.message?.content ?? '{}'))
+    const mensaje = data.choices?.[0]?.message
+    contenido = JSON.parse(stripFences(mensaje?.content || mensaje?.reasoning_content || '{}'))
   } catch (e) {
     return errorJson(`Error generando con IA: ${(e as Error).message}`, 502)
   }
