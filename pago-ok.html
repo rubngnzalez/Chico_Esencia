@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#16261b">
+  <meta name="robots" content="noindex">
+  <title>Pago Confirmado — SHADDAI · Esencia de Umbral</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.ico">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="carrito">
+
+  <div class="fondo-magico" aria-hidden="true"></div>
+
+  <header class="cabecera">
+    <div class="barra">
+      <a href="index.html" class="marca">
+        <span class="shin"><img src="img/shin-logo.png" alt=""></span>
+        <span class="nombre">SHADDAI<small>Eau de Parfum</small></span>
+      </a>
+      <nav class="navegacion">
+        <ul>
+          <li><a href="carta.html" data-pagina="carta">El Origen</a></li>
+          <li><a href="concepto.html" data-pagina="concepto">El Umbral</a></li>
+          <li><a href="producto.html" data-pagina="producto">La Alquimia</a></li>
+          <li><a href="ritual.html" data-pagina="ritual">El Ritual</a></li>
+          <li><a href="usos.html" data-pagina="usos">Usos y Rituales</a></li>
+          <li><a href="tienda.html" data-pagina="tienda">Tienda</a></li>
+          <li><a href="contacto.html" data-pagina="contacto">Contacto</a></li>
+        </ul>
+      </nav>
+      <div class="acciones-cabecera">
+        <a href="carrito.html" class="carrito-boton" aria-label="Ver carrito">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1.2 14H4.8L6 7z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>
+          <span class="carrito-conteo" aria-hidden="true"></span>
+        </a>
+        <button class="menu-boton" aria-label="Abrir menú">&#9776;</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="cabecera-pagina">
+      <div class="contenedor">
+        <span class="etiqueta">Pago confirmado</span>
+        <h1>Gracias por cruzar el Umbral</h1>
+        <p class="entradilla">Tu pago se ha realizado con éxito y tu frasco queda asignado por orden de solicitud.</p>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor">
+        <div class="panel revelar" style="max-width: 46rem; margin: 0 auto;">
+          <span class="etiqueta">Resumen de tu pedido</span>
+          <div id="resumen-pago" style="margin-top: 1.4rem;">
+            <p>Recuperando los datos de tu pedido…</p>
+          </div>
+          <p class="carrito-nota" style="margin-top: 1.6rem;">Recibirás la confirmación del banco en tu entorno de pago. Si lo deseas, envíanos una copia para agilizar la preparación de tu envío.</p>
+          <p style="margin-top: 1.4rem;"><button class="boton boton-lleno" type="button" id="enviar-confirmacion">Enviar confirmación por correo</button></p>
+          <p style="margin-top: 1.4rem;"><a class="boton" href="ritual.html">Preparar tu ritual de bienvenida</a></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="columnas">
+        <div>
+          <h4>Navegación del Alma</h4>
+          <ul>
+            <li><a href="carta.html">El Origen — Carta del Autor</a></li>
+            <li><a href="concepto.html">El Umbral — Concepto y Shin</a></li>
+            <li><a href="producto.html">La Alquimia — Ficha del Producto</a></li>
+            <li><a href="ritual.html">El Protocolo del Umbral — Ritual</a></li>
+            <li><a href="usos.html">Usos, Rituales y Espacios — Aplicaciones</a></li>
+            <li><a href="tienda.html">La Tienda — Reservas Limitadas</a></li>
+            <li><a href="carrito.html">Tu Carrito</a></li>
+            <li><a href="politica.html">Política de Envío Consciente</a></li>
+          </ul>
+        </div>
+        <div>
+          <a href="index.html" class="marca">
+            <span class="shin"><img src="img/shin-logo.png" alt=""></span>
+            <span class="nombre">SHADDAI<small>Eau de Parfum</small></span>
+          </a>
+          <p style="margin-top: 1rem;">Inhala &middot; Exhala&trade; — Que nos busquen por dentro.<br>Edición Artesanal Limitada.</p>
+        </div>
+        <div>
+          <h4>El Boletín del Umbral</h4>
+          <p style="font-size: .95rem;">Reflexiones íntimas y avisos exclusivos sobre las próximas aperturas de lotes limitados.</p>
+          <form class="boletin">
+            <input type="email" name="correo" placeholder="Tu correo electrónico" aria-label="Correo electrónico" required>
+            <button type="submit">Unirme</button>
+          </form>
+          <p class="aviso-boletin" aria-live="polite"></p>
+        </div>
+      </div>
+      <div class="base">© 2026 SHADDAI · Esencia de Umbral · Pago seguro vía Redsys · Bizum</div>
+    </div>
+  </footer>
+
+  <script>
+    // Resumen del pedido pendiente y limpieza del carrito
+    (() => {
+      const formatear = (valor) =>
+        valor.toLocaleString("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      let pedido = null;
+      try {
+        pedido = JSON.parse(localStorage.getItem("shaddai-pedido-pendiente"));
+      } catch {
+        pedido = null;
+      }
+
+      const contenedor = document.getElementById("resumen-pago");
+      if (!pedido || typeof pedido !== "object") {
+        contenedor.innerHTML =
+          "<p>Tu pago se ha registrado correctamente.</p><p>Si tienes cualquier duda, escríbenos desde la página de contacto indicando tu nombre.</p>";
+      } else {
+        const metodoTexto = pedido.metodo === "bizum" ? "Bizum" : "Tarjeta (Redsys)";
+        const lineas = (pedido.articulos || [])
+          .map((articulo) => `<div class="carrito-linea"><span>${articulo.cantidad} × ${articulo.nombre}</span><span>${formatear(articulo.precio * articulo.cantidad)}</span></div>`)
+          .join("");
+        contenedor.innerHTML =
+          `<div class="carrito-linea"><span>Pedido</span><span>${pedido.pedido}</span></div>` +
+          `<div class="carrito-linea"><span>Método</span><span>${metodoTexto}</span></div>` +
+          lineas +
+          `<div class="carrito-total"><span class="etiqueta">Total pagado</span><span class="importe">${formatear(pedido.total)}</span></div>` +
+          (pedido.direccion ? `<p class="carrito-nota" style="margin: 1.2rem 0 0;">Envío a: ${pedido.direccion}</p>` : "");
+
+        // El pedido ya está pagado: vacía el carrito
+        localStorage.removeItem("shaddai-carrito-v2");
+
+        const boton = document.getElementById("enviar-confirmacion");
+        boton.addEventListener("click", () => {
+          const lineasTexto = (pedido.articulos || [])
+            .map((articulo) => `${articulo.cantidad} × ${articulo.nombre}`)
+            .join("\n");
+          const asunto = `Pedido confirmado SHADDAI · ${pedido.pedido}`;
+          const cuerpo =
+            `Pago confirmado a través de Redsys.\n\nPedido: ${pedido.pedido}\nMétodo: ${metodoTexto}\n` +
+            `Total: ${formatear(pedido.total)}\n\n${lineasTexto}\n\n` +
+            `Nombre: ${pedido.nombre || "-"}\nEmail: ${pedido.email || "-"}\nTeléfono: ${pedido.telefono || "-"}\n` +
+            `Envío: ${pedido.direccion || "-"}\nFecha: ${new Date(pedido.fecha).toLocaleString("es-ES")}\n`;
+          location.href = `mailto:hola@shaddai.es?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+        });
+      }
+    })();
+  </script>
+  <script src="js/main.js"></script>
+</body>
+</html>
