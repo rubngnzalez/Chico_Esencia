@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#16261b">
   <title>La Alquimia — SHADDAI · Eau de Parfum Neurosensorial</title>
   <meta name="description" content="SHADDAI, Esencia de Umbral: biotecnología olfativa y neurobiología de la quietud. Incienso sagrado, mirra de umbral y nardo silvestre. Edición limitada y numerada, hecha a mano.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,18 +20,26 @@
     <div class="barra">
       <a href="index.html" class="marca">
         <span class="shin"><img src="img/shin-logo.png" alt=""></span>
-        <span class="nombre">SHADDAI<small>Eau de Parfum Neurosensorial</small></span>
+        <span class="nombre">SHADDAI<small>Eau de Parfum</small></span>
       </a>
-      <button class="menu-boton" aria-label="Abrir menú">&#9776;</button>
       <nav class="navegacion">
         <ul>
           <li><a href="carta.html" data-pagina="carta">El Origen</a></li>
           <li><a href="concepto.html" data-pagina="concepto">El Umbral</a></li>
           <li><a href="producto.html" data-pagina="producto">La Alquimia</a></li>
           <li><a href="ritual.html" data-pagina="ritual">El Ritual</a></li>
+          <li><a href="usos.html" data-pagina="usos">Usos y Rituales</a></li>
+          <li><a href="tienda.html" data-pagina="tienda">Tienda</a></li>
           <li><a href="contacto.html" data-pagina="contacto">Contacto</a></li>
         </ul>
       </nav>
+      <div class="acciones-cabecera">
+        <a href="carrito.html" class="carrito-boton" aria-label="Ver carrito">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1.2 14H4.8L6 7z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>
+          <span class="carrito-conteo" aria-hidden="true"></span>
+        </a>
+        <button class="menu-boton" aria-label="Abrir menú">&#9776;</button>
+      </div>
     </div>
   </header>
 
@@ -41,7 +50,6 @@
         <span class="etiqueta">La Alquimia</span>
         <h1>SHADDAI</h1>
         <p class="subtitulo-cabecera">Eau de Parfum Neurosensorial</p>
-        <p class="entradilla">Más que un perfume: biotecnología olfativa.</p>
       </div>
     </section>
 
@@ -49,15 +57,28 @@
     <section class="seccion">
       <div class="contenedor dos-columnas">
         <div class="columna-imagen marco-imagen revelar">
-          <img src="img/experiencia-estuche.jpg" alt="Estuche de SHADDAI abierto con el frasco en su interior, rodeado de resinas, lavanda y flores secas" style="aspect-ratio: 4 / 3; object-fit: cover;">
+          <img src="img/presentacion-estuche.jpg?v=2" alt="Estuche de SHADDAI abierto junto al frasco verde sobre un altar de piedra en ruinas sagradas, con rayos de luz, incienso y jazmines" style="aspect-ratio: 4 / 3; object-fit: cover;">
         </div>
         <div class="revelar">
           <span class="etiqueta">Presentación</span>
           <h2 class="titulo">Una <span class="oro">experiencia</span>, no un perfume</h2>
           <p>Dentro del estuche te espera el frasco de vidrio verde con tapa dorada, y la guía del ritual impresa: <em>&ldquo;Inhala el origen&hellip; exhala tu esencia&rdquo;</em>.</p>
-          <p>Producción artesanal con carga cuántica en su proceso. Cada unidad se elabora a mano.</p>
+          <p>Producción artesanal donde se cuida su proceso para complementarla con una frecuencia cuántica en su proceso. Cada serie se elabora cuidadosamente.</p>
           <p style="margin-top: 1.8rem;"><a class="boton" href="contacto.html">Reservar la primera edición</a></p>
         </div>
+      </div>
+    </section>
+
+    <!-- Vídeo promocional -->
+    <section class="seccion">
+      <div class="contenedor">
+        <div class="centrar revelar" style="max-width: 46rem; margin: 0 auto 2.8rem;">
+          <span class="etiqueta">Vídeo</span>
+          <h2 class="titulo">Un aroma que te lleva <span class="oro">a otro estado</span></h2>
+        </div>
+        <figure class="video-escena revelar">
+          <video src="img/video-promocional.mp4?v=3" autoplay muted loop playsinline preload="auto" aria-label="Vídeo promocional de SHADDAI: mujer inhalando el perfume junto al frasco verde y dorado entre humo y flores"></video>
+        </figure>
       </div>
     </section>
 
@@ -65,13 +86,12 @@
     <section class="seccion">
       <div class="contenedor dos-columnas inversa">
         <div class="columna-imagen marco-imagen revelar">
-          <img src="img/botellas-pareja.jpg" alt="Frasco de SHADDAI por delante y por detrás con la etiqueta del ritual e ingredientes">
+          <img src="img/etiqueta-estuche.jpg" alt="Estuche y frasco de SHADDAI sobre un pedestal dorado: el reverso del estuche muestra la etiqueta impresa con el protocolo Inhala el origen — Exhala tu esencia, los ingredientes y el lote SHD-001" loading="lazy">
         </div>
         <div class="revelar">
           <span class="etiqueta">La etiqueta</span>
-          <h2 class="titulo">El frasco que <span class="oro">te habla</span></h2>
-          <p>La etiqueta trasera recoge la esencia del protocolo: <strong>Inhala el origen</strong> — deja que el humo invisible limpie tu espacio y despeje la mente. <strong>Exhala tu esencia</strong> — en el exhalo, las resinas milenarias se funden con tu piel. Reconecta. Habita tu propia verdad.</p>
-          <p>Formulación: alcohol desodorizado, parfum (fragancia) y glicerina. Lote numerado. Hecho a mano.</p>
+          <h2 class="titulo">El estuche que <span class="oro">te habla</span></h2>
+          <p>En el reverso del estuche va impreso el protocolo completo: <strong>Inhala el origen</strong> — deja que el humo invisible limpie tu espacio y despeje la mente. <strong>Exhala tu esencia</strong> — en el exhalo, las resinas milenarias se funden con tu piel. Reconecta. Habita tu propia verdad.</p>
         </div>
       </div>
     </section>
@@ -80,72 +100,32 @@
     <section class="seccion">
       <div class="contenedor dos-columnas">
         <div class="columna-imagen marco-imagen revelar">
-          <img src="img/neurobiologia.jpg" alt="Mujer en meditación junto a la esencia SHADDAI">
+          <img src="img/neurobiologia-quietud.jpg" alt="Pareja compartiendo un momento de calma leyendo juntos en el salón, con el estuche y frasco de SHADDAI sobre la mesa entre incienso y jazmines">
         </div>
         <div class="revelar">
           <span class="etiqueta">Neurociencia</span>
           <h2 class="titulo">Neurobiología de <span class="oro">la quietud</span></h2>
-          <p>SHADDAI es una experiencia sensorial; una fórmula de precisión diseñada en colaboración con la neurociencia moderna para modular el sistema nervioso autónomo y disipar el ruido mental.</p>
-          <p>Cuando nos adentramos en ingredientes milenarios como el incienso, la mirra y el nardo, la ciencia actual demuestra que su impacto no responde al azar, sino a la conexión con lo divino, creando una compleja y fascinante composición fitoquímica natural.</p>
-          <p>Nuestra propuesta trasciende la perfumería convencional para erigirse como una <strong>biotecnología olfativa</strong> basada en principios activos de alta precisión.</p>
-          <p>A través de moléculas neuro-moduladoras de eficacia probada, la fórmula actúa directamente sobre los circuitos de la calma, transformando el gesto de perfumarse en un <em>interruptor biológico</em> hacia la quietud interior.</p>
+          <p>Shaddai es una experiencia sensorial que dialoga con los sentidos. Respaldada por la investigación sobre la memoria y las emociones olfativas, SHADDAI ha sido formulada para crear una atmósfera de serenidad que ayuda a despejar la mente y habitar el momento presente.</p>
+          <p>El Incienso, la Mirra y el Nardo han custodiado durante milenios el puente entre lo terrenal y lo sagrado. Hoy, la ciencia contemporánea revela que su reverencia ancestral se apoya en una extraordinaria riqueza fitoquímica: compuestos botánicos nobles que la neurobiología del olfato reconoce como llaves directas a la memoria, la emoción y el recogimiento.</p>
+          <p>Lejos de la perfumería convencional, SHADDAI se concibe como una creación de alta afinidad sensorial. Una arquitectura de esencias concebida para disipar el ruido mental, propiciar el silencio y transformar el gesto de perfumarse en un ancla viva hacia la presencia y la quietud interior.</p>
         </div>
-      </div>
-    </section>
-
-    <!-- Notas olfativas -->
-    <section class="seccion">
-      <div class="contenedor">
-        <div class="centrar revelar">
-          <span class="etiqueta">El alma del ritual</span>
-          <h2 class="titulo">Sus <span class="oro">tres notas</span></h2>
-          <p style="font-family: var(--serif); font-size: 1.3rem; color: var(--crema); max-width: 40rem; margin: 0 auto;">&ldquo;Incienso sagrado, mirra de umbral y nardo silvestre.&rdquo;</p>
-        </div>
-        <figure class="notas-franja revelar">
-          <img src="img/notas-franja.jpg" alt="Las tres notas de SHADDAI: incienso sagrado, mirra de umbral y nardo silvestre" loading="lazy">
-        </figure>
       </div>
     </section>
 
     <!-- Edición Limitada y Numerada -->
     <section class="seccion">
-      <div class="contenedor dos-columnas inversa">
-        <div class="columna-imagen marco-imagen revelar">
-          <img src="img/reserva-edicion.jpg" alt="Reserva tu Primera Edición Limitada de SHADDAI">
-        </div>
-        <div class="revelar">
+      <div class="contenedor">
+        <div class="centrar revelar" style="max-width: 46rem; margin: 0 auto 2.8rem;">
           <span class="etiqueta">Edición Limitada y Numerada</span>
           <h2 class="titulo">Sé el primero en <span class="oro">cruzar el Umbral</span></h2>
           <p><em>Esencia de Umbral</em> nace como una edición muy limitada, elaborada de manera artesanal y guiada por los principios de la alta perfumería neurosensorial.</p>
           <p>Para garantizar la máxima calidad en cada frasco de nuestra primera partida, la producción es estrictamente controlada.</p>
           <p><strong>Reserva hoy tu frasco de la Edición Limitada</strong> antes de que se agote la asignación exclusiva de lanzamiento.</p>
-          <p style="margin-top: 1.8rem;"><a class="boton boton-lleno" href="contacto.html">Reserva Primera Edición Limitada</a></p>
+          <p style="margin-top: 1.8rem;"><a class="boton boton-lleno" href="contacto.html">Compra la Primera Edición Limitada</a></p>
         </div>
-      </div>
-    </section>
-
-    <!-- Ficha técnica -->
-    <section class="seccion">
-      <div class="contenedor">
-        <div class="centrar revelar" style="margin-bottom: 2.4rem;">
-          <span class="etiqueta">Ficha</span>
-          <h2 class="titulo">Detalles de la <span class="oro">esencia</span></h2>
-        </div>
-        <div class="ficha">
-          <div class="dato revelar">
-            <span class="valor">50<span style="font-size: .55em;"> ml</span></span>
-            <span class="nombre-dato">Formato</span>
-          </div>
-          <div class="dato revelar">
-            <span class="valor">100%</span>
-            <span class="nombre-dato">Hecho a mano</span>
-          </div>
-          <div class="dato revelar">
-            <span class="valor">1ª</span>
-            <span class="nombre-dato">Edición limitada y numerada</span>
-          </div>
-        </div>
-        <p class="centrar revelar" style="margin-top: 1.8rem; font-size: .92rem; opacity: .8;">Inhalar &middot; Exhalar&trade; — Encuentra la paz interior y el equilibrio.</p>
+        <figure class="notas-franja revelar">
+          <img src="img/triptico-esencia.jpg?v=2" alt="Hombre y mujer inhalando la Esencia de Umbral junto al gran sello dorado de la Shin con el nombre SHADDAI" loading="lazy">
+        </figure>
       </div>
     </section>
 
@@ -156,19 +136,27 @@
           <span class="etiqueta">Galería</span>
           <h2 class="titulo">El universo <span class="oro">SHADDAI</span></h2>
         </div>
-        <div class="galeria">
-          <img src="img/universo-1-frasco-lino.jpg" alt="Frasco de SHADDAI sobre lino con sello de lacre dorado y lavanda" loading="lazy">
-          <img src="img/universo-2-nebulizador.jpg" alt="Nebulizador de precisión artesanal del frasco SHADDAI" loading="lazy">
-          <img src="img/universo-3-estuche-bosque.jpg" alt="Estuche de SHADDAI abierto entre musgo y ramas del bosque" loading="lazy">
-          <img src="img/universo-4-aromaterapia.jpg" alt="Aromaterapia sagrada: resinas humeantes junto al frasco SHADDAI" loading="lazy">
-          <img src="img/universo-5-centro.jpg" alt="Frasco SHADDAI bajo un arco de bosque con geometría dorada: encuentra tu centro" loading="lazy">
-          <img src="img/universo-6-ritual-diario.jpg" alt="Frasco SHADDAI en el escritorio con diario y cuarzo: para tu ritual diario" loading="lazy">
+        <div class="carrusel-universo revelar">
+          <div class="carrusel-universo-visor">
+            <img class="universo-capa activa" src="img/universo-3-estuche-bosque.jpg?v=1" alt="Estuche y frasco de SHADDAI entre jazmines y resinas en el templo de piedra" loading="lazy">
+            <img class="universo-capa" src="img/universo-claridad.jpg" alt="Ritual de claridad: mujer inhalando la Esencia de Umbral en plena naturaleza" loading="lazy">
+            <img class="universo-capa" src="img/universo-presencia.jpg" alt="El poder de la presencia: hombre inhalando la esencia SHADDAI en el bosque" loading="lazy">
+            <img class="universo-capa" src="img/universo-coche.jpg" alt="El perfume que te ancla al presente: hombre inhalando SHADDAI en su coche al atardecer frente a la ciudad" loading="lazy">
+            <img class="universo-capa" src="img/universo-escritorio.jpg" alt="Pausa al atardecer: mujer inhalando SHADDAI junto a la ventana con la ciudad de fondo" loading="lazy">
+            <img class="universo-capa" src="img/universo-conecta.jpg" alt="Conecta con tu interior: mujer en calma rodeada de luz dorada y pétalos" loading="lazy">
+            <img class="universo-capa" src="img/universo-altar.jpg?v=2" alt="Estuche, frasco y perfume sólido de SHADDAI sobre el altar de madera con inciensos, resinas y flores blancas" loading="lazy">
+            <img class="universo-capa" src="img/esencia-50.jpg?v=4" alt="Frasco de SHADDAI Esencia de Umbral de 50 ml con su caja verde y la Shin dorada" loading="lazy">
+            <img class="universo-capa" src="img/perfume-solido.jpg?v=2" alt="Perfume Sólido Natural de SHADDAI en tarro de cristal con tapa dorada y etiqueta verde de la Shin" loading="lazy">
+            <button class="universo-flecha universo-atras" type="button" aria-label="Imagen anterior">&#8249;</button>
+            <button class="universo-flecha universo-adelante" type="button" aria-label="Imagen siguiente">&#8250;</button>
+            <div class="universo-puntos" aria-label="Seleccionar imagen"></div>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- CTA -->
-    <section class="cita" style="background-image: url('img/pausas-shaddai.jpg?v=2');">
+    <section class="cita" style="background-image: url('img/despertar-paz.jpg'); background-position: center 45%;">
       <div class="contenedor revelar">
         <blockquote>&ldquo;Despierta la paz interior&rdquo;</blockquote>
         <p class="autor">Tu ritual diario · 50 ml</p>
@@ -182,22 +170,25 @@
     <div class="contenedor">
       <div class="columnas">
         <div>
-          <a href="index.html" class="marca">
-            <span class="shin"><img src="img/shin-logo.png" alt=""></span>
-            <span class="nombre">SHADDAI<small>Eau de Parfum Neurosensorial</small></span>
-          </a>
-          <p style="margin-top: 1rem;">Inhala &middot; Exhala&trade; — Que nos busquen por dentro.<br>Edición Artesanal Limitada.</p>
-        </div>
-        <div>
           <h4>Navegación del Alma</h4>
           <ul>
             <li><a href="carta.html">El Origen — Carta del Autor</a></li>
             <li><a href="concepto.html">El Umbral — Concepto y Shin</a></li>
             <li><a href="producto.html">La Alquimia — Ficha del Producto</a></li>
             <li><a href="ritual.html">El Protocolo del Umbral — Ritual</a></li>
+            <li><a href="usos.html">Usos, Rituales y Espacios — Aplicaciones</a></li>
+            <li><a href="tienda.html">La Tienda — Reservas Limitadas</a></li>
+            <li><a href="carrito.html">Tu Carrito</a></li>
             <li><a href="politica.html">Política de Envío Consciente</a></li>
             <li><a href="contacto.html">Contacto Directo</a></li>
           </ul>
+        </div>
+        <div>
+          <a href="index.html" class="marca">
+            <span class="shin"><img src="img/shin-logo.png" alt=""></span>
+            <span class="nombre">SHADDAI<small>Eau de Parfum</small></span>
+          </a>
+          <p style="margin-top: 1rem;">Inhala &middot; Exhala&trade; — Que nos busquen por dentro.<br>Edición Artesanal Limitada.</p>
         </div>
         <div>
           <h4>El Boletín del Umbral</h4>

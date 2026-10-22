@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#16261b">
+  <meta name="robots" content="noindex">
+  <title>Pago Seguro — SHADDAI · Esencia de Umbral</title>
+  <meta name="description" content="Finaliza tu reserva de SHADDAI con pago seguro por tarjeta o Bizum a través de Redsys, la pasarela de tu banco.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.ico">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="carrito">
+
+  <div class="fondo-magico" aria-hidden="true"></div>
+
+  <header class="cabecera">
+    <div class="barra">
+      <a href="index.html" class="marca">
+        <span class="shin"><img src="img/shin-logo.png" alt=""></span>
+        <span class="nombre">SHADDAI<small>Eau de Parfum</small></span>
+      </a>
+      <nav class="navegacion">
+        <ul>
+          <li><a href="carta.html" data-pagina="carta">El Origen</a></li>
+          <li><a href="concepto.html" data-pagina="concepto">El Umbral</a></li>
+          <li><a href="producto.html" data-pagina="producto">La Alquimia</a></li>
+          <li><a href="ritual.html" data-pagina="ritual">El Ritual</a></li>
+          <li><a href="usos.html" data-pagina="usos">Usos y Rituales</a></li>
+          <li><a href="tienda.html" data-pagina="tienda">Tienda</a></li>
+          <li><a href="contacto.html" data-pagina="contacto">Contacto</a></li>
+        </ul>
+      </nav>
+      <div class="acciones-cabecera">
+        <a href="carrito.html" class="carrito-boton" aria-label="Ver carrito">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1.2 14H4.8L6 7z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>
+          <span class="carrito-conteo" aria-hidden="true"></span>
+        </a>
+        <button class="menu-boton" aria-label="Abrir menú">&#9776;</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="cabecera-pagina">
+      <div class="contenedor">
+        <span class="etiqueta">Pago seguro del Umbral</span>
+        <h1>Finaliza tu Reserva</h1>
+        <p class="entradilla">Tarjeta o Bizum a través de Redsys, la pasarela segura de tu banco. Tu frasco queda asignado en cuanto se confirma el pago.</p>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor dos-columnas">
+
+        <div class="panel" data-resumen-pedido>
+          <span class="etiqueta">Tu pedido</span>
+          <div class="carrito-lineas" data-lineas-pedido style="margin: 1.4rem 0;"></div>
+          <div class="carrito-linea">
+            <span>Subtotal</span>
+            <span data-subtotal>—</span>
+          </div>
+          <div class="carrito-linea">
+            <span>Gastos de envío</span>
+            <span data-envio>—</span>
+          </div>
+          <div class="carrito-total">
+            <span class="etiqueta">Total a pagar</span>
+            <span class="importe" data-total>—&nbsp;€</span>
+          </div>
+          <p class="carrito-nota" style="margin: 1.2rem 0 0;">El envío peninsular es gratuito a partir de 80&nbsp;€. Preparamos cada frasco por orden de pago.</p>
+        </div>
+
+        <form class="panel" data-formulario-pago novalidate>
+          <span class="etiqueta">Tus datos</span>
+          <div class="pago-datos">
+            <div class="campo">
+              <label for="p-nombre">Nombre</label>
+              <input id="p-nombre" name="nombre" type="text" autocomplete="given-name" required>
+            </div>
+            <div class="campo">
+              <label for="p-apellidos">Apellidos</label>
+              <input id="p-apellidos" name="apellidos" type="text" autocomplete="family-name">
+            </div>
+            <div class="campo campo--ancho">
+              <label for="p-email">Correo electrónico</label>
+              <input id="p-email" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="campo">
+              <label for="p-telefono">Teléfono</label>
+              <input id="p-telefono" name="telefono" type="tel" autocomplete="tel">
+            </div>
+            <div class="campo">
+              <label for="p-cp">Código postal</label>
+              <input id="p-cp" name="cp" type="text" inputmode="numeric" autocomplete="postal-code">
+            </div>
+            <div class="campo campo--ancho">
+              <label for="p-direccion">Dirección de envío</label>
+              <input id="p-direccion" name="direccion" type="text" autocomplete="street-address">
+            </div>
+            <div class="campo">
+              <label for="p-poblacion">Población</label>
+              <input id="p-poblacion" name="poblacion" type="text" autocomplete="address-level2">
+            </div>
+            <div class="campo">
+              <label for="p-provincia">Provincia</label>
+              <input id="p-provincia" name="provincia" type="text" autocomplete="address-level1">
+            </div>
+          </div>
+
+          <span class="etiqueta" style="display: block; margin: 2rem 0 1rem;">Método de pago</span>
+          <label class="metodo-pago">
+            <input type="radio" name="metodo" value="tarjeta" checked>
+            <span class="metodo-texto">
+              <h4>Tarjeta de crédito o débito</h4>
+              <p>Pago cifrado a través de Redsys, la pasarela de tu banco.</p>
+            </span>
+          </label>
+          <label class="metodo-pago">
+            <input type="radio" name="metodo" value="bizum">
+            <span class="metodo-texto">
+              <h4>Bizum</h4>
+              <p>Paga desde el móvil en segundos, sin tarjeta.</p>
+            </span>
+          </label>
+
+          <p class="aviso-formulario" aria-live="polite" data-aviso-pago style="margin: 1.2rem 0 0;"></p>
+
+          <button type="submit" class="boton boton-lleno" style="margin-top: 1.4rem;">Pagar de forma segura</button>
+          <p class="pago-aviso-entorno">Serás redirigido al entorno seguro de tu banco. No almacenamos ningún dato de tarjeta.</p>
+        </form>
+
+        <div class="panel" data-pago-vacio hidden style="grid-column: 1 / -1;">
+          <span class="etiqueta">Tu carrito está en calma</span>
+          <h3>No hay nada que pagar todavía</h3>
+          <p>Añade tu Esencia de Umbral a la selección y vuelve para completar el pago.</p>
+          <p style="margin-top: 1.6rem;"><a class="boton boton-lleno" href="tienda.html">Descubrir la tienda</a></p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="columnas">
+        <div>
+          <h4>Navegación del Alma</h4>
+          <ul>
+            <li><a href="carta.html">El Origen — Carta del Autor</a></li>
+            <li><a href="concepto.html">El Umbral — Concepto y Shin</a></li>
+            <li><a href="producto.html">La Alquimia — Ficha del Producto</a></li>
+            <li><a href="ritual.html">El Protocolo del Umbral — Ritual</a></li>
+            <li><a href="usos.html">Usos, Rituales y Espacios — Aplicaciones</a></li>
+            <li><a href="tienda.html">La Tienda — Reservas Limitadas</a></li>
+            <li><a href="carrito.html">Tu Carrito</a></li>
+            <li><a href="politica.html">Política de Envío Consciente</a></li>
+          </ul>
+        </div>
+        <div>
+          <a href="index.html" class="marca">
+            <span class="shin"><img src="img/shin-logo.png" alt=""></span>
+            <span class="nombre">SHADDAI<small>Eau de Parfum</small></span>
+          </a>
+          <p style="margin-top: 1rem;">Inhala &middot; Exhala&trade; — Que nos busquen por dentro.<br>Edición Artesanal Limitada.</p>
+        </div>
+        <div>
+          <h4>El Boletín del Umbral</h4>
+          <p style="font-size: .95rem;">Reflexiones íntimas y avisos exclusivos sobre las próximas aperturas de lotes limitados.</p>
+          <form class="boletin">
+            <input type="email" name="correo" placeholder="Tu correo electrónico" aria-label="Correo electrónico" required>
+            <button type="submit">Unirme</button>
+          </form>
+          <p class="aviso-boletin" aria-live="polite"></p>
+        </div>
+      </div>
+      <div class="base">© 2026 SHADDAI · Esencia de Umbral · Pago seguro vía Redsys · Bizum</div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/pago.js"></script>
+</body>
+</html>

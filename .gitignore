@@ -5,6 +5,10 @@ shaddai-web/img/pages/
 Thumbs.db
 .DS_Store
 
+# Configuración local
+.kilo/
+.vscode/
+
 # Proyecto blog (news/): dependencias y secretos locales
 news/node_modules/
 news/.env

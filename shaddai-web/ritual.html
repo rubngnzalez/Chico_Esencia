@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#16261b">
   <title>El Ritual — SHADDAI · Eau de Parfum Neurosensorial</title>
   <meta name="description" content="El Protocolo del Umbral: el Ritual Shaddai en cuatro pasos — detente, inhala el origen, siente cómo te sostienes y exhala tu esencia — antes de tu meditación.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,18 +20,26 @@
     <div class="barra">
       <a href="index.html" class="marca">
         <span class="shin"><img src="img/shin-logo.png" alt=""></span>
-        <span class="nombre">SHADDAI<small>Eau de Parfum Neurosensorial</small></span>
+        <span class="nombre">SHADDAI<small>Eau de Parfum</small></span>
       </a>
-      <button class="menu-boton" aria-label="Abrir menú">&#9776;</button>
       <nav class="navegacion">
         <ul>
           <li><a href="carta.html" data-pagina="carta">El Origen</a></li>
           <li><a href="concepto.html" data-pagina="concepto">El Umbral</a></li>
           <li><a href="producto.html" data-pagina="producto">La Alquimia</a></li>
           <li><a href="ritual.html" data-pagina="ritual">El Ritual</a></li>
+          <li><a href="usos.html" data-pagina="usos">Usos y Rituales</a></li>
+          <li><a href="tienda.html" data-pagina="tienda">Tienda</a></li>
           <li><a href="contacto.html" data-pagina="contacto">Contacto</a></li>
         </ul>
       </nav>
+      <div class="acciones-cabecera">
+        <a href="carrito.html" class="carrito-boton" aria-label="Ver carrito">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1.2 14H4.8L6 7z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>
+          <span class="carrito-conteo" aria-hidden="true"></span>
+        </a>
+        <button class="menu-boton" aria-label="Abrir menú">&#9776;</button>
+      </div>
     </div>
   </header>
 
@@ -45,50 +54,25 @@
     </section>
 
     <!-- Los cuatro pasos -->
-    <section class="seccion">
+    <section class="seccion seccion-ritual">
       <div class="contenedor">
-        <div class="revelar">
+        <div class="centrar revelar" style="max-width: 46rem; margin: 0 auto 2.8rem;">
           <span class="etiqueta">Cuatro pasos</span>
           <h2 class="titulo">El gesto que <span class="oro">te devuelve</span></h2>
-          <div class="pasos">
-            <div class="paso">
-              <span class="numero">01</span>
-              <div>
-                <h3>Detente</h3>
-                <p>Cierra los ojos. Interrumpe el piloto automático del día.</p>
-              </div>
-              <img class="paso-imagen" src="img/paso-detente.jpg" alt="Paso 1 · Detente: estuche SHADDAI abierto sobre la cama" loading="lazy">
-            </div>
-            <div class="paso">
-              <span class="numero">02</span>
-              <div>
-                <h3>Inhala</h3>
-                <p>El origen, despacio. Deja que la fragancia entre en tu espacio mental.</p>
-              </div>
-              <img class="paso-imagen" src="img/paso-inhala.jpg" alt="Paso 2 · Inhala: mujer inhalando la esencia SHADDAI" loading="lazy">
-            </div>
-            <div class="paso">
-              <span class="numero">03</span>
-              <div>
-                <h3>Siente</h3>
-                <p>Cómo te sostienes. La atención se posa en el presente.</p>
-              </div>
-              <img class="paso-imagen" src="img/paso-siente.jpg" alt="Paso 3 · Siente: mujer con la esencia SHADDAI sobre el pecho" loading="lazy">
-            </div>
-            <div class="paso">
-              <span class="numero">04</span>
-              <div>
-                <h3>Exhala</h3>
-                <p>Tu esencia. Libera el ruido y la tensión del mundo exterior.</p>
-              </div>
-              <img class="paso-imagen" src="img/paso-exhala.jpg" alt="Paso 4 · Exhala: mujer exhalando con la esencia SHADDAI" loading="lazy">
-            </div>
-          </div>
-          <p style="margin-top: 1.8rem;">Te invitamos a realizar este ritual antes de adentrarte en tu meditación.</p>
-          <div class="panel-nota revelar">
-            <h3>✦ Audio meditación</h3>
-            <p style="margin: 0;">Cada estuche de la primera edición incluye acceso al audio de meditación del Ritual Shaddai: escanea el QR acompañante para comenzar tu práctica guiada.</p>
-          </div>
+          <p class="texto-grande">Detente, inhala, siente y exhala: el Ritual Shaddai completo en un solo gesto.</p>
+        </div>
+        <figure class="ritual-franja revelar">
+          <img src="img/ritual-pasos.jpg" alt="El Ritual Shaddai en cuatro pasos: 1 Detente — encuentra la quietud, 2 Inhala — recibe la esencia, 3 Siente — conecta con tu interior, 4 Exhala — suelta y trasciende" loading="lazy">
+        </figure>
+        <figure class="ritual-video revelar">
+          <video autoplay muted loop playsinline preload="metadata" tabindex="-1" aria-label="Vídeo del Ritual Shaddai: encuentra la quietud">
+            <source src="img/video-alquimia.mp4" type="video/mp4">
+          </video>
+        </figure>
+        <p class="centrar" style="margin-top: 1.8rem;">Te invitamos a realizar este ritual antes de adentrarte en tu meditación.</p>
+        <div class="panel-nota con-fondo revelar">
+          <h3>✦ Audio meditación</h3>
+          <p style="margin: 0;">Cada estuche de la primera edición incluye acceso al audio de meditación del Ritual Shaddai: escanea el QR acompañante para comenzar tu práctica guiada.</p>
         </div>
       </div>
     </section>
@@ -128,22 +112,25 @@
     <div class="contenedor">
       <div class="columnas">
         <div>
-          <a href="index.html" class="marca">
-            <span class="shin"><img src="img/shin-logo.png" alt=""></span>
-            <span class="nombre">SHADDAI<small>Eau de Parfum Neurosensorial</small></span>
-          </a>
-          <p style="margin-top: 1rem;">Inhala &middot; Exhala&trade; — Que nos busquen por dentro.<br>Edición Artesanal Limitada.</p>
-        </div>
-        <div>
           <h4>Navegación del Alma</h4>
           <ul>
             <li><a href="carta.html">El Origen — Carta del Autor</a></li>
             <li><a href="concepto.html">El Umbral — Concepto y Shin</a></li>
             <li><a href="producto.html">La Alquimia — Ficha del Producto</a></li>
             <li><a href="ritual.html">El Protocolo del Umbral — Ritual</a></li>
+            <li><a href="usos.html">Usos, Rituales y Espacios — Aplicaciones</a></li>
+            <li><a href="tienda.html">La Tienda — Reservas Limitadas</a></li>
+            <li><a href="carrito.html">Tu Carrito</a></li>
             <li><a href="politica.html">Política de Envío Consciente</a></li>
             <li><a href="contacto.html">Contacto Directo</a></li>
           </ul>
+        </div>
+        <div>
+          <a href="index.html" class="marca">
+            <span class="shin"><img src="img/shin-logo.png" alt=""></span>
+            <span class="nombre">SHADDAI<small>Eau de Parfum</small></span>
+          </a>
+          <p style="margin-top: 1rem;">Inhala &middot; Exhala&trade; — Que nos busquen por dentro.<br>Edición Artesanal Limitada.</p>
         </div>
         <div>
           <h4>El Boletín del Umbral</h4>
