@@ -38,12 +38,16 @@ const bloqueVacio = document.querySelector("[data-pago-vacio]");
 
 const articulosPago = typeof leerCarrito === "function" ? leerCarrito() : [];
 
-if (articulosPago.length === 0) {
-  if (resumenPedido) resumenPedido.hidden = true;
-  if (formularioPagoR) formularioPagoR.hidden = true;
-  if (bloqueVacio) bloqueVacio.hidden = false;
-} else {
+// Resumen del pedido (se repinta cuando la API trae el coste de envío real)
+const pintarResumen = () => {
+  if (articulosPago.length === 0) {
+    if (resumenPedido) resumenPedido.hidden = true;
+    if (formularioPagoR) formularioPagoR.hidden = true;
+    if (bloqueVacio) bloqueVacio.hidden = false;
+    return;
+  }
   const lineas = document.querySelector("[data-lineas-pedido]");
+  lineas.innerHTML = "";
   articulosPago.forEach((articulo) => {
     const fila = document.createElement("div");
     fila.className = "carrito-linea";
@@ -59,6 +63,27 @@ if (articulosPago.length === 0) {
   document.querySelector("[data-subtotal]").textContent = formatearPrecio(subtotal);
   document.querySelector("[data-envio]").textContent = envio === 0 ? "Gratis" : formatearPrecio(envio);
   document.querySelector("[data-total]").textContent = formatearPrecio(total);
+};
+
+pintarResumen();
+
+// Entorno, comercio, métodos y envío reales del panel cuando la API responde
+if (typeof CONEXION !== "undefined") {
+  CONEXION.cuandoConfig.then((config) => {
+    if (!config) return;
+    if (config.entornoPago === "test" || config.entornoPago === "produccion") {
+      CONFIG_REDSYS.entorno = config.entornoPago;
+    }
+    if (config.nombreComercio) CONFIG_REDSYS.nombreComercio = config.nombreComercio;
+    pintarResumen();
+    const metodos = config.metodosPago || {};
+    document.querySelectorAll(".metodo-pago input[name='metodo']").forEach((entrada) => {
+      const activo = entrada.value === "bizum" ? metodos.bizum !== false : metodos.tarjeta !== false;
+      entrada.disabled = !activo;
+      const etiqueta = entrada.closest(".metodo-pago");
+      if (etiqueta) etiqueta.hidden = !activo;
+    });
+  });
 }
 
 // Número de pedido: fecha + hora, 12 dígitos únicos
@@ -88,16 +113,10 @@ const firmarParametros = (parametrosB64, pedido, claveB64) => {
 };
 
 if (formularioPagoR) {
-  formularioPagoR.addEventListener("submit", (evento) => {
+  formularioPagoR.addEventListener("submit", async (evento) => {
     evento.preventDefault();
 
     if (articulosPago.length === 0) return;
-
-    if (typeof CryptoJS === "undefined") {
-      avisoPagoR.textContent =
-        "No se pudo cargar el módulo de firma segura. Comprueba tu conexión y recarga la página.";
-      return;
-    }
 
     const datos = new FormData(formularioPagoR);
     const nombre = (datos.get("nombre") || "").toString().trim();
@@ -109,41 +128,77 @@ if (formularioPagoR) {
     const poblacion = (datos.get("poblacion") || "").toString().trim();
     const provincia = (datos.get("provincia") || "").toString().trim();
     const metodo = (datos.get("metodo") || "tarjeta").toString();
-
-    const { total } = calcularTotales(articulosPago);
-    const importe = String(Math.round(total * 100));
     const pedido = generarPedido();
-    const descripcion = articulosPago
-      .map((articulo) => `${articulo.cantidad}× ${articulo.nombre}`)
-      .join(" · ")
-      .slice(0, 120);
+    const botonEnviar = formularioPagoR.querySelector('button[type="submit"]');
 
-    const parametros = {
-      DS_MERCHANT_AMOUNT: importe,
-      DS_MERCHANT_ORDER: pedido,
-      DS_MERCHANT_MERCHANTCODE: CONFIG_REDSYS.comercio,
-      DS_MERCHANT_CURRENCY: CONFIG_REDSYS.moneda,
-      DS_MERCHANT_TRANSACTIONTYPE: "0",
-      DS_MERCHANT_TERMINAL: CONFIG_REDSYS.terminal,
-      DS_MERCHANT_MERCHANTNAME: CONFIG_REDSYS.nombreComercio,
-      DS_MERCHANT_PRODUCTDESCRIPTION: descripcion,
-      DS_MERCHANT_TITULAR: [nombre, apellidos].filter(Boolean).join(" ").slice(0, 60),
-      DS_MERCHANT_CONSUMERLANGUAGE: "001",
-      DS_MERCHANT_URLOK: CONFIG_REDSYS.urlOk,
-      DS_MERCHANT_URLKO: CONFIG_REDSYS.urlKo,
-      DS_MERCHANT_MERCHANTURL: CONFIG_REDSYS.urlNotificacion,
-      DS_MERCHANT_PAYMETHODS: metodo === "bizum" ? "z" : "C",
-    };
+    // 1) Firma en servidor: el importe se calcula con precios y ofertas reales del panel
+    let firmaApi = null;
+    if (typeof CONEXION !== "undefined") {
+      avisoPagoR.textContent = "Preparando tu pago seguro…";
+      if (botonEnviar) botonEnviar.disabled = true;
+      firmaApi = await CONEXION.post("/api/pagos/firma", {
+        articulos: articulosPago.map((articulo) => ({ codigo: articulo.id, cantidad: articulo.cantidad })),
+        metodo,
+        numeroPedido: pedido,
+        envio: { nombre, apellidos, email, telefono, direccion, cp, poblacion, provincia },
+      });
+      if (botonEnviar) botonEnviar.disabled = false;
+      if (firmaApi && !firmaApi.parametrosB64) {
+        avisoPagoR.textContent = `${firmaApi.error || "No hemos podido preparar el pago seguro."} Inténtalo de nuevo en un momento o escríbenos a hola@shaddai.es.`;
+        return;
+      }
+    }
 
-    const json = JSON.stringify(parametros);
-    const parametrosB64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(json));
-    const firma = firmarParametros(parametrosB64, pedido, CONFIG_REDSYS.clave);
+    let numeroFinal = pedido;
+    let total = calcularTotales(articulosPago).total;
+    let parametrosB64;
+    let firma;
+    let version = "HMAC_SHA256_V1";
+
+    if (firmaApi && firmaApi.parametrosB64) {
+      numeroFinal = firmaApi.numeroPedido || pedido;
+      version = firmaApi.version || version;
+      if (firmaApi.resumen && Number(firmaApi.resumen.total) > 0) total = Number(firmaApi.resumen.total);
+      parametrosB64 = firmaApi.parametrosB64;
+      firma = firmaApi.firma;
+    } else {
+      // 2) Sin API: firma en cliente con la configuración local (flujo actual intacto)
+      if (typeof CryptoJS === "undefined") {
+        avisoPagoR.textContent =
+          "No se pudo cargar el módulo de firma segura. Comprueba tu conexión y recarga la página.";
+        return;
+      }
+      const descripcion = articulosPago
+        .map((articulo) => `${articulo.cantidad}× ${articulo.nombre}`)
+        .join(" · ")
+        .slice(0, 120);
+
+      const parametros = {
+        DS_MERCHANT_AMOUNT: String(Math.round(total * 100)),
+        DS_MERCHANT_ORDER: pedido,
+        DS_MERCHANT_MERCHANTCODE: CONFIG_REDSYS.comercio,
+        DS_MERCHANT_CURRENCY: CONFIG_REDSYS.moneda,
+        DS_MERCHANT_TRANSACTIONTYPE: "0",
+        DS_MERCHANT_TERMINAL: CONFIG_REDSYS.terminal,
+        DS_MERCHANT_MERCHANTNAME: CONFIG_REDSYS.nombreComercio,
+        DS_MERCHANT_PRODUCTDESCRIPTION: descripcion,
+        DS_MERCHANT_TITULAR: [nombre, apellidos].filter(Boolean).join(" ").slice(0, 60),
+        DS_MERCHANT_CONSUMERLANGUAGE: "001",
+        DS_MERCHANT_URLOK: CONFIG_REDSYS.urlOk,
+        DS_MERCHANT_URLKO: CONFIG_REDSYS.urlKo,
+        DS_MERCHANT_MERCHANTURL: CONFIG_REDSYS.urlNotificacion,
+        DS_MERCHANT_PAYMETHODS: metodo === "bizum" ? "z" : "C",
+      };
+
+      parametrosB64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(JSON.stringify(parametros)));
+      firma = firmarParametros(parametrosB64, pedido, CONFIG_REDSYS.clave);
+    }
 
     // Pedido pendiente: lo muestra la página de confirmación
     localStorage.setItem(
       "shaddai-pedido-pendiente",
       JSON.stringify({
-        pedido,
+        pedido: numeroFinal,
         total,
         metodo,
         nombre: [nombre, apellidos].filter(Boolean).join(" "),
@@ -157,17 +212,17 @@ if (formularioPagoR) {
 
     const envio = document.createElement("form");
     envio.method = "POST";
-    envio.action = CONFIG_REDSYS.urls[CONFIG_REDSYS.entorno];
+    envio.action = (firmaApi && firmaApi.url) || CONFIG_REDSYS.urls[CONFIG_REDSYS.entorno];
     [
       ["DS_MERCHANT_PARAMETERS", parametrosB64],
       ["DS_MERCHANT_SIGNATURE", firma],
-      ["DS_MERCHANT_SIGNATUREVERSION", "HMAC_SHA256_V1"],
-    ].forEach(([name, value]) => {
-      const campo = document.createElement("input");
-      campo.type = "hidden";
-      campo.name = name;
-      campo.value = value;
-      envio.append(campo);
+      ["DS_MERCHANT_SIGNATUREVERSION", version],
+    ].forEach(([campo, valor]) => {
+      const entrada = document.createElement("input");
+      entrada.type = "hidden";
+      entrada.name = campo;
+      entrada.value = valor;
+      envio.append(entrada);
     });
 
     avisoPagoR.textContent = "Abriendo el entorno seguro de tu banco…";
