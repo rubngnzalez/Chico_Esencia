@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Panel de gestión — SHADDAI · Esencia de Umbral</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+
+  <div id="vista-login" class="vista-login" hidden>
+    <div class="login-tarjeta">
+      <p class="login-marca">SHADDAI</p>
+      <p class="login-sub">Panel de gestión · Esencia de Umbral</p>
+      <h1>Entra en el Umbral</h1>
+      <form id="formulario-login" autocomplete="off">
+        <label for="login-email">Correo electrónico</label>
+        <input type="email" id="login-email" name="email" placeholder="tu@correo.com" required>
+        <label for="login-contrasena">Contraseña</label>
+        <input type="password" id="login-contrasena" name="contrasena" placeholder="Tu contraseña" required>
+        <button type="submit" class="boton-oro" id="boton-login">Iniciar sesión</button>
+        <p id="login-aviso" class="aviso" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="vista-cambio" class="vista-login" hidden>
+    <div class="login-tarjeta">
+      <p class="login-marca">SHADDAI</p>
+      <p class="login-sub">Primer acceso</p>
+      <h1>Cambia tu contraseña</h1>
+      <p class="login-nota">Por seguridad, tu contraseña temporal debe cambiarse antes de continuar.</p>
+      <form id="formulario-cambio" autocomplete="off">
+        <label for="cambio-actual">Contraseña temporal</label>
+        <input type="password" id="cambio-actual" required>
+        <label for="cambio-nueva">Contraseña nueva (mínimo 8 caracteres)</label>
+        <input type="password" id="cambio-nueva" minlength="8" required>
+        <label for="cambio-repetir">Repite la contraseña nueva</label>
+        <input type="password" id="cambio-repetir" minlength="8" required>
+        <button type="submit" class="boton-oro">Guardar contraseña</button>
+        <p id="cambio-aviso" class="aviso" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="vista-panel" class="vista-panel" hidden>
+    <aside class="lateral" id="lateral">
+      <div class="lateral-marca">
+        <span class="shin">ש</span>
+        <div>
+          <p class="nombre">SHADDAI</p>
+          <p class="sub">Panel de gestión</p>
+        </div>
+      </div>
+      <nav class="lateral-menu" id="menu-lateral">
+        <button class="menu-item" data-seccion="panel"><span>◆</span> Panel</button>
+        <button class="menu-item" data-seccion="productos"><span>❈</span> Productos</button>
+        <button class="menu-item" data-seccion="categorias"><span>❉</span> Categorías</button>
+        <button class="menu-item" data-seccion="ofertas"><span>✦</span> Ofertas</button>
+        <button class="menu-item" data-seccion="testimonios"><span>✧</span> Testimonios</button>
+        <button class="menu-item" data-seccion="blog"><span>✎</span> Blog</button>
+        <button class="menu-item" data-seccion="email"><span>✉</span> Email marketing</button>
+        <button class="menu-item" data-seccion="bandeja"><span>📪</span> Bandeja de entrada <em class="contador" id="contador-bandeja" hidden></em></button>
+        <button class="menu-item" data-seccion="pedidos"><span>❖</span> Pedidos</button>
+        <button class="menu-item" data-seccion="ajustes"><span>⚙</span> Ajustes</button>
+        <button class="menu-item" data-seccion="usuarios"><span>☉</span> Usuarios</button>
+        <button class="menu-item" data-seccion="manual"><span>☰</span> Manual del panel</button>
+      </nav>
+      <div class="lateral-pie">
+        <p id="usuario-nombre" class="usuario-nombre"></p>
+        <p id="usuario-rol" class="usuario-rol"></p>
+        <button id="boton-salir" class="boton-salir">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <main class="principal">
+      <header class="principal-cabecera">
+        <button id="boton-menu" class="boton-menu" aria-label="Abrir menú">☰</button>
+        <h1 id="titulo-seccion">Panel</h1>
+        <a class="enlace-web" href="/" target="_blank" rel="noopener">Ver la web ↗</a>
+      </header>
+      <section id="contenido-seccion" class="contenido"></section>
+    </main>
+  </div>
+
+  <div id="contenedor-toasts" class="contenedor-toasts" aria-live="polite"></div>
+  <div id="contenedor-modales"></div>
+
+  <script type="module" src="panel.js"></script>
+</body>
+</html>

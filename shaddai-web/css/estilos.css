@@ -20,6 +20,17 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Red de seguridad contra el scroll horizontal: clip no crea contenedor de scroll ni rompe los elementos fixed */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Bloquea el scroll de fondo mientras el menú móvil está abierto */
+body.menu-abierto {
+  overflow: hidden;
+}
+
 body {
   background: var(--verde);
   color: var(--texto);
@@ -132,6 +143,8 @@ p + p {
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 50;
+  /* Respeta el área segura superior en iPhone con notch (viewport-fit=cover) */
+  padding-top: env(safe-area-inset-top);
   transition: background 0.4s ease, box-shadow 0.4s ease;
 }
 
@@ -220,19 +233,26 @@ p + p {
   border-color: var(--oro);
 }
 
+/* El botón de cierre del menú solo existe en la capa móvil */
+.navegacion .cerrar {
+  display: none;
+}
+
 .menu-boton {
   display: none;
   background: none;
   border: 1px solid rgba(201, 164, 95, 0.55);
   color: var(--oro);
   font-size: 1.3rem;
-  width: 2.7rem;
-  height: 2.7rem;
+  /* 44 px mínimos de área táctil */
+  width: 2.75rem;
+  height: 2.75rem;
   cursor: pointer;
 }
 
 /* ---------- Héroe ---------- */
 .heroe {
+  min-height: 100vh; /* fallback para navegadores sin svh */
   min-height: 100svh;
   display: grid;
   place-items: center;
@@ -319,7 +339,7 @@ p + p {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
-/* V�deo de presentaci�n del producto (Manifiesto, portada) */
+/* V�deo de presentaci�n del producto (Manifiesto, portada) */
 .columna-imagen video {
   display: block;
   width: 100%;
@@ -457,7 +477,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   width: 100%;
   display: block;
 }
-/* ---------- V�deo promocional ---------- */
+/* ---------- V�deo promocional ---------- */
 .video-escena {
   margin: 0 auto;
   max-width: 940px;
@@ -629,8 +649,8 @@ body[data-pagina="usos"] .tarjeta .icono {
   transform: translateY(-50%);
   display: grid;
   place-items: center;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 1px solid rgba(201, 164, 95, 0.5);
   border-radius: 50%;
   background: rgba(11, 18, 13, 0.55);
@@ -665,18 +685,20 @@ body[data-pagina="usos"] .tarjeta .icono {
 }
 
 .universo-puntos button {
-  width: 0.55rem;
-  height: 0.55rem;
+  /* Borde transparente amplía la zona táctil sin cambiar el punto visible */
+  width: 1.35rem;
+  height: 1.35rem;
   padding: 0;
-  border: none;
+  border: 0.4rem solid transparent;
+  background-clip: padding-box;
   border-radius: 50%;
-  background: rgba(243, 238, 226, 0.45);
+  background-color: rgba(243, 238, 226, 0.45);
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .universo-puntos button.activa {
-  background: var(--oro);
+  background-color: var(--oro);
   transform: scale(1.3);
 }
 
@@ -868,7 +890,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 .pie {
   border-top: 1px solid rgba(201, 164, 95, 0.22);
   background: linear-gradient(180deg, #1b2e22 0%, #111e16 100%);
-  padding: 5rem 0 2.6rem;
+  padding: 5rem 0 calc(2.6rem + env(safe-area-inset-bottom));
 }
 
 .pie .columnas {
@@ -878,7 +900,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   align-items: start;
 }
 
-/* Orden editorial: marca, navegaci�n, bolet�n */
+/* Orden editorial: marca, navegaci�n, bolet�n */
 .pie .columnas > div:nth-child(1) { order: 2; }
 .pie .columnas > div:nth-child(2) {
   order: 1;
@@ -1000,45 +1022,103 @@ body[data-pagina="usos"] .tarjeta .icono {
   .navegacion {
     position: fixed;
     inset: 0;
-    top: 0;
     background: rgba(15, 24, 17, 0.98);
     display: grid;
-    place-items: center;
+    /* overflow + margen automático: el menú se centra y se puede desplazar en pantallas bajas */
+    overflow-y: auto;
+    padding: calc(env(safe-area-inset-top) + 4.5rem) 1rem calc(env(safe-area-inset-bottom) + 3rem);
     opacity: 0;
+    /* visibility evita que los enlaces ocultos reciban tabulaciones */
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.35s ease;
+    transition: opacity 0.35s ease, visibility 0s linear 0.35s;
   }
 
   .navegacion.abierta {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
+    transition: opacity 0.35s ease;
   }
 
   .navegacion ul {
     flex-direction: column;
     text-align: center;
-    gap: 2rem;
+    gap: 1rem;
+    margin: auto;
   }
 
   .navegacion a {
     font-size: 1.05rem;
+    /* Área táctil amplia en los enlaces del menú */
+    display: inline-block;
+    padding: 0.65rem 1.2rem;
   }
 
   .navegacion .cerrar {
     position: absolute;
-    top: 1.6rem;
-    right: 1.6rem;
-    font-size: 2rem;
+    top: 1rem;
+    top: calc(1rem + env(safe-area-inset-top));
+    right: 1rem;
+    right: calc(1rem + env(safe-area-inset-right));
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.9rem;
+    line-height: 1;
     color: var(--oro);
     background: none;
     border: none;
     cursor: pointer;
+  }
+
+  /* El aura y las motas del marco no pueden sobresalir del ancho de pantalla */
+  .marco-imagen::before,
+  .marco-imagen::after {
+    inset: -3%;
+  }
+
+  .marco-imagen::before {
+    animation: none;
+    transform: none;
+    opacity: 0.75;
+  }
+}
+
+/* Compacción de la marca en pantallas muy estrechas */
+@media (max-width: 400px) {
+  .cabecera .barra {
+    gap: 0.5rem;
+  }
+
+  .marca {
+    gap: 0.5rem;
+  }
+
+  .marca .shin {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .marca .nombre {
+    font-size: 1.2rem;
+    letter-spacing: 0.16em;
+  }
+
+  .acciones-cabecera {
+    gap: 0.5rem;
   }
 }
 
 @media (max-width: 560px) {
   .carrusel-universo-visor {
     aspect-ratio: 4 / 3;
+  }
+
+  /* Menos tracking en el subtítulo del héroe para que no envuelva en 320 px */
+  .heroe .subtitulo {
+    letter-spacing: 0.2em;
   }
 
   .paso {
@@ -1049,6 +1129,21 @@ body[data-pagina="usos"] .tarjeta .icono {
   .paso-imagen {
     grid-column: 1 / -1;
     width: 100%;
+  }
+
+  /* Botones de cantidad con área táctil de 44 px */
+  .cantidad button {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.1rem;
+  }
+
+  .cantidad {
+    gap: 0.6rem;
+  }
+
+  .item-acciones {
+    gap: 1.2rem;
   }
 }
 
@@ -1137,7 +1232,8 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: var(--crema);
   padding: 0.65rem 0.9rem;
   font-family: var(--sans);
-  font-size: 0.92rem;
+  /* 16 px evita el zoom automático de iOS al enfocar */
+  font-size: 1rem;
 }
 
 .boletin input:focus {
@@ -1185,7 +1281,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 .panel-nota.con-fondo {
   background:
     linear-gradient(rgba(17, 28, 20, 0.78), rgba(17, 28, 20, 0.86)),
-    url("../img/audio-meditacion.jpg") center 40% / cover no-repeat var(--verde-2);
+    url("../img/audio-meditacion.webp") center 40% / cover no-repeat var(--verde-2);
 }
 
 @media (max-width: 900px) {
@@ -1213,7 +1309,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   isolation: isolate;
 }
 
-/* Ventana de v�deo del ritual */
+/* Ventana de v�deo del ritual */
 .ritual-video {
   margin: 2.6rem auto 0;
   max-width: 680px;
@@ -1481,7 +1577,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   inset: 0;
   background:
     linear-gradient(rgba(14, 22, 16, 0.86), rgba(14, 22, 16, 0.9)),
-    url("../img/fondo-carta.jpg") 55% 28% / cover no-repeat;
+    url("../img/fondo-carta.webp") 55% 28% / cover no-repeat;
   pointer-events: none;
 }
 
@@ -1686,7 +1782,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   animation: kenburns 26s ease-in-out forwards;
 }
 
-/* V�deo de fondo del h�roe (presentaci�n del producto) */
+/* V�deo de fondo del h�roe (presentaci�n del producto) */
 .carrusel-video {
   position: absolute;
   inset: 0;
@@ -1733,8 +1829,8 @@ body[data-pagina="usos"] .tarjeta .icono {
   position: relative;
   display: grid;
   place-items: center;
-  width: 2.7rem;
-  height: 2.7rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 1px solid rgba(201, 164, 95, 0.55);
   color: var(--oro);
   transition: background 0.3s ease;
@@ -2203,7 +2299,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   aspect-ratio: 4 / 5;
   object-position: center;
 }
-/* ---------- M�sica ambiente del Umbral ---------- */
+/* ---------- M�sica ambiente del Umbral ---------- */
 .musica-iframe {
   position: fixed;
   left: -9999px;
@@ -2217,7 +2313,9 @@ body[data-pagina="usos"] .tarjeta .icono {
 .musica-boton {
   position: fixed;
   right: 18px;
+  right: calc(18px + env(safe-area-inset-right));
   bottom: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
   z-index: 60;
   width: 48px;
   height: 48px;
@@ -2274,7 +2372,9 @@ body[data-pagina="usos"] .tarjeta .icono {
 @media (max-width: 720px) {
   .musica-boton {
     right: 14px;
+    right: calc(14px + env(safe-area-inset-right));
     bottom: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
     width: 44px;
     height: 44px;
   }
@@ -2288,4 +2388,97 @@ body[data-pagina="usos"] .tarjeta .icono {
   .musica-boton.cargando {
     animation: none;
   }
+}
+
+/* ---------- Testimonios: Ecos del Umbral ---------- */
+.rejilla-testimonios {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.4rem;
+  margin-top: 2.8rem;
+}
+
+.testimonio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  border: 1px solid rgba(201, 164, 95, 0.28);
+  background: rgba(201, 164, 95, 0.05);
+  padding: 1.9rem 1.7rem;
+  text-align: left;
+}
+
+.testimonio-estrellas {
+  font-size: 1.02rem;
+  letter-spacing: 0.18em;
+  color: var(--oro);
+}
+
+.testimonio-estrellas .vacias {
+  color: rgba(201, 164, 95, 0.28);
+}
+
+.testimonio-texto {
+  flex: 1;
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.18rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--crema);
+}
+
+.testimonio-autor {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(217, 212, 197, 0.75);
+}
+
+@media (max-width: 900px) {
+  .rejilla-testimonios {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .rejilla-testimonios {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Campo trampa anti-spam del formulario ---------- */
+.campo-trampa {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ---------- Redes sociales del pie (solo si el panel las trae) ---------- */
+.pie-redes {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.1rem 1.9rem;
+  margin-top: 2.6rem;
+  padding-top: 1.8rem;
+  border-top: 1px solid rgba(201, 164, 95, 0.18);
+}
+
+.pie-redes a {
+  font-size: 0.76rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--texto);
+  opacity: 0.8;
+  transition: color 0.25s ease, opacity 0.25s ease;
+}
+
+.pie-redes a:hover,
+.pie-redes a:focus-visible {
+  color: var(--oro);
+  opacity: 1;
 }

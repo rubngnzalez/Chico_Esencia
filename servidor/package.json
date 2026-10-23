@@ -1,0 +1,19 @@
+{
+  "name": "shaddai-servidor",
+  "version": "1.0.0",
+  "description": "API y panel de gestión de SHADDAI · Esencia de Umbral",
+  "main": "servidor.js",
+  "scripts": {
+    "start": "node servidor.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
+    "nodemailer": "^6.10.1"
+  }
+}

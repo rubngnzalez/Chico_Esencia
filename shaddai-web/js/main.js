@@ -10,26 +10,62 @@ const marcarFondo = () => {
 marcarFondo();
 window.addEventListener("scroll", marcarFondo, { passive: true });
 
-// Menú móvil
+// Menú móvil: botón de cierre único, Escape, toque fuera y foco gestionado
 const botonMenu = document.querySelector(".menu-boton");
 const navegacion = document.querySelector(".navegacion");
 
 if (botonMenu && navegacion) {
-  botonMenu.addEventListener("click", () => {
+  navegacion.id = "menu-principal";
+  botonMenu.setAttribute("aria-controls", "menu-principal");
+  botonMenu.setAttribute("aria-expanded", "false");
+
+  // El botón de cierre se crea una sola vez (antes se duplicaba en cada apertura)
+  const botonCerrar = document.createElement("button");
+  botonCerrar.type = "button";
+  botonCerrar.className = "cerrar";
+  botonCerrar.setAttribute("aria-label", "Cerrar menú");
+  botonCerrar.textContent = "×";
+  navegacion.appendChild(botonCerrar);
+
+  const abrirMenu = () => {
     navegacion.classList.add("abierta");
-    const cerrar = document.createElement("button");
-    cerrar.className = "cerrar";
-    cerrar.setAttribute("aria-label", "Cerrar menú");
-    cerrar.textContent = "×";
-    navegacion.appendChild(cerrar);
-    cerrar.addEventListener("click", cerrarMenu);
-    function cerrarMenu() {
-      navegacion.classList.remove("abierta");
-      cerrar.remove();
+    document.body.classList.add("menu-abierto");
+    botonMenu.setAttribute("aria-expanded", "true");
+    botonCerrar.focus({ preventScroll: true });
+  };
+
+  const cerrarMenu = () => {
+    if (!navegacion.classList.contains("abierta")) return;
+    navegacion.classList.remove("abierta");
+    document.body.classList.remove("menu-abierto");
+    botonMenu.setAttribute("aria-expanded", "false");
+    botonMenu.focus({ preventScroll: true });
+  };
+
+  botonMenu.addEventListener("click", () => {
+    if (navegacion.classList.contains("abierta")) cerrarMenu();
+    else abrirMenu();
+  });
+  botonCerrar.addEventListener("click", cerrarMenu);
+
+  // Un único listener por enlace (antes se acumulaban en cada apertura)
+  navegacion.querySelectorAll("a").forEach((enlace) =>
+    enlace.addEventListener("click", cerrarMenu)
+  );
+
+  document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape") cerrarMenu();
+  });
+
+  // Cierre al tocar o hacer clic fuera de la capa de navegación
+  document.addEventListener("pointerdown", (evento) => {
+    if (
+      navegacion.classList.contains("abierta") &&
+      !navegacion.contains(evento.target) &&
+      !botonMenu.contains(evento.target)
+    ) {
+      cerrarMenu();
     }
-    navegacion.querySelectorAll("a").forEach((enlace) =>
-      enlace.addEventListener("click", cerrarMenu)
-    );
   });
 }
 
@@ -88,29 +124,71 @@ const observador = new IntersectionObserver(
 );
 document.querySelectorAll(".revelar").forEach((el) => observador.observe(el));
 
-// Formulario de contacto (demostración local)
+// Formulario de contacto: API del panel; si no responde, correo con el mensaje preparado
 const formulario = document.querySelector(".formulario");
 if (formulario) {
-  formulario.addEventListener("submit", (evento) => {
+  formulario.addEventListener("submit", async (evento) => {
     evento.preventDefault();
     const datos = new FormData(formulario);
     const nombre = (datos.get("nombre") || "").toString().trim();
+    const email = (datos.get("email") || "").toString().trim();
+    const mensaje = (datos.get("mensaje") || "").toString().trim();
+    const telefono = (datos.get("telefono") || "").toString().trim();
+    const web = (datos.get("web") || "").toString(); // honeypot: los humanos no lo rellenan
     const aviso = document.querySelector(".aviso-formulario");
-    aviso.textContent = `Gracias, ${nombre || "alma buscadora"}. Hemos recibido tu mensaje: te responderemos con la calma que mereces.`;
-    formulario.reset();
+    const boton = formulario.querySelector('button[type="submit"]');
+
+    const enviarPorCorreo = () => {
+      const asunto = `Mensaje de la web · ${nombre || "consulta"}`;
+      const cuerpo = `Nombre: ${nombre}\nEmail: ${email}\n\n${mensaje}`;
+      window.location.href = `mailto:hola@shaddai.es?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+      aviso.textContent = "Se abre tu correo con el mensaje preparado para hola@shaddai.es: tu palabra queda registrada al enviarlo.";
+      formulario.reset();
+    };
+
+    if (typeof CONEXION !== "undefined") {
+      aviso.textContent = "Enviando tu mensaje…";
+      if (boton) boton.disabled = true;
+      const respuesta = await CONEXION.post("/api/public/contacto", { nombre, email, mensaje, telefono, web });
+      if (boton) boton.disabled = false;
+      if (respuesta) {
+        if (respuesta.ok) {
+          aviso.textContent = respuesta.mensaje || `Gracias, ${nombre || "alma buscadora"}. Hemos recibido tu mensaje: te responderemos con la calma que mereces.`;
+          formulario.reset();
+        } else {
+          aviso.textContent = `${respuesta.error || "No hemos podido enviar tu mensaje."} También puedes escribirnos a hola@shaddai.es.`;
+        }
+        return;
+      }
+      // Sin API disponible: correo de toda la vida
+      enviarPorCorreo();
+      return;
+    }
+    enviarPorCorreo();
   });
 }
 
-// Boletín del Umbral (demostración local)
+// Boletín del Umbral: alta en la API del panel; sin ella, confirmación local
 const boletin = document.querySelector(".boletin");
 if (boletin) {
-  boletin.addEventListener("submit", (evento) => {
+  boletin.addEventListener("submit", async (evento) => {
     evento.preventDefault();
-    boletin.reset();
+    const correo = (new FormData(boletin).get("correo") || "").toString().trim();
     const aviso = document.querySelector(".aviso-boletin");
-    if (aviso) {
-      aviso.textContent = "Bienvenido al Umbral: recibirás las próximas reflexiones y aperturas de lotes limitados.";
+    if (typeof CONEXION !== "undefined") {
+      const respuesta = await CONEXION.post("/api/public/suscribirse", { email: correo });
+      if (respuesta) {
+        boletin.reset();
+        if (aviso) {
+          aviso.textContent = respuesta.ok
+            ? respuesta.mensaje || "Bienvenido al Umbral: recibirás las próximas reflexiones y aperturas de lotes limitados."
+            : respuesta.error || "No hemos podido completar tu suscripción: inténtalo de nuevo en un momento.";
+        }
+        return;
+      }
     }
+    boletin.reset();
+    if (aviso) aviso.textContent = "Bienvenido al Umbral: recibirás las próximas reflexiones y aperturas de lotes limitados.";
   });
 }
 
@@ -211,27 +289,30 @@ const escribirCarrito = (articulos) => {
   }
 };
 
-// Anadir productos desde la tienda
-document.querySelectorAll(".boton-anadir").forEach((boton) => {
-  boton.addEventListener("click", () => {
-    const { id, nombre, precio, imagen } = boton.dataset;
-    const articulos = leerCarrito();
-    const existente = articulos.find((item) => item.id === id);
-    if (existente) {
-      existente.cantidad += 1;
-    } else {
-      articulos.push({ id, nombre, precio: Number(precio), imagen, cantidad: 1 });
-    }
-    escribirCarrito(articulos);
-    if (!boton.dataset.texto) boton.dataset.texto = boton.textContent;
-    boton.textContent = "Añadido ✦";
-    boton.classList.add("anadido");
-    clearTimeout(boton._aviso);
-    boton._aviso = setTimeout(() => {
-      boton.textContent = boton.dataset.texto;
-      boton.classList.remove("anadido");
-    }, 1600);
-  });
+// Anadir productos desde la tienda (delegado: cubre también los que llegan de la API)
+const anadirAlCarrito = (boton) => {
+  const { id, nombre, precio, imagen } = boton.dataset;
+  const articulos = leerCarrito();
+  const existente = articulos.find((item) => item.id === id);
+  if (existente) {
+    existente.cantidad += 1;
+  } else {
+    articulos.push({ id, nombre, precio: Number(precio), imagen, cantidad: 1 });
+  }
+  escribirCarrito(articulos);
+  if (!boton.dataset.texto) boton.dataset.texto = boton.textContent;
+  boton.textContent = "Añadido ✦";
+  boton.classList.add("anadido");
+  clearTimeout(boton._aviso);
+  boton._aviso = setTimeout(() => {
+    boton.textContent = boton.dataset.texto;
+    boton.classList.remove("anadido");
+  }, 1600);
+};
+
+document.addEventListener("click", (evento) => {
+  const boton = evento.target.closest(".boton-anadir");
+  if (boton) anadirAlCarrito(boton);
 });
 
 // Cambios de cantidad y borrado dentro del carrito

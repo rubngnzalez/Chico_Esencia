@@ -16,3 +16,8 @@ news/*.local
 news/supabase/.temp/
 news/supabase/.branches/
 news/supabase/.temp
+
+# Servidor del panel: dependencias y datos locales (no se suben al repositorio)
+servidor/node_modules/
+servidor/datos/
+servidor/datos/creado-*

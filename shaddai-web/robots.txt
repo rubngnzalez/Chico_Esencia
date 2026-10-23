@@ -15,4 +15,5 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
+Sitemap: https://omshaddai.com/sitemap.xml
 Sitemap: https://omshaddai.com/news/sitemap.xml
