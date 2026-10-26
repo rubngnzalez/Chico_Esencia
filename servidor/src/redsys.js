@@ -2,11 +2,8 @@
 
 const crypto = require('crypto');
 
-function claveDeOperacion(claveBase64, numeroPedido) {
+function claveAntigua(claveBase64) {
   let clave = Buffer.from(String(claveBase64 || ''), 'base64');
-  if (clave.length === 0) {
-    throw new Error('La clave secreta de Redsys no está configurada.');
-  }
   if (clave.length > 24) clave = clave.subarray(0, 24);
   if (clave.length < 24) {
     const completa = Buffer.alloc(24);
@@ -18,6 +15,28 @@ function claveDeOperacion(claveBase64, numeroPedido) {
     }
     clave = completa;
   }
+  return clave;
+}
+
+function claveDeOperacion(claveBase64, numeroPedido) {
+  // Estándar oficial actual: clave CICLADA hasta 24 bytes.
+  let clave = Buffer.from(String(claveBase64 || ''), 'base64');
+  if (clave.length === 0) {
+    throw new Error('La clave secreta de Redsys no está configurada.');
+  }
+  if (clave.length > 24) clave = clave.subarray(0, 24);
+  if (clave.length < 24) {
+    const completa = Buffer.alloc(24);
+    for (let i = 0; i < 24; i++) completa[i] = clave[i % clave.length];
+    clave = completa;
+  }
+  const cifrador = crypto.createCipheriv('des-ede3', clave, null);
+  cifrador.setAutoPadding(true);
+  return Buffer.concat([cifrador.update(String(numeroPedido), 'utf8'), cifrador.final()]);
+}
+
+function claveDeOperacionAntigua(claveBase64, numeroPedido) {
+  const clave = claveAntigua(claveBase64);
   const cifrador = crypto.createCipheriv('des-ede3', clave, null);
   cifrador.setAutoPadding(true);
   return Buffer.concat([cifrador.update(String(numeroPedido), 'utf8'), cifrador.final()]);
@@ -32,7 +51,7 @@ function firmarParametros(parametrosB64, numeroPedido, claveBase64) {
 }
 
 function normalizarFirma(firma) {
-  return String(firma || '').replace(/-/g, '+').replace(/_/g, '/').replace(/\s+/g, '');
+  return String(firma || '').replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '').replace(/\s+/g, '');
 }
 
 function verificarNotificacion(cuerpo, claveBase64) {
@@ -59,10 +78,21 @@ function verificarNotificacion(cuerpo, claveBase64) {
     return { ok: false, motivo: 'La notificación no incluye número de pedido.' };
   }
 
+  // Acepta la derivación oficial (clave ciclada) o la antigua (relleno con ceros)
   const firmaEsperada = firmarParametros(parametrosRecibidos, pedido, claveBase64);
+  const firmaAntigua = (() => {
+    const derivada = claveDeOperacionAntigua(claveBase64, pedido);
+    return crypto
+      .createHmac('sha256', derivada)
+      .update(String(parametrosRecibidos) + String(pedido), 'utf8')
+      .digest('base64');
+  })();
   const bufA = Buffer.from(normalizarFirma(firmaEsperada));
   const bufB = Buffer.from(firmaRecibida);
-  const valida = bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+  const bufC = Buffer.from(normalizarFirma(firmaAntigua));
+  const valida =
+    (bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)) ||
+    (bufC.length === bufB.length && crypto.timingSafeEqual(bufC, bufB));
 
   if (!valida) {
     return { ok: false, motivo: 'La firma de la notificación no es válida.' };

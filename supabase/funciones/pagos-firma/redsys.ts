@@ -239,9 +239,20 @@ function normalizarClave(claveBase64: string): Uint8Array {
   return clave;
 }
 
+// Estándar oficial actual: si la clave tiene menos de 24 bytes, se CICLA
+// (se repite a sí misma) hasta completarlos.
+function claveCiclada(claveBase64: string): Uint8Array {
+  let clave = base64ABytes(claveBase64);
+  if (clave.length === 0) throw new Error('La clave secreta de Redsys no está configurada.');
+  if (clave.length > 24) clave = clave.slice(0, 24);
+  const completa = new Uint8Array(24);
+  for (let i = 0; i < 24; i++) completa[i] = clave[i % clave.length];
+  return completa;
+}
+
 export function claveDeOperacion(claveBase64: string, numeroPedido: string): Uint8Array {
   if (!claveBase64) throw new Error('La clave secreta de Redsys no está configurada.');
-  const clave = normalizarClave(claveBase64);
+  const clave = claveCiclada(claveBase64);
   return tripleDesEcbCifrar(new TextEncoder().encode(String(numeroPedido)), clave);
 }
 
@@ -255,7 +266,7 @@ export async function firmarParametros(
 }
 
 export function normalizarFirma(firma: string): string {
-  return String(firma || '').replace(/-/g, '+').replace(/_/g, '/').replace(/\s+/g, '');
+  return String(firma || '').replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '').replace(/\s+/g, '');
 }
 
 export interface Verificacion {

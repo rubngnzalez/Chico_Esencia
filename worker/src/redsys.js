@@ -238,8 +238,11 @@ function base64ABytes(texto) {
   return bytes;
 }
 
-// Normaliza la clave base64 de Redsys a 24 bytes exactamente como el Node:
-// >24 → recorta; 16 → repite los 8 primeros; otro tamaño → rellena con ceros.
+// Normaliza la clave base64 de Redsys para 3DES. Estándar oficial actual:
+// si tiene menos de 24 bytes, se CICLA (se repite a sí misma) hasta 24 —
+// con la clave de pruebas de 15 bytes es lo que el banco espera.
+// Se conserva también la derivación con ceros (mcrypt antiguo) como
+// alternativa de validación de notificaciones.
 function normalizarClave(claveBase64) {
   let clave = base64ABytes(claveBase64);
   if (clave.length === 0) throw new Error('La clave secreta de Redsys no está configurada.');
@@ -254,9 +257,18 @@ function normalizarClave(claveBase64) {
   return clave;
 }
 
+function claveCiclada(claveBase64) {
+  let clave = base64ABytes(claveBase64);
+  if (clave.length === 0) throw new Error('La clave secreta de Redsys no está configurada.');
+  if (clave.length > 24) clave = clave.slice(0, 24);
+  const completa = new Uint8Array(24);
+  for (let i = 0; i < 24; i++) completa[i] = clave[i % clave.length];
+  return completa;
+}
+
 export function claveDeOperacion(claveBase64, numeroPedido) {
   if (!claveBase64) throw new Error('La clave secreta de Redsys no está configurada.');
-  const clave = normalizarClave(claveBase64);
+  const clave = claveCiclada(claveBase64);
   return tripleDesEcbCifrar(codificador.encode(String(numeroPedido)), clave);
 }
 
@@ -266,7 +278,7 @@ export async function firmarParametros(parametrosB64, numeroPedido, claveBase64)
 }
 
 export function normalizarFirma(firma) {
-  return String(firma || '').replace(/-/g, '+').replace(/_/g, '/').replace(/\s+/g, '');
+  return String(firma || '').replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '').replace(/\s+/g, '');
 }
 
 export async function verificarNotificacion(cuerpo, claveBase64) {
@@ -294,8 +306,15 @@ export async function verificarNotificacion(cuerpo, claveBase64) {
     return { ok: false, motivo: 'La notificación no incluye número de pedido.' };
   }
 
-  const firmaEsperada = await firmarParametros(parametrosRecibidos, pedido, claveBase64);
-  const valida = comparacionSeguraCadena(normalizarFirma(firmaEsperada), firmaRecibida);
+  // Acepta la firma calculada con la derivación oficial (clave ciclada) o con
+  // la antigua (relleno con ceros), para cobertura total de notificaciones.
+  const firmaCiclada = await firmarParametros(parametrosRecibidos, pedido, claveBase64);
+  const claveAntigua = normalizarClave(claveBase64);
+  const derivadaAntigua = tripleDesEcbCifrar(codificador.encode(String(pedido)), claveAntigua);
+  const firmaAntigua = await hmacSha256Base64(derivadaAntigua, String(parametrosRecibidos) + String(pedido));
+  const esperadas = [normalizarFirma(firmaCiclada), normalizarFirma(firmaAntigua)];
+  const firmaRecibidaNormalizada = firmaRecibida;
+  const valida = esperadas.some((e) => comparacionSeguraCadena(e, firmaRecibidaNormalizada));
   if (!valida) {
     return { ok: false, motivo: 'La firma de la notificación no es válida.' };
   }
