@@ -1,7 +1,8 @@
 // Conexión con la API del panel: fetch con timeout corto y degradación silenciosa.
 // Si la API no responde (modo GitHub Pages), la web sigue funcionando como estática.
 const CONEXION = (() => {
-  const TIEMPO_MS = 2500; // espera máxima: en estático la carga no se ralentiza
+  const TIEMPO_MS = 4000; // espera máxima: en estático la carga no se ralentiza
+  const BASE = typeof window.SHADDAI_API_BASE === "string" ? window.SHADDAI_API_BASE.replace(/\/$/, "") : "";
   const pendientes = new Map(); // respuestas GET reutilizables dentro de la misma página
 
   // Escapa el texto que llega del panel antes de pintarlo en el DOM
@@ -18,7 +19,7 @@ const CONEXION = (() => {
       const control = new AbortController();
       const reloj = setTimeout(() => control.abort(), TIEMPO_MS);
       try {
-        const respuesta = await fetch(ruta, {
+        const respuesta = await fetch(BASE + ruta, {
           method: metodo,
           headers: cuerpo ? { "Content-Type": "application/json" } : undefined,
           body: cuerpo ? JSON.stringify(cuerpo) : undefined,
