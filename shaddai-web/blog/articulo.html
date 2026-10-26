@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artículo — SHADDAI · El Umbral</title>
+  <meta name="description" content="Artículo del diario de SHADDAI, Esencia de Umbral.">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="SHADDAI · El Umbral">
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/estilos.css">
+  <style>
+    /* MISMA plantilla y estética que worker/src/blog.js (plantillaArticulo):
+       crema #f3eee2, verde #16261b, dorado #c9a45f, Cormorant Garamond + Jost */
+    body { background: var(--crema, #f3eee2); color: #2b332c; }
+    .articulo-cabecera { padding: clamp(4rem, 9vw, 7rem) 0 2.5rem; text-align: center; }
+    .articulo-cabecera h1 { font-family: var(--serif, Georgia, serif); font-weight: 500; color: var(--verde, #16261b); font-size: clamp(1.9rem, 4.5vw, 3rem); line-height: 1.2; max-width: 56rem; margin: 0 auto 1.2rem; }
+    .articulo-meta { font-family: var(--sans, sans-serif); font-size: .85rem; letter-spacing: .18em; text-transform: uppercase; color: #6b7a6e; }
+    .articulo-meta .separador { color: var(--oro, #c9a45f); margin: 0 .6rem; }
+    .articulo-entradilla { font-family: var(--serif, Georgia, serif); font-size: clamp(1.15rem, 2.4vw, 1.45rem); color: #4a564d; font-style: italic; max-width: 46rem; margin: 1.4rem auto 0; line-height: 1.6; }
+    .articulo-cuerpo { max-width: 44rem; margin: 0 auto; padding: 1rem 0 clamp(3rem, 7vw, 5rem); font-family: var(--serif, Georgia, serif); font-size: 1.15rem; line-height: 1.85; }
+    .articulo-cuerpo p { margin: 0 0 1.2rem; }
+    .articulo-cuerpo h2, .articulo-cuerpo h3 { font-family: var(--serif, Georgia, serif); color: var(--verde, #16261b); font-weight: 600; line-height: 1.3; margin: 2.4rem 0 1rem; }
+    .articulo-cuerpo h2 { font-size: 1.8rem; }
+    .articulo-cuerpo h3 { font-size: 1.4rem; }
+    .articulo-cuerpo a { color: #a3823f; text-decoration: underline; text-underline-offset: 3px; }
+    .articulo-cuerpo ul, .articulo-cuerpo ol { margin: 0 0 1.2rem; padding-left: 1.4rem; }
+    .articulo-cuerpo li { margin-bottom: .5rem; }
+    .articulo-cuerpo blockquote { border-left: 3px solid var(--oro, #c9a45f); padding: .4rem 0 .4rem 1.4rem; margin: 1.8rem 0; font-style: italic; color: #4a564d; font-size: 1.25rem; }
+    .articulo-cuerpo img { border-radius: 2px; margin: 1.8rem auto; }
+    .articulo-portada { max-width: 62rem; margin: 0 auto 2.5rem; }
+    .articulo-portada img { width: 100%; border-radius: 2px; }
+    .articulo-etiqueta { display: inline-block; font-family: var(--sans, sans-serif); font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: #a3823f; border: 1px solid rgba(201, 164, 95, .5); padding: .3rem .8rem; margin: 0 .35rem .6rem 0; }
+    .articulo-volver { display: block; text-align: center; padding: 2.5rem 0 4rem; font-family: var(--sans, sans-serif); }
+    .articulo-volver a { color: #a3823f; letter-spacing: .18em; text-transform: uppercase; font-size: .82rem; }
+    .articulo-pie { background: var(--verde, #16261b); color: var(--texto, #d9d4c5); text-align: center; padding: 2.6rem 0; font-family: var(--sans, sans-serif); font-size: .9rem; }
+    .articulo-pie .marca-linea { letter-spacing: .3em; text-transform: uppercase; font-size: .72rem; color: var(--oro, #c9a45f); margin-bottom: .6rem; }
+    .articulo-ausente { text-align: center; font-family: var(--serif, Georgia, serif); font-size: 1.15rem; color: #4a564d; padding: 4rem 1rem; }
+  </style>
+</head>
+<body>
+  <header class="articulo-cabecera" id="articulo-cabecera">
+    <div class="contenedor">
+      <p class="etiqueta">SHADDAI · El Umbral</p>
+      <h1 id="articulo-titulo">…</h1>
+      <p class="articulo-meta" id="articulo-meta" hidden><span id="articulo-fecha"></span><span class="separador">✦</span><span id="articulo-autor"></span></p>
+      <p class="articulo-entradilla" id="articulo-entradilla" hidden></p>
+      <p style="margin-top:1.4rem;" id="articulo-etiquetas" hidden></p>
+    </div>
+  </header>
+  <main>
+    <div id="articulo-contenido"><p class="articulo-ausente">Preparando la lectura…</p></div>
+    <div class="articulo-volver"><a href="index.html">← Volver al diario</a></div>
+  </main>
+  <footer class="articulo-pie">
+    <p class="marca-linea">SHADDAI · Esencia de Umbral</p>
+    <p>Inhala · Exhala — Que nos busquen por dentro.</p>
+  </footer>
+
+  <script src="../js/supabase.js"></script>
+  <script src="../js/config-supabase.js"></script>
+  <script>
+    // Artículo por ?slug=… desde la tabla articulos. La RLS solo permite ver
+    // publicados (y programados ya vencidos): los borradores dan 404 amable.
+    (() => {
+      const escapar = (t) =>
+        String(t == null ? "" : t).replace(/[&<>"']/g, (c) => (
+          { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+        );
+      const fechaLarga = (iso) => {
+        try {
+          return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+        } catch {
+          return "";
+        }
+      };
+      const ausente = (mensaje) => {
+        document.getElementById("articulo-titulo").textContent = "Sin página";
+        document.getElementById("articulo-contenido").innerHTML = `<p class="articulo-ausente">${escapar(mensaje)}</p>`;
+      };
+
+      const slug = new URLSearchParams(location.search).get("slug") || "";
+      if (!slug) { ausente("No hemos encontrado el artículo que buscas."); return; }
+      if (!window.SUPABASE_CONFIGURADO || !window.SUPABASE_CONFIGURADO() || typeof window.supabase === "undefined") {
+        ausente("El diario se está preparando. Muy pronto, las primeras palabras del Umbral.");
+        return;
+      }
+      const cliente = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      cliente
+        .from("articulos")
+        .select("titulo, slug, extracto, contenido, imagen_portada, etiquetas, estado, fecha_publicacion, autor")
+        .eq("slug", slug)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (error || !data) {
+            ausente("No hemos encontrado el artículo que buscas. Quizá aún no se ha publicado.");
+            return;
+          }
+          document.title = `${data.titulo} — SHADDAI · El Umbral`;
+          document.getElementById("articulo-titulo").textContent = data.titulo;
+          const meta = document.getElementById("articulo-meta");
+          meta.hidden = false;
+          document.getElementById("articulo-fecha").textContent = fechaLarga(data.fecha_publicacion);
+          document.getElementById("articulo-autor").textContent = data.autor || "SHADDAI";
+          if (data.extracto) {
+            const entradilla = document.getElementById("articulo-entradilla");
+            entradilla.hidden = false;
+            entradilla.textContent = data.extracto;
+          }
+          const etiquetas = data.etiquetas || [];
+          if (etiquetas.length) {
+            const zona = document.getElementById("articulo-etiquetas");
+            zona.hidden = false;
+            zona.innerHTML = etiquetas.map((e) => `<span class="articulo-etiqueta">${escapar(e)}</span>`).join("");
+          }
+          if (data.imagen_portada) {
+            document.querySelector("main").insertAdjacentHTML(
+              "afterbegin",
+              `<figure class="articulo-portada"><img src="${escapar(data.imagen_portada)}" alt="${escapar(data.titulo)}"></figure>`
+            );
+          }
+          document.getElementById("articulo-contenido").innerHTML = `<article class="articulo-cuerpo contenedor">${data.contenido || ""}</article>`;
+        })
+        .catch(() => ausente("El diario no está disponible en este momento. Vuelve pronto."));
+    })();
+  </script>
+</body>
+</html>

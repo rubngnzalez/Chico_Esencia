@@ -21,3 +21,6 @@ news/supabase/.temp
 servidor/node_modules/
 servidor/datos/
 servidor/datos/creado-*
+
+supabase/proyecto.txt
+supabase/credenciales-locales.txt

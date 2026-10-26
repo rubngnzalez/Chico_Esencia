@@ -2,7 +2,8 @@
 // CPU del plan gratis de Workers). Formato almacenado:
 //   pbkdf2$<iteraciones>$<salt base64>$<hash base64>
 
-const ITERACIONES = 200000;
+// El plan gratuito de Workers limita PBKDF2 a 100.000 iteraciones
+const ITERACIONES = 100000;
 const LONGITUD_HASH = 256; // bits
 
 const codificador = new TextEncoder();

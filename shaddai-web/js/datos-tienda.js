@@ -52,7 +52,9 @@ const DATOS_TIENDA = [
   },
 ];
 
-// Re-render de la tienda con los productos del panel cuando la API responde
+// Re-render de la tienda con los productos de la base de datos cuando hay
+// conexión (Supabase → productos_publicos con precio_efectivo; o Worker).
+// Sin conexión queda el HTML estático actual: degradación silenciosa.
 (() => {
   if (document.body.dataset.pagina !== "tienda" || typeof CONEXION === "undefined") return;
 
@@ -62,15 +64,24 @@ const DATOS_TIENDA = [
     "perfume-solido": DATOS_TIENDA[1].imagen,
     "duo-ritual": DATOS_TIENDA[2].imagen,
   };
-  const IMAGENES_SEMILLA = ["img/esencia-50.jpg", "img/perfume-solido.jpg", "img/duo-esencial.jpg"];
+  const IMAGENES_SEMILLA = [
+    "img/esencia-50.jpg",
+    "img/perfume-solido.jpg",
+    "img/duo-esencial.jpg",
+    "img/esencia-50.webp",
+    "img/perfume-solido.webp",
+    "img/duo-esencial.webp",
+  ];
 
   const imagenDe = (producto) => {
     const actual = producto.imagenes && producto.imagenes[0];
     if (!actual || IMAGENES_SEMILLA.includes(actual)) {
       return IMAGENES_CONOCIDAS[producto.codigo] || actual || "";
     }
-    // Las imágenes subidas desde el panel viven en la API (recursos/...):
-    // se absolutizan para que funcionen desde la web de GitHub Pages
+    // Las imágenes del bucket «recursos» de Supabase son URLs completas
+    // (https://…supabase.co/storage/v1/object/public/recursos/…): se usan tal cual.
+    if (/^(https?:)?\/\//.test(actual)) return actual;
+    // Compatibilidad con rutas del almacenamiento del Worker antiguo
     if (typeof window.SHADDAI_API_BASE === "string" && window.SHADDAI_API_BASE && /^recursos\//.test(actual)) {
       return window.SHADDAI_API_BASE.replace(/\/$/, "") + "/" + actual;
     }
@@ -146,7 +157,7 @@ const DATOS_TIENDA = [
     return seccion;
   };
 
-  // Si la API no responde no pasa nada: queda el HTML estático actual
+  // Si no hay conexión no pasa nada: queda el HTML estático actual
   CONEXION.get("/api/productos/publico").then((cuerpo) => {
     const productos = cuerpo && Array.isArray(cuerpo.datos) ? cuerpo.datos : [];
     if (productos.length === 0) return;
