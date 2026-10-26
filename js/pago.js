@@ -1,10 +1,16 @@
 // Pago seguro del Umbral — Redsys (tarjeta) + Bizum
 // ------------------------------------------------------------------
-// Configura aquí los datos de tu TPV (panel de tu banco).
-// IMPORTANTE: la firma HMAC_SHA256_V1 se calcula en el navegador con
-// la clave secreta. Para un comercio en producción lo recomendable es
-// firmar en un servidor; esta página está lista para pruebas y para
-// comercios que asumen ese paso.
+// CADENA DE FIRMA (de mayor a menor garantía; cae al siguiente eslabón
+// si el anterior no está disponible):
+//   1. Edge Function «pagos-firma» de Supabase (si js/config-supabase.js
+//      está rellenada): calcula el importe EN SERVIDOR con precios y
+//      ofertas reales y firma HMAC_SHA256_V1. La clave nunca sale.
+//   2. Worker actual (window.SHADDAI_API_BASE en js/config-api.js):
+//      POST /api/pagos/firma, igual que siempre.
+//   3. Firma en cliente (CryptoJS) con los datos de la vista pública
+//      ajustes_publicos. OJO: la vista solo expone la clave si el entorno
+//      es «test» (clave de pruebas pública de Redsys). En producción sin
+//      funciones desplegadas el panel avisa: esta vía no puede usarse.
 // ------------------------------------------------------------------
 
 const CONFIG_REDSYS = {
@@ -67,7 +73,7 @@ const pintarResumen = () => {
 
 pintarResumen();
 
-// Entorno, comercio, métodos y envío reales del panel cuando la API responde
+// Entorno, comercio, métodos y envío reales del panel cuando hay conexión
 if (typeof CONEXION !== "undefined") {
   CONEXION.cuandoConfig.then((config) => {
     if (!config) return;
@@ -75,6 +81,29 @@ if (typeof CONEXION !== "undefined") {
       CONFIG_REDSYS.entorno = config.entornoPago;
     }
     if (config.nombreComercio) CONFIG_REDSYS.nombreComercio = config.nombreComercio;
+    // Datos Redsys reales de los ajustes (la vista solo trae la clave en test)
+    if (config.pago) {
+      if (config.pago.fuc) CONFIG_REDSYS.comercio = config.pago.fuc;
+      if (config.pago.terminal) CONFIG_REDSYS.terminal = config.pago.terminal;
+      if (config.pago.moneda) CONFIG_REDSYS.moneda = config.pago.moneda;
+      if (config.pago.urlOk) CONFIG_REDSYS.urlOk = config.pago.urlOk;
+      if (config.pago.urlKo) CONFIG_REDSYS.urlKo = config.pago.urlKo;
+      if (config.pago.urlNotificacion) CONFIG_REDSYS.urlNotificacion = config.pago.urlNotificacion;
+    }
+    if (config.clavePago) {
+      CONFIG_REDSYS.clave = String(config.clavePago);
+    } else if (CONFIG_REDSYS.entorno === "produccion") {
+      // Producción sin clave pública en la vista: la firma en cliente no es
+      // posible; sin Edge Function/Worker desplegados el pago no puede
+      // completarse y el panel avisa al equipo.
+      document
+        .querySelectorAll(".metodo-pago input[name='metodo']")
+        .forEach((entrada) => {
+          entrada.disabled = true;
+          const etiqueta = entrada.closest(".metodo-pago");
+          if (etiqueta) etiqueta.hidden = true;
+        });
+    }
     pintarResumen();
     const metodos = config.metodosPago || {};
     document.querySelectorAll(".metodo-pago input[name='metodo']").forEach((entrada) => {
@@ -131,7 +160,9 @@ if (formularioPagoR) {
     const pedido = generarPedido();
     const botonEnviar = formularioPagoR.querySelector('button[type="submit"]');
 
-    // 1) Firma en servidor: el importe se calcula con precios y ofertas reales del panel
+    // Eslabones 1 y 2 de la cadena: Edge Function (Supabase) y Worker.
+    // CONEXION.post cae al Worker si la función no está desplegada, y a null
+    // si tampoco hay Worker: entonces se firma en cliente (eslabón 3).
     let firmaApi = null;
     if (typeof CONEXION !== "undefined") {
       avisoPagoR.textContent = "Preparando tu pago seguro…";
@@ -162,7 +193,8 @@ if (formularioPagoR) {
       parametrosB64 = firmaApi.parametrosB64;
       firma = firmaApi.firma;
     } else {
-      // 2) Sin API: firma en cliente con la configuración local (flujo actual intacto)
+      // 3) Sin servidor disponible: firma en cliente con la configuración
+      //    cargada de la vista pública (clave solo en entorno test).
       if (typeof CryptoJS === "undefined") {
         avisoPagoR.textContent =
           "No se pudo cargar el módulo de firma segura. Comprueba tu conexión y recarga la página.";

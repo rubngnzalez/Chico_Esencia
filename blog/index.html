@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>El Umbral · Diario — SHADDAI · Esencia de Umbral</title>
+  <meta name="description" content="Diario de SHADDAI, Esencia de Umbral: artículos sobre presencia, ritual y el principio de acción neurosensorial del perfume.">
+  <meta name="robots" content="index,follow">
+  <meta property="og:site_name" content="SHADDAI · Esencia de Umbral">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="El Umbral · Diario — SHADDAI">
+  <meta property="og:description" content="Que nos busquen por dentro. Artículos sobre presencia, alquimia y ritual.">
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/estilos.css">
+  <style>
+    /* Capa de lectura del diario, idéntica a la plantilla de artículos */
+    body { background: var(--crema, #f3eee2); color: #2b332c; }
+    .diario-cabecera { padding: clamp(4rem, 9vw, 7rem) 0 2.5rem; text-align: center; }
+    .diario-cabecera h1 { font-family: var(--serif, Georgia, serif); font-weight: 500; color: var(--verde, #16261b); font-size: clamp(1.9rem, 4.5vw, 3rem); line-height: 1.2; max-width: 56rem; margin: 0 auto 1.2rem; }
+    .diario-meta { font-family: var(--sans, sans-serif); font-size: .85rem; letter-spacing: .18em; text-transform: uppercase; color: #6b7a6e; }
+    .diario-lista { max-width: 56rem; margin: 0 auto; padding: 1rem 0 clamp(3rem, 7vw, 5rem); }
+    .diario-articulo { display: block; border-top: 1px solid rgba(22, 38, 27, .12); padding: 2.4rem 0; font-family: var(--serif, Georgia, serif); }
+    .diario-articulo:last-child { border-bottom: 1px solid rgba(22, 38, 27, .12); }
+    .diario-fecha { font-family: var(--sans, sans-serif); font-size: .8rem; letter-spacing: .2em; text-transform: uppercase; color: #6b7a6e; margin: 0 0 .8rem; }
+    .diario-titulo { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 500; color: var(--verde, #16261b); margin: 0 0 .8rem; line-height: 1.25; }
+    .diario-titulo a { color: inherit; text-decoration: none; }
+    .diario-titulo a:hover { color: #a3823f; }
+    .diario-extracto { font-size: 1.15rem; line-height: 1.7; color: #4a564d; margin: 0 0 1rem; font-style: italic; }
+    .diario-etiqueta { display: inline-block; font-family: var(--sans, sans-serif); font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: #a3823f; border: 1px solid rgba(201, 164, 95, .5); padding: .3rem .8rem; margin: 0 .35rem .4rem 0; }
+    .diario-portada { width: 100%; max-height: 22rem; object-fit: cover; border-radius: 2px; margin: 0 0 1.4rem; }
+    .diario-leer { display: inline-block; font-family: var(--sans, sans-serif); letter-spacing: .18em; text-transform: uppercase; font-size: .82rem; color: #a3823f; text-decoration: underline; text-underline-offset: 3px; margin-top: .6rem; }
+    .diario-vacio { text-align: center; font-family: var(--serif, Georgia, serif); font-size: 1.15rem; color: #4a564d; padding: 3rem 1rem; }
+    .diario-pie { background: var(--verde, #16261b); color: var(--texto, #d9d4c5); text-align: center; padding: 2.6rem 0; font-family: var(--sans, sans-serif); font-size: .9rem; }
+    .diario-pie .marca-linea { letter-spacing: .3em; text-transform: uppercase; font-size: .72rem; color: var(--oro, #c9a45f); margin-bottom: .6rem; }
+  </style>
+</head>
+<body>
+  <header class="diario-cabecera">
+    <div class="contenedor">
+      <p class="etiqueta">SHADDAI · El Umbral</p>
+      <h1>El Umbral · Diario</h1>
+      <p class="diario-meta">Presencia · Ritual · Alquimia</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="diario-lista contenedor" id="diario-lista">
+      <p class="diario-vacio">Preparando el diario…</p>
+    </section>
+    <div class="articulo-volver"><a href="/">← Volver a la portada</a></div>
+  </main>
+
+  <footer class="diario-pie">
+    <p class="marca-linea">SHADDAI · Esencia de Umbral</p>
+    <p>Inhala · Exhala — Que nos busquen por dentro.</p>
+  </footer>
+
+  <script src="../js/supabase.js"></script>
+  <script src="../js/config-supabase.js"></script>
+  <script>
+    // Listado de artículos publicados (y programados ya vencidos) desde la
+    // tabla articulos de Supabase. Sin configuración: aviso discreto.
+    (() => {
+      const zona = document.getElementById("diario-lista");
+      const escapar = (t) =>
+        String(t == null ? "" : t).replace(/[&<>"']/g, (c) => (
+          { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+        );
+      const fechaLarga = (iso) => {
+        try {
+          return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+        } catch {
+          return "";
+        }
+      };
+
+      if (!window.SUPABASE_CONFIGURADO || !window.SUPABASE_CONFIGURADO() || typeof window.supabase === "undefined") {
+        zona.innerHTML = '<p class="diario-vacio">El diario se está preparando. Muy pronto, las primeras palabras del Umbral.</p>';
+        return;
+      }
+      const cliente = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      // La RLS solo deja ver: publicado, o programado con fecha ya vencida
+      cliente
+        .from("articulos")
+        .select("titulo, slug, extracto, contenido, imagen_portada, etiquetas, estado, fecha_publicacion, autor")
+        .order("fecha_publicacion", { ascending: false })
+        .limit(30)
+        .then(({ data, error }) => {
+          if (error || !data || data.length === 0) {
+            zona.innerHTML = '<p class="diario-vacio">Todavía no hay artículos publicados. Vuelve pronto.</p>';
+            return;
+          }
+          zona.innerHTML = data
+            .map((a) => {
+              const portada = a.imagen_portada
+                ? `<img class="diario-portada" src="${escapar(a.imagen_portada)}" alt="${escapar(a.titulo)}" loading="lazy">`
+                : "";
+              const etiquetas = (a.etiquetas || [])
+                .map((e) => `<span class="diario-etiqueta">${escapar(e)}</span>`)
+                .join("");
+              return (
+                `<article class="diario-articulo">` +
+                `<p class="diario-fecha">${escapar(fechaLarga(a.fecha_publicacion))} · ${escapar(a.autor || "SHADDAI")}</p>` +
+                `<h2 class="diario-titulo"><a href="articulo.html?slug=${encodeURIComponent(a.slug)}">${escapar(a.titulo)}</a></h2>` +
+                portada +
+                (a.extracto ? `<p class="diario-extracto">${escapar(a.extracto)}</p>` : "") +
+                (etiquetas ? `<p>${etiquetas}</p>` : "") +
+                `<a class="diario-leer" href="articulo.html?slug=${encodeURIComponent(a.slug)}">Leer el artículo</a>` +
+                `</article>`
+              );
+            })
+            .join("");
+        })
+        .catch(() => {
+          zona.innerHTML = '<p class="diario-vacio">El diario no está disponible en este momento. Vuelve pronto.</p>';
+        });
+    })();
+  </script>
+</body>
+</html>
