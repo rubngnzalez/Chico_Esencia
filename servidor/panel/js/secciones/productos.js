@@ -166,7 +166,7 @@ function abrirFormulario(producto, categorias, alGuardar) {
       <textarea name="descripcion" rows="3" maxlength="3000">${escapar(producto?.descripcion || '')}</textarea>
       <label>Historia (página del producto)</label>
       <textarea name="historia" rows="6" maxlength="12000">${escapar(producto?.historia || '')}</textarea>
-      <label>Imágenes (JPEG, PNG o WebP · máx. 5 MB cada una)</label>
+      <label>Imágenes (JPEG, PNG o WebP · máx. 2 MB cada una)</label>
       <div class="zona-subida">
         <input type="file" accept="image/jpeg,image/png,image/webp" multiple class="entrada-archivo">
         <span class="texto-suave">Se suben al guardar la carpeta img/subidas de la web.</span>

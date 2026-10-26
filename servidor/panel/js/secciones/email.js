@@ -92,13 +92,13 @@ async function pintarCampanas(zona, contexto) {
       if (!ajustes.smtp?.activo) {
         avisoSmtp = `
           <div class="aviso-smtp">
-            <p><strong>El SMTP no está configurado.</strong> Los envíos quedarán «pendientes» y se guardarán como archivos .eml en <code>servidor/datos/bandeja-salida/</code>.</p>
+            <p><strong>El envío real usa Resend</strong> (secreto <code>RESEND_API_KEY</code>). Sin él, los envíos quedan «pendientes» en la bandeja de salida y puedes descargar cada correo como archivo .eml.</p>
             <button class="boton boton-fantasma boton-pequeno" data-ir-ajustes type="button">Ir a Ajustes → SMTP</button>
           </div>`;
       }
     } catch {}
   } else {
-    avisoSmtp = `<div class="aviso-smtp"><p>Si el SMTP no está configurado, los envíos quedarán «pendientes» (se guardan en <code>servidor/datos/bandeja-salida/</code>). Solo la administración puede configurarlo en Ajustes.</p></div>`;
+    avisoSmtp = `<div class="aviso-smtp"><p>Si no hay envío configurado, los envíos quedan «pendientes» (guardados en la bandeja de salida con botón de descarga .eml). Solo la administración puede configurarlo en Ajustes.</p></div>`;
   }
 
   zona.innerHTML = `
@@ -123,6 +123,7 @@ async function pintarCampanas(zona, contexto) {
               ${c.estado !== 'enviada' ? `
               <button class="boton boton-fantasma boton-pequeno" data-accion="editar" type="button">Editar</button>
               <button class="boton boton-oro boton-pequeno" data-accion="enviar" type="button">Enviar</button>` : ''}
+              ${c.estado === 'pendiente' && c.outboxId ? `<a class="boton boton-fantasma boton-pequeno" href="/api/outbox/${encodeURIComponent(c.outboxId)}/eml" download>Descargar .eml</a>` : ''}
               ${esAdmin ? '<button class="boton boton-peligro boton-pequeno" data-accion="eliminar" type="button">Eliminar</button>' : ''}
             </td>
           </tr>`).join('')}
@@ -152,7 +153,7 @@ async function pintarCampanas(zona, contexto) {
       try {
         const respuesta = await pedir(`/api/campanas/${campana.id}/enviar`, { method: 'POST' });
         if (respuesta.pendiente) {
-          toast(`Campaña pendiente: no hay SMTP configurado. Se guardó en servidor/datos/bandeja-salida/. ${esAdmin ? 'Configúralo en Ajustes → SMTP.' : ''}`, 'error');
+          toast(`Campaña pendiente: no hay envío configurado. Se guardó en la bandeja de salida: descárgala con «Descargar .eml».`, 'error');
         } else {
           const estadisticas = respuesta.dato.estadisticas;
           toast(`Campaña enviada: ${estadisticas.enviados} de ${estadisticas.total} correos entregados.`);

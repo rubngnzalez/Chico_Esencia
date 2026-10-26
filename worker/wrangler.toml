@@ -1,0 +1,49 @@
+# Worker SHADDAI · Panel de gestión en Cloudflare
+# Nombre del Worker (omshaddai-panel trabajará con los workers.dev y rutas de zona)
+name = "shaddai-panel"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Observabilidad: logs de invocación visibles en el panel de Cloudflare
+[observability]
+enabled = true
+
+# ─── Base de datos D1 ────────────────────────────────────────────────────────
+# Crea la base con:  npx wrangler d1 create shaddai
+# y pega aquí el database_id que devuelve el comando.
+[[d1_databases]]
+binding = "DB"
+database_name = "shaddai"
+database_id = "892de753-37a5-4361-bfa2-84d62b46689b"
+
+# ─── Imágenes subidas ───────────────────────────────────────────────────────
+# Se guardan como BLOB en D1 (tabla recursos) y se sirven en /recursos/<clave>.
+# No se usa R2 para evitar su activación con tarjeta en el dashboard.
+
+# ─── Assets: el panel (servidor/panel) servido por el Worker ────────────────
+# El Worker reescribe /admin/* y /panel/* sobre estos archivos (ver src/index.js).
+[assets]
+directory = "../servidor/panel"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+# El Worker debe ejecutarse primero para interceptar /api, /admin, /recursos y /news.
+run_worker_first = true
+
+# ─── Secretos (NUNCA en este archivo; se configuran con la CLI) ─────────────
+#   npx wrangler secret put SECRETO_SESION     (obligatorio en producción)
+#   npx wrangler secret put RESEND_API_KEY     (opcional: envío real de correo)
+# En desarrollo local se puede usar un archivo .dev.vars (gitignored).
+
+# ─── Rutas en la zona omshaddai.com ─────────────────────────────────────────
+# Requieren que el registro DNS de omshaddai.com tenga la nube naranja activada
+# (proxy) y que la zona esté en la misma cuenta de Cloudflare. Si `wrangler deploy`
+# falla porque la zona no está en la cuenta, descomenta estas líneas cuando lo esté
+# (o créalas a mano: panel de Cloudflare → Workers → shaddai-panel → Settings → Domains & Routes → Add route).
+# routes = [
+#   { pattern = "omshaddai.com/api/*", zone_name = "omshaddai.com" },
+#   { pattern = "omshaddai.com/admin*", zone_name = "omshaddai.com" },
+#   { pattern = "omshaddai.com/panel*", zone_name = "omshaddai.com" },
+#   { pattern = "omshaddai.com/news/articulo/*", zone_name = "omshaddai.com" },
+#   { pattern = "omshaddai.com/recursos/*", zone_name = "omshaddai.com" },
+#   { pattern = "omshaddai.com/news/articulos.json", zone_name = "omshaddai.com" },
+# ]

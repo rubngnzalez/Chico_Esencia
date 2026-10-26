@@ -146,7 +146,7 @@ export function leerArchivoBase64(archivo) {
 
 export async function subirImagen(archivo) {
   if (archivo.size > 5 * 1024 * 1024) {
-    throw new Error(`«${archivo.name}» supera el límite de 5 MB.`);
+    throw new Error(`«${archivo.name}» supera el límite de 2 MB.`);
   }
   const datos = await leerArchivoBase64(archivo);
   const respuesta = await pedir('/api/subir-imagen', {

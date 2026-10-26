@@ -69,6 +69,11 @@ const DATOS_TIENDA = [
     if (!actual || IMAGENES_SEMILLA.includes(actual)) {
       return IMAGENES_CONOCIDAS[producto.codigo] || actual || "";
     }
+    // Las imágenes subidas desde el panel viven en la API (recursos/...):
+    // se absolutizan para que funcionen desde la web de GitHub Pages
+    if (typeof window.SHADDAI_API_BASE === "string" && window.SHADDAI_API_BASE && /^recursos\//.test(actual)) {
+      return window.SHADDAI_API_BASE.replace(/\/$/, "") + "/" + actual;
+    }
     return actual;
   };
 

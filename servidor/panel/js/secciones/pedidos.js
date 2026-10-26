@@ -86,8 +86,30 @@ export default async function (contenedor, contexto) {
     const boton = evento.target.closest('button[data-accion="detalle"]');
     if (!boton) return;
     const pedido = pedidos.find((p) => p.id === boton.closest('tr').dataset.id);
-    if (pedido) abrirDetalle(pedido);
+    if (pedido) abrirDetalle(pedido, cargarOutbox);
   });
+
+  // Lista los correos .eml pendientes (outbox) de un pedido y añade botones de descarga
+  async function cargarOutbox(pedido) {
+    const zona = document.getElementById('outbox-pedido');
+    if (!zona) return;
+    try {
+      const datos = await pedir(`/api/outbox?pedido=${encodeURIComponent(pedido.numero)}`);
+      if (!datos.datos.length) {
+        zona.innerHTML = '';
+        return;
+      }
+      zona.innerHTML = `
+        <p style="margin-top:1rem;"><strong>Correos pendientes de envío</strong> (sin Resend configurado):</p>
+        ${datos.datos.map((o) => `
+          <div class="barra-herramientas sin-borde" style="justify-content:space-between;">
+            <span>${escapar(o.asunto || '(sin asunto)')}</span>
+            <a class="boton boton-fantasma boton-pequeno" href="/api/outbox/${encodeURIComponent(o.id)}/eml" download>Descargar .eml</a>
+          </div>`).join('')}`;
+    } catch {
+      zona.innerHTML = '';
+    }
+  }
 
   contenedor.querySelector('#filtro-estado').addEventListener('change', (evento) => {
     filtroEstado = evento.target.value;
@@ -97,10 +119,10 @@ export default async function (contenedor, contexto) {
   await cargar();
 }
 
-function abrirDetalle(pedido) {
+function abrirDetalle(pedido, cargarEmisores) {
   const cliente = pedido.cliente || {};
   const direccion = [cliente.direccion, cliente.cp, cliente.poblacion, cliente.provincia].filter(Boolean).join(', ');
-  abrirModal(`Pedido ${pedido.numero}`, `
+  const modal = abrirModal(`Pedido ${pedido.numero}`, `
     <article class="detalle-pedido">
       <p class="texto-suave">Creado el ${fechaHora(pedido.fecha)} · ${badgeEstado(pedido.estado)} · Método: ${escapar(pedido.metodo || '—')}</p>
       <dl class="detalle-datos">
@@ -126,5 +148,10 @@ function abrirDetalle(pedido) {
       <p class="totales-pedido">
         Subtotal: ${euro(pedido.subtotal)} · Envío: ${euro(pedido.envio)} · <strong>Total: ${euro(pedido.total)}</strong>
       </p>
+      <div id="outbox-pedido" class="texto-suave"></div>
     </article>`, '36rem');
+  // Correos pendientes en la bandeja de salida de este pedido → descarga .eml
+  if (cargarEmisores) {
+    cargarEmisores(pedido).catch(() => {});
+  }
 }

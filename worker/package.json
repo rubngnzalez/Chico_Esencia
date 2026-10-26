@@ -1,0 +1,20 @@
+{
+  "name": "shaddai-worker",
+  "version": "1.0.0",
+  "description": "Panel de gestión de SHADDAI · Esencia de Umbral como Cloudflare Worker (D1 + R2)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "migraciones:local": "wrangler d1 migrations apply shaddai --local",
+    "migraciones:remoto": "wrangler d1 migrations apply shaddai --remote",
+    "pruebas": "node test/redsys-vectores.mjs && node test/prueba-local.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "wrangler": "^3.99.0"
+  }
+}

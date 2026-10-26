@@ -194,12 +194,79 @@ window.addEventListener('shaddai:cambio-pendiente', () => {
 
 setInterval(refrescarContador, 60 * 1000);
 
+// Pantalla de instalación (solo Worker: primer arranque sin consola).
+// Si no hay usuarios todavía, se ofrece crear la cuenta de administrador.
+function mostrarInstalacion() {
+  let vista = document.getElementById('vista-instalacion');
+  if (!vista) {
+    vista = document.createElement('div');
+    vista.id = 'vista-instalacion';
+    vista.className = 'vista-login';
+    vista.innerHTML = `
+      <div class="login-tarjeta">
+        <p class="login-marca">SHADDAI</p>
+        <p class="login-sub">Instalación</p>
+        <h1>Crear cuenta de administrador</h1>
+        <p class="login-nota">Este panel aún no tiene usuarios. Crea la cuenta de administración para empezar.</p>
+        <form id="formulario-instalacion" autocomplete="off">
+          <label for="inst-nombre">Tu nombre</label>
+          <input type="text" id="inst-nombre" maxlength="120" required>
+          <label for="inst-email">Correo electrónico</label>
+          <input type="email" id="inst-email" placeholder="tu@correo.com" required>
+          <label for="inst-contrasena">Contraseña (mínimo 8 caracteres)</label>
+          <input type="password" id="inst-contrasena" minlength="8" required>
+          <button type="submit" class="boton-oro" id="boton-instalacion">Crear cuenta de administrador</button>
+          <p id="inst-aviso" class="aviso" aria-live="polite"></p>
+        </form>
+      </div>`;
+    document.body.appendChild(vista);
+    vista.querySelector('#formulario-instalacion').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const aviso = vista.querySelector('#inst-aviso');
+      aviso.textContent = '';
+      const boton = vista.querySelector('#boton-instalacion');
+      boton.disabled = true;
+      try {
+        await pedir('/api/instalacion', {
+          method: 'POST',
+          cuerpo: {
+            nombre: vista.querySelector('#inst-nombre').value.trim(),
+            email: vista.querySelector('#inst-email').value,
+            contrasena: vista.querySelector('#inst-contrasena').value,
+          },
+        });
+        const datos = await pedir('/api/auth/login', {
+          method: 'POST',
+          cuerpo: {
+            email: vista.querySelector('#inst-email').value,
+            contrasena: vista.querySelector('#inst-contrasena').value,
+          },
+        });
+        vista.remove();
+        entrar(datos.usuario);
+        toast('Cuenta de administrador creada. Bienvenida al Umbral.');
+      } catch (error) {
+        aviso.textContent = error.message;
+        boton.disabled = false;
+      }
+    });
+  }
+  vista.hidden = false;
+}
+
 (async function iniciar() {
   try {
     const datos = await pedir('/api/auth/me');
     if (datos.usuario.debeCambiarContrasena) mostrarVista('cambio');
     else entrar(datos.usuario);
   } catch {
+    try {
+      const instalacion = await fetch('/api/instalacion', { credentials: 'same-origin' }).then((r) => r.json());
+      if (instalacion && instalacion.pendiente) {
+        mostrarInstalacion();
+        return;
+      }
+    } catch {}
     mostrarVista('login');
   }
 })();

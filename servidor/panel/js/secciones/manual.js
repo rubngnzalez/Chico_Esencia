@@ -38,8 +38,8 @@ const SECCIONES_MANUAL = [
         <li><strong>Buscar</strong>: el cuadro de búsqueda filtra por nombre, código, slug o categoría mientras escribes.</li>
         <li><strong>Activar/desactivar</strong>: el interruptor de la columna «Activo». Un producto desactivado desaparece de la tienda
         pública en el momento, sin borrar nada.</li>
-        <li><strong>Imágenes</strong>: en el formulario, elige uno o varios archivos (JPEG, PNG o WebP, máximo 5 MB). Se suben al
-        servidor y quedan en <code>shaddai-web/img/subidas/</code>. Puedes quitarlas con la × de la miniatura. La primera imagen es la principal.</li>
+        <li><strong>Imágenes</strong>: en el formulario, elige uno o varios archivos (JPEG, PNG o WebP, máximo 2 MB). Se suben al
+        almacenamiento del panel y la web pública las muestra automáticamente. Puedes quitarlas con la × de la miniatura. La primera imagen es la principal.</li>
         <li><strong>Eliminar</strong> pide confirmación y no se puede deshacer.</li>
       </ul>`,
   },
