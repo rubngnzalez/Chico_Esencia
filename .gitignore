@@ -31,3 +31,6 @@ supabase/credenciales-locales.txt
 !.dev.vars.example
 .env*
 !.env.example
+
+wrangler.jsonc
+supabase/.temp/
