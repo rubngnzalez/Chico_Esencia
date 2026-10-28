@@ -30,7 +30,7 @@ const DATOS_TIENDA = [
     precioAnterior: null,
     imagen: "img/perfume-solido.webp?v=6",
     alt: "Perfume Sólido Natural de SHADDAI sobre el altar de piedra, con su tapa dorada grabada",
-    vertical: true,
+    vertical: false,
     inversa: false,
   },
   {
@@ -133,16 +133,38 @@ const DATOS_TIENDA = [
     return `<button class="boton boton-lleno boton-anadir" ${atributos}>Añadir al carrito</button>`;
   };
 
+  // Orden fijo de la tienda: Esencia, Perfume Sólido y Dúo al final
+  const ORDEN_TIENDA = ["esencia-umbral-50", "perfume-solido", "duo-ritual"];
+
+  // Orientación y lado de cada producto (las fotos horizontales no van en marco vertical)
+  const datosDe = (producto) => {
+    const codigo = String(producto.codigo || producto.slug || producto.id || "");
+    return DATOS_TIENDA.find((dato) => dato.id === codigo) || null;
+  };
+
+  const ordenarComoTienda = (productos) => {
+    const posicion = (producto) => {
+      const codigo = String(producto.codigo || producto.slug || producto.id || "");
+      const indice = ORDEN_TIENDA.indexOf(codigo);
+      return indice === -1 ? ORDEN_TIENDA.length : indice;
+    };
+    return productos.slice().sort((a, b) => posicion(a) - posicion(b));
+  };
+
   // Mismo marcado y clases que las secciones estáticas para no romper estilos
   const crearSeccion = (producto, indice) => {
     const seccion = document.createElement("section");
     seccion.className = "seccion";
     const imagen = imagenDe(producto);
+    const datos = datosDe(producto);
+    const vertical = datos ? datos.vertical : false;
+    const inversa = datos ? datos.inversa : indice % 2 === 1;
+    const medidas = vertical ? 'width="900" height="1125"' : 'width="800" height="600"';
     seccion.innerHTML =
-      `<div class="contenedor dos-columnas${indice % 2 === 1 ? " inversa" : ""}">` +
+      `<div class="contenedor dos-columnas${inversa ? " inversa" : ""}">` +
       (imagen
-        ? `<div class="columna-imagen marco-imagen compra-figura vertical revelar visible">` +
-          `<img src="${CONEXION.escapar(imagen)}" alt="${CONEXION.escapar(producto.nombre)} — SHADDAI" loading="lazy" width="800" height="1000">` +
+        ? `<div class="columna-imagen marco-imagen compra-figura${vertical ? " vertical" : ""} revelar visible">` +
+          `<img src="${CONEXION.escapar(imagen)}" alt="${CONEXION.escapar(producto.nombre)} — SHADDAI" loading="lazy" ${medidas}>` +
           `</div>`
         : "") +
       `<div class="compra revelar visible">` +
@@ -165,7 +187,7 @@ const DATOS_TIENDA = [
     if (estaticas.length === 0) return;
     const ancla = estaticas[estaticas.length - 1].nextElementSibling;
     estaticas.forEach((seccion) => seccion.remove());
-    productos
+    ordenarComoTienda(productos)
       .map((producto, indice) => crearSeccion(producto, indice))
       .forEach((seccion) => {
         if (ancla && ancla.parentNode) ancla.parentNode.insertBefore(seccion, ancla);
