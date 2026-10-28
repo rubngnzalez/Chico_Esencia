@@ -2299,6 +2299,12 @@ body[data-pagina="usos"] .tarjeta .icono {
   aspect-ratio: 4 / 5;
   object-position: center;
 }
+
+/* Dúo Ritual: encuadre desplazado hacia el frasco y el bálsamo de la derecha */
+.compra-figura img[src*="duo-esencial"],
+.compra-figura.vertical img[src*="duo-esencial"] {
+  object-position: 68% 62%;
+}
 /* ---------- M�sica ambiente del Umbral ---------- */
 .musica-iframe {
   position: fixed;
