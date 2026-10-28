@@ -2305,6 +2305,11 @@ body[data-pagina="usos"] .tarjeta .icono {
 .compra-figura.vertical img[src*="duo-esencial"] {
   object-position: 68% 62%;
 }
+
+/* Esencia 50 ml en marco horizontal: centrada para no cortar el tapón */
+.compra-figura img[src*="esencia-50"] {
+  object-position: center 50%;
+}
 /* ---------- M�sica ambiente del Umbral ---------- */
 .musica-iframe {
   position: fixed;
