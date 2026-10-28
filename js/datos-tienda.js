@@ -13,7 +13,7 @@ const DATOS_TIENDA = [
     precioAnterior: null,
     imagen: "img/esencia-50.webp?v=6",
     alt: "Frasco verde de SHADDAI Esencia de Umbral de 50 ml junto a su caja verde con la Shin dorada, sobre un pedestal dorado en el templo",
-    vertical: true,
+    vertical: false,
     inversa: false,
   },
   {
