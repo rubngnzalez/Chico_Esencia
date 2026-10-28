@@ -2310,6 +2310,12 @@ body[data-pagina="usos"] .tarjeta .icono {
 .compra-figura img[src*="esencia-50"] {
   object-position: center 50%;
 }
+
+@media (max-width: 900px) {
+  .compra-figura img[src*="esencia-50"] {
+    object-position: center 45%;
+  }
+}
 /* ---------- M�sica ambiente del Umbral ---------- */
 .musica-iframe {
   position: fixed;
