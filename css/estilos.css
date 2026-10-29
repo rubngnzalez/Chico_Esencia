@@ -1671,12 +1671,12 @@ body[data-pagina="usos"] .tarjeta .icono {
 }
 /* ---------- Marcos del umbral: arcos, auras y motas doradas ---------- */
 
-/* Imagen principal de cada seccion: forma de arco-umbral con doble marco */
+/* Imagen principal de cada seccion: forma de arco-umbral con el marco pegado al borde */
 .dos-columnas .columna-imagen img {
   border-color: rgba(201, 164, 95, 0.5);
   border-radius: 50% 50% 14px 14px / 26% 26% 14px 14px;
   outline: 1px solid rgba(201, 164, 95, 0.28);
-  outline-offset: 10px;
+  outline-offset: 0;
   animation: brillo-marco 7s ease-in-out infinite;
 }
 
