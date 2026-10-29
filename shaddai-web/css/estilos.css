@@ -334,6 +334,7 @@ p + p {
 
 .dos-columnas .columna-imagen img {
   width: 100%;
+  height: auto;
   object-fit: cover;
   border: 1px solid rgba(201, 164, 95, 0.35);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
@@ -398,6 +399,24 @@ p + p {
   margin-bottom: 1.5rem;
 }
 
+/* Imagen de tarjeta con altura identica en cualquier navegador:
+   caja 4:3 por relleno, sin depender de aspect-ratio */
+.tarjeta-foto {
+  position: relative;
+  padding-top: 75%;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.tarjeta.con-foto .tarjeta-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+}
+
 .tarjeta.con-foto .instante {
   margin-bottom: 1rem;
   line-height: 1.7;
@@ -457,6 +476,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 
 .notas-franja img {
   width: 100%;
+  height: auto;
   display: block;
 }
 /* ---------- Ritual: storyboard de los cuatro pasos ---------- */
@@ -475,6 +495,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 
 .ritual-franja img {
   width: 100%;
+  height: auto;
   display: block;
 }
 /* ---------- V�deo promocional ---------- */
@@ -2253,6 +2274,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 }
 /* ---------- Marco de la ficha de compra ---------- */
 .compra-figura img {
+  height: auto;
   aspect-ratio: 5 / 4;
   object-fit: cover;
   object-position: center 62%;
