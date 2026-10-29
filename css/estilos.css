@@ -334,6 +334,7 @@ p + p {
 
 .dos-columnas .columna-imagen img {
   width: 100%;
+  height: auto;
   object-fit: cover;
   border: 1px solid rgba(201, 164, 95, 0.35);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
@@ -457,6 +458,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 
 .notas-franja img {
   width: 100%;
+  height: auto;
   display: block;
 }
 /* ---------- Ritual: storyboard de los cuatro pasos ---------- */
@@ -475,6 +477,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 
 .ritual-franja img {
   width: 100%;
+  height: auto;
   display: block;
 }
 /* ---------- V�deo promocional ---------- */
@@ -2253,6 +2256,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 }
 /* ---------- Marco de la ficha de compra ---------- */
 .compra-figura img {
+  height: auto;
   aspect-ratio: 5 / 4;
   object-fit: cover;
   object-position: center 62%;
