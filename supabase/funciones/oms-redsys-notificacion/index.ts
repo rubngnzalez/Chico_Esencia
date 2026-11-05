@@ -73,7 +73,7 @@ async function enviarCorreo(
       // sin red o Rechend falla: cae al outbox
     }
   }
-  await db.from('outbox').insert({
+  await db.from('oms_outbox').insert({
     para: Array.isArray(mensaje.para) ? mensaje.para.join(', ') : mensaje.para,
     asunto: mensaje.asunto,
     html: mensaje.html,
@@ -101,7 +101,7 @@ Deno.serve(async (request: Request) => {
 
   // 2 · Clave de firma desde ajustes
   const { data: filaAjustes } = await db
-    .from('ajustes')
+    .from('oms_ajustes')
     .select('contacto, redsys, smtp, emails_automaticos, notificaciones')
     .eq('id', 'general')
     .single();
@@ -122,7 +122,7 @@ Deno.serve(async (request: Request) => {
 
   const numero = String(verificacion.pedido);
   const { data: pedido } = await db
-    .from('pedidos')
+    .from('oms_pedidos')
     .select('id, numero, cliente, subtotal, envio, total, estado')
     .eq('numero', numero)
     .single();
@@ -140,7 +140,7 @@ Deno.serve(async (request: Request) => {
   // 4 · Marcar pagado / cancelado
   if (!verificacion.autorizado) {
     await db
-      .from('pedidos')
+      .from('oms_pedidos')
       .update({
         estado: 'cancelado',
         respuesta_redsys: {
@@ -158,7 +158,7 @@ Deno.serve(async (request: Request) => {
   }
 
   await db
-    .from('pedidos')
+    .from('oms_pedidos')
     .update({
       estado: 'pagado',
       pagado_en: new Date().toISOString(),
@@ -172,7 +172,7 @@ Deno.serve(async (request: Request) => {
 
   // 5 · Líneas para las plantillas
   const { data: lineasPedido } = await db
-    .from('pedidos_lineas')
+    .from('oms_pedidos_lineas')
     .select('codigo, nombre, cantidad, precio_unitario')
     .eq('pedido', pedidoInfo.id);
 

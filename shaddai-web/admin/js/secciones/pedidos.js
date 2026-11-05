@@ -30,7 +30,7 @@ export default async function (contenedor, contexto) {
   async function cargar() {
     zona.innerHTML = '<p class="cargando">Cargando pedidos…</p>';
     try {
-      let consulta = sb().from('pedidos').select('*').order('creado_en', { ascending: false }).limit(300);
+      let consulta = sb().from('oms_pedidos').select('*').order('creado_en', { ascending: false }).limit(300);
       if (filtroEstado) consulta = consulta.eq('estado', filtroEstado);
       pedidos = (await asegurar(consulta)) || [];
       await contarUnidades();
@@ -46,7 +46,7 @@ export default async function (contenedor, contexto) {
     if (!pedidos.length) return;
     try {
       const lineas = (await asegurar(
-        sb().from('pedidos_lineas').select('pedido, cantidad').in('pedido', pedidos.map((p) => p.id))
+        sb().from('oms_pedidos_lineas').select('pedido, cantidad').in('pedido', pedidos.map((p) => p.id))
       )) || [];
       for (const linea of lineas) {
         unidadesPorPedido.set(linea.pedido, (unidadesPorPedido.get(linea.pedido) || 0) + (linea.cantidad || 0));
@@ -58,7 +58,7 @@ export default async function (contenedor, contexto) {
 
   async function lineasDe(pedido) {
     if (lineasPorPedido.has(pedido.id)) return lineasPorPedido.get(pedido.id);
-    const lineas = (await asegurar(sb().from('pedidos_lineas').select('*').eq('pedido', pedido.id).order('creado_en'))) || [];
+    const lineas = (await asegurar(sb().from('oms_pedidos_lineas').select('*').eq('pedido', pedido.id).order('creado_en'))) || [];
     lineasPorPedido.set(pedido.id, lineas);
     return lineas;
   }
@@ -67,7 +67,7 @@ export default async function (contenedor, contexto) {
   async function correosDe(pedido) {
     try {
       return (await asegurar(
-        sb().from('outbox').select('id, asunto, estado, creado_en, eml').eq('ref_pedido', pedido.numero).order('creado_en')
+        sb().from('oms_outbox').select('id, asunto, estado, creado_en, eml').eq('ref_pedido', pedido.numero).order('creado_en')
       )) || [];
     } catch {
       return [];
@@ -114,7 +114,7 @@ export default async function (contenedor, contexto) {
     const pedido = pedidos.find((p) => p.id === selector.closest('tr').dataset.id);
     if (!pedido) return;
     try {
-      const error = (await sb().from('pedidos').update({ estado: selector.value }).eq('id', pedido.id)).error;
+      const error = (await sb().from('oms_pedidos').update({ estado: selector.value }).eq('id', pedido.id)).error;
       if (error) throw new Error(mensajeError(error));
       pedido.estado = selector.value;
       toast(`Pedido ${pedido.numero}: estado «${selector.value}».`);

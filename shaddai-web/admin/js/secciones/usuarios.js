@@ -26,7 +26,7 @@ export default async function (contenedor, contexto) {
   async function cargar() {
     zona.innerHTML = '<p class="cargando">Cargando usuarios…</p>';
     try {
-      usuarios = (await asegurar(sb().from('usuarios').select('id, nombre, email, rol, activo, creado_en, ultimo_acceso').order('creado_en'))) || [];
+      usuarios = (await asegurar(sb().from('oms_usuarios').select('id, nombre, email, rol, activo, creado_en, ultimo_acceso').order('creado_en'))) || [];
       pintar();
     } catch (error) {
       zona.innerHTML = etiquetaVacia(`No se pudieron cargar los usuarios: ${error.message}`);
@@ -82,7 +82,7 @@ export default async function (contenedor, contexto) {
   }
 
   async function llamar(cuerpo) {
-    const respuesta = await invocarFuncion('gestion-usuarios', cuerpo);
+    const respuesta = await invocarFuncion('oms-gestion-usuarios', cuerpo);
     return respuesta || { ok: true };
   }
 
@@ -167,7 +167,7 @@ export default async function (contenedor, contexto) {
     const usuario = usuarios.find((u) => u.id === interruptor.closest('tr').dataset.id);
     if (!usuario) return;
     try {
-      const error = (await sb().from('usuarios').update({ activo: interruptor.checked }).eq('id', usuario.id)).error;
+      const error = (await sb().from('oms_usuarios').update({ activo: interruptor.checked }).eq('id', usuario.id)).error;
       if (error) throw new Error(mensajeError(error));
       usuario.activo = interruptor.checked;
       toast(interruptor.checked ? `«${usuario.nombre || usuario.email}» puede volver a entrar.` : `«${usuario.nombre || usuario.email}» desactivado: no podrá iniciar sesión.`);

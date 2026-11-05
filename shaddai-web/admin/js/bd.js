@@ -68,14 +68,14 @@ export function urlImagen(ruta) {
 // ---- helpers de sesión/rol ----
 
 export async function perfilDe(uid) {
-  const datos = await asegurar(sb().from('usuarios').select('id, nombre, email, rol, activo').eq('id', uid).maybeSingle());
+  const datos = await asegurar(sb().from('oms_usuarios').select('id, nombre, email, rol, activo').eq('id', uid).maybeSingle());
   return datos;
 }
 
 // Marca el último acceso del usuario actual (falla en silencio: es un detalle)
 export async function tocarAcceso() {
   try {
-    await sb().rpc('tocar_acceso');
+    await sb().rpc('oms_tocar_acceso');
   } catch {}
 }
 

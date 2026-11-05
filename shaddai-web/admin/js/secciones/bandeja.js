@@ -31,7 +31,7 @@ export default async function (contenedor, contexto) {
 
   async function cargar(conservarSeleccion = true) {
     try {
-      let consulta = sb().from('mensajes').select('*').order('creado_en', { ascending: false });
+      let consulta = sb().from('oms_mensajes').select('*').order('creado_en', { ascending: false });
       if (filtroActual === 'archivados') consulta = consulta.eq('archivado', true);
       else {
         consulta = consulta.eq('archivado', false);
@@ -110,7 +110,7 @@ export default async function (contenedor, contexto) {
 
   async function actualizar(id, cambios, aviso) {
     try {
-      const datos = await asegurar(sb().from('mensajes').update(cambios).eq('id', id).select());
+      const datos = await asegurar(sb().from('oms_mensajes').update(cambios).eq('id', id).select());
       mensajeSeleccionado = datos?.[0] || { ...mensajeSeleccionado, ...cambios };
       toast(aviso);
       await cargar();
@@ -129,7 +129,7 @@ export default async function (contenedor, contexto) {
     pintarDetalle();
     if (!mensaje.leido) {
       try {
-        const datos = await asegurar(sb().from('mensajes').update({ leido: true }).eq('id', mensaje.id).select());
+        const datos = await asegurar(sb().from('oms_mensajes').update({ leido: true }).eq('id', mensaje.id).select());
         mensajeSeleccionado = datos?.[0] || mensaje;
         pintarLista();
         pintarDetalle();
@@ -169,7 +169,7 @@ export default async function (contenedor, contexto) {
         const seguro = await confirmar('Eliminar mensaje', `¿Eliminar el mensaje de «${mensajeSeleccionado.nombre}»? No se puede recuperar.`);
         if (!seguro) return;
         try {
-          const error = (await sb().from('mensajes').delete().eq('id', id)).error;
+          const error = (await sb().from('oms_mensajes').delete().eq('id', id)).error;
           if (error) throw new Error(mensajeError(error));
           toast('Mensaje eliminado.');
           mensajeSeleccionado = null;

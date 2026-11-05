@@ -52,7 +52,7 @@ Deno.serve(async (request: Request) => {
     return new Response(JSON.stringify({ error: 'Sesión no válida.' }), { status: 401, headers: cabeceras(request) });
   }
   const { data: perfil } = await db
-    .from('usuarios')
+    .from('oms_usuarios')
     .select('id, nombre, rol, activo, email')
     .eq('id', quien.user.id)
     .single();
@@ -98,15 +98,16 @@ Deno.serve(async (request: Request) => {
         { status: 400, headers: cabeceras(request) }
       );
     }
-    // El trigger crea el perfil como «lector»; aquí ajustamos nombre y rol
-    await db.from('usuarios').update({ nombre, rol }).eq('id', alta.data.user!.id);
+    // Sin trigger sobre auth.users (proyecto compartido): el perfil se crea
+    // aquí de forma explícita con el rol elegido.
+    await db.from('oms_usuarios').insert({ id: alta.data.user!.id, email, nombre, rol });
     return new Response(JSON.stringify({ ok: true, email, contrasena, rol }), { headers: cabeceras(request) });
   }
 
   // ─── RESETEAR (contraseña temporal nueva para un usuario) ───────────────
   if (accion === 'resetear') {
     const id = String(cuerpo.id || '');
-    const { data: objetivo } = await db.from('usuarios').select('id, email, nombre').eq('id', id).maybeSingle();
+    const { data: objetivo } = await db.from('oms_usuarios').select('id, email, nombre').eq('id', id).maybeSingle();
     if (!objetivo) {
       return new Response(JSON.stringify({ error: 'Usuario no encontrado.' }), { status: 404, headers: cabeceras(request) });
     }
@@ -145,13 +146,13 @@ Deno.serve(async (request: Request) => {
     if (id === perfil.id) {
       return new Response(JSON.stringify({ error: 'No puedes eliminar tu propio usuario.' }), { status: 400, headers: cabeceras(request) });
     }
-    const { data: objetivo } = await db.from('usuarios').select('id, email, nombre, rol, activo').eq('id', id).maybeSingle();
+    const { data: objetivo } = await db.from('oms_usuarios').select('id, email, nombre, rol, activo').eq('id', id).maybeSingle();
     if (!objetivo) {
       return new Response(JSON.stringify({ error: 'Usuario no encontrado.' }), { status: 404, headers: cabeceras(request) });
     }
     if (objetivo.rol === 'admin') {
       const { count: otrosAdmins } = await db
-        .from('usuarios')
+        .from('oms_usuarios')
         .select('id', { count: 'exact', head: true })
         .eq('rol', 'admin')
         .eq('activo', true)

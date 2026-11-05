@@ -57,7 +57,7 @@ Deno.serve(async (request: Request) => {
   if (errorToken || !datosUsuario?.user) return json({ error: 'Sesión no válida.' }, 401);
 
   const { data: perfil } = await db
-    .from('usuarios')
+    .from('oms_usuarios')
     .select('id, rol, activo, email')
     .eq('id', datosUsuario.user.id)
     .single();
@@ -77,7 +77,7 @@ Deno.serve(async (request: Request) => {
   if (!campanaId) return json({ error: 'Falta el identificador de la campaña.' }, 400);
 
   const { data: campana } = await db
-    .from('campanas')
+    .from('oms_campanas')
     .select('id, asunto, html, estado, destinatarios')
     .eq('id', campanaId)
     .single();
@@ -93,7 +93,7 @@ Deno.serve(async (request: Request) => {
 
   // 3 · Destinatarios (todos o segmento por etiqueta)
   const { data: listaSuscriptores, error: errorSuscriptores } = await db
-    .from('suscriptores')
+    .from('oms_suscriptores')
     .select('email, etiquetas');
   if (errorSuscriptores) return json({ error: `No se pudo leer la lista de suscriptores: ${errorSuscriptores.message}` }, 500);
 
@@ -112,7 +112,7 @@ Deno.serve(async (request: Request) => {
   if (destinatarios.length === 0) return json({ error: 'No hay destinatarios para esta campaña.' }, 400);
 
   const { data: filaAjustes } = await db
-    .from('ajustes')
+    .from('oms_ajustes')
     .select('contacto, smtp')
     .eq('id', 'general')
     .single();
@@ -128,7 +128,7 @@ Deno.serve(async (request: Request) => {
   // 4 · Envío o bandeja de salida
   if (!claveResend) {
     for (const para of destinatarios) {
-      await db.from('outbox').insert({
+      await db.from('oms_outbox').insert({
         para,
         asunto: campanaInfo.asunto,
         html: campanaInfo.html,
@@ -138,7 +138,7 @@ Deno.serve(async (request: Request) => {
       });
     }
     await db
-      .from('campanas')
+      .from('oms_campanas')
       .update({
         estado: 'pendiente',
         estadisticas: { total: destinatarios.length, enviados: 0, fallidos: 0, pendientes: destinatarios.length },
@@ -181,7 +181,7 @@ Deno.serve(async (request: Request) => {
   }
 
   await db
-    .from('campanas')
+    .from('oms_campanas')
     .update({
       estado: 'enviada',
       enviada_en: new Date().toISOString(),

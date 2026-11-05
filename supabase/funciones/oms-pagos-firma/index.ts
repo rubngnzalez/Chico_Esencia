@@ -64,7 +64,7 @@ Deno.serve(async (request: Request) => {
 
   // 1 · Ajustes (envío + redsys)
   const { data: filaAjustes, error: errorAjustes } = await db
-    .from('ajustes')
+    .from('oms_ajustes')
     .select('contacto, redsys, envio')
     .eq('id', 'general')
     .single();
@@ -79,13 +79,13 @@ Deno.serve(async (request: Request) => {
 
   // 2 · Catálogo real y ofertas activas
   const { data: productos, error: errorProductos } = await db
-    .from('productos')
+    .from('oms_productos')
     .select('id, codigo, nombre, slug, precio, precio_oferta, stock, activo');
   if (errorProductos || !productos) {
     return errorJson('No se pudo leer el catálogo.', 500, request);
   }
   const { data: ofertas } = await db
-    .from('ofertas')
+    .from('oms_ofertas')
     .select('producto, tipo, valor, inicio, fin, activa');
 
   const ahoraMs = Date.now();
@@ -152,7 +152,7 @@ Deno.serve(async (request: Request) => {
   if (numero.length < 4 || numero.length > 12) {
     return errorJson('El número de pedido debe tener entre 4 y 12 caracteres alfanuméricos.', 400, request);
   }
-  const { data: duplicado } = await db.from('pedidos').select('id').eq('numero', numero).limit(1);
+  const { data: duplicado } = await db.from('oms_pedidos').select('id').eq('numero', numero).limit(1);
   if (duplicado && duplicado.length > 0) {
     return errorJson('Ese número de pedido ya existe. Genera uno nuevo.', 400, request);
   }
@@ -210,7 +210,7 @@ Deno.serve(async (request: Request) => {
 
   // 8 · Pedido pendiente + líneas (service_role: es la única vía de escritura)
   const { data: pedidoCreado, error: errorPedido } = await db
-    .from('pedidos')
+    .from('oms_pedidos')
     .insert({ numero, cliente, subtotal, envio: costeEnvio, total, metodo, estado: 'pendiente' })
     .select('id')
     .single();
@@ -224,7 +224,7 @@ Deno.serve(async (request: Request) => {
     cantidad: l.cantidad,
     precio_unitario: l.precioUnitario,
   }));
-  await db.from('pedidos_lineas').insert(lineasInsert);
+  await db.from('oms_pedidos_lineas').insert(lineasInsert);
 
   return new Response(
     JSON.stringify({

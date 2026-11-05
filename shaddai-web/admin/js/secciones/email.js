@@ -34,7 +34,7 @@ async function pintarSuscriptores(zona) {
   zona.innerHTML = '<p class="cargando">Cargando suscriptores…</p>';
   let suscriptores;
   try {
-    suscriptores = (await asegurar(sb().from('suscriptores').select('*').order('creado_en', { ascending: false }))) || [];
+    suscriptores = (await asegurar(sb().from('oms_suscriptores').select('*').order('creado_en', { ascending: false }))) || [];
   } catch (error) {
     zona.innerHTML = etiquetaVacia(`No se pudieron cargar los suscriptores: ${error.message}`);
     return;
@@ -77,7 +77,7 @@ async function pintarSuscriptores(zona) {
     const seguro = await confirmar('Eliminar suscriptor', `¿Eliminar a ${suscriptor.email} de la lista?`);
     if (!seguro) return;
     try {
-      const error = (await sb().from('suscriptores').delete().eq('id', suscriptor.id)).error;
+      const error = (await sb().from('oms_suscriptores').delete().eq('id', suscriptor.id)).error;
       if (error) throw new Error(mensajeError(error));
       toast('Suscriptor eliminado.');
       pintarSuscriptores(zona);
@@ -92,7 +92,7 @@ async function pintarCampanas(zona, contexto) {
 
   let campanas;
   try {
-    campanas = (await asegurar(sb().from('campanas').select('*').order('creado_en', { ascending: false }))) || [];
+    campanas = (await asegurar(sb().from('oms_campanas').select('*').order('creado_en', { ascending: false }))) || [];
   } catch (error) {
     zona.innerHTML = etiquetaVacia(`No se pudieron cargar las campañas: ${error.message}`);
     return;
@@ -156,10 +156,10 @@ async function pintarCampanas(zona, contexto) {
         let respuesta;
         try {
           // Fase 2: Edge Function con envío real (requiere admin + RESEND_API_KEY)
-          respuesta = await invocarFuncion('enviar-campana', { campanaId: campana.id });
+          respuesta = await invocarFuncion('oms-enviar-campana', { campanaId: campana.id });
         } catch {
           // Sin función desplegada: marca pendiente (los correos se generan al desplegarla)
-          const error = (await sb().from('campanas').update({
+          const error = (await sb().from('oms_campanas').update({
             estado: 'pendiente',
             estadisticas: { ...(campana.estadisticas || {}), pendienteDesde: new Date().toISOString() },
           }).eq('id', campana.id)).error;
@@ -185,7 +185,7 @@ async function pintarCampanas(zona, contexto) {
       const seguro = await confirmar('Eliminar campaña', `¿Eliminar la campaña «${campana.asunto}»?`);
       if (!seguro) return;
       try {
-        const error = (await sb().from('campanas').delete().eq('id', campana.id)).error;
+        const error = (await sb().from('oms_campanas').delete().eq('id', campana.id)).error;
         if (error) throw new Error(mensajeError(error));
         toast('Campaña eliminada.');
         pintarCampanas(zona, contexto);
@@ -200,7 +200,7 @@ async function pintarOutbox(zona) {
   zona.innerHTML = '<p class="cargando">Cargando bandeja de salida…</p>';
   let pendientes;
   try {
-    pendientes = (await asegurar(sb().from('outbox').select('*').order('creado_en', { ascending: false }).limit(200))) || [];
+    pendientes = (await asegurar(sb().from('oms_outbox').select('*').order('creado_en', { ascending: false }).limit(200))) || [];
   } catch (error) {
     zona.innerHTML = etiquetaVacia(`No se pudo cargar la bandeja: ${error.message}`);
     return;
@@ -244,7 +244,7 @@ async function pintarOutbox(zona) {
     }
     if (boton.dataset.accion === 'marcar') {
       try {
-        const error = (await sb().from('outbox').update({ estado: 'enviado' }).eq('id', fila.id)).error;
+        const error = (await sb().from('oms_outbox').update({ estado: 'enviado' }).eq('id', fila.id)).error;
         if (error) throw new Error(mensajeError(error));
         toast('Correo marcado como enviado.');
         pintarOutbox(zona);
@@ -345,8 +345,8 @@ function abrirFormularioCampana(campana, alGuardar) {
     }
     try {
       const error = esNueva
-        ? (await sb().from('campanas').insert(envio)).error
-        : (await sb().from('campanas').update(envio).eq('id', campana.id)).error;
+        ? (await sb().from('oms_campanas').insert(envio)).error
+        : (await sb().from('oms_campanas').update(envio).eq('id', campana.id)).error;
       if (error) throw new Error(mensajeError(error));
       toast(esNueva ? 'Campaña creada como borrador. Revísala y envíala cuando quieras.' : 'Campaña actualizada.');
       cerrar();

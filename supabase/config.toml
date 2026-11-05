@@ -1,0 +1,17 @@
+# Proyecto Supabase compartido (ARENA13) para la tienda SHADDAI · Esencia de Umbral.
+# Todas las tablas del panel llevan prefijo oms_ para convivir con las otras apps
+# del proyecto (ga13_*, sha_*, …). Esquema completo: supabase/schema-oms.sql.
+
+project_id = "zjzqbugpdpfuttdwagai"
+
+[functions.oms-gestion-usuarios]
+entrypoint = "functions/oms-gestion-usuarios/index.ts"
+
+[functions.oms-pagos-firma]
+entrypoint = "functions/oms-pagos-firma/index.ts"
+
+[functions.oms-redsys-notificacion]
+entrypoint = "functions/oms-redsys-notificacion/index.ts"
+
+[functions.oms-enviar-campana]
+entrypoint = "functions/oms-enviar-campana/index.ts"

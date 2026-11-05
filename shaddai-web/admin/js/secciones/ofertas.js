@@ -41,8 +41,8 @@ export default async function (contenedor) {
     zona.innerHTML = '<p class="cargando">Cargando ofertas…</p>';
     try {
       const [datosOfertas, datosProductos] = await Promise.all([
-        asegurar(sb().from('ofertas').select('*').order('creado_en', { ascending: false })),
-        asegurar(sb().from('productos').select('*').order('nombre')),
+        asegurar(sb().from('oms_ofertas').select('*').order('creado_en', { ascending: false })),
+        asegurar(sb().from('oms_productos').select('*').order('nombre')),
       ]);
       ofertas = datosOfertas || [];
       productos = datosProductos || [];
@@ -89,7 +89,7 @@ export default async function (contenedor) {
     const oferta = ofertas.find((o) => o.id === interruptor.closest('tr').dataset.id);
     if (!oferta) return;
     try {
-      const error = (await sb().from('ofertas').update({ activa: interruptor.checked }).eq('id', oferta.id)).error;
+      const error = (await sb().from('oms_ofertas').update({ activa: interruptor.checked }).eq('id', oferta.id)).error;
       if (error) throw new Error(mensajeError(error));
       oferta.activa = interruptor.checked;
       toast(interruptor.checked ? 'Oferta activada.' : 'Oferta desactivada.');
@@ -112,7 +112,7 @@ export default async function (contenedor) {
     const seguro = await confirmar('Eliminar oferta', '¿Eliminar esta oferta? El producto volverá a su precio normal.');
     if (!seguro) return;
     try {
-      const error = (await sb().from('ofertas').delete().eq('id', oferta.id)).error;
+      const error = (await sb().from('oms_ofertas').delete().eq('id', oferta.id)).error;
       if (error) throw new Error(mensajeError(error));
       toast('Oferta eliminada.');
       cargar();
@@ -189,8 +189,8 @@ function abrirFormulario(oferta, productos, alGuardar) {
     }
     try {
       const error = esNueva
-        ? (await sb().from('ofertas').insert(envio)).error
-        : (await sb().from('ofertas').update(envio).eq('id', oferta.id)).error;
+        ? (await sb().from('oms_ofertas').insert(envio)).error
+        : (await sb().from('oms_ofertas').update(envio).eq('id', oferta.id)).error;
       if (error) throw new Error(mensajeError(error));
       toast(esNueva ? 'Oferta creada.' : 'Oferta actualizada.');
       cerrar();

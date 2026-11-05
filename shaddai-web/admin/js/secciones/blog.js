@@ -25,7 +25,7 @@ export default async function (contenedor, contexto) {
   async function cargar() {
     zona.innerHTML = '<p class="cargando">Cargando artículos…</p>';
     try {
-      articulos = (await asegurar(sb().from('articulos').select('*').order('fecha_publicacion', { ascending: false, nullsFirst: false }).order('creado_en', { ascending: false }))) || [];
+      articulos = (await asegurar(sb().from('oms_articulos').select('*').order('fecha_publicacion', { ascending: false, nullsFirst: false }).order('creado_en', { ascending: false }))) || [];
       pintar();
     } catch (error) {
       zona.innerHTML = etiquetaVacia(`No se pudieron cargar los artículos: ${error.message}`);
@@ -67,7 +67,7 @@ export default async function (contenedor, contexto) {
     if (estado === 'publicado' && !articulo.fecha_publicacion) {
       cambios.fecha_publicacion = new Date().toISOString();
     }
-    const error = (await sb().from('articulos').update(cambios).eq('id', articulo.id)).error;
+    const error = (await sb().from('oms_articulos').update(cambios).eq('id', articulo.id)).error;
     if (error) throw new Error(mensajeError(error));
   }
 
@@ -111,7 +111,7 @@ export default async function (contenedor, contexto) {
       const seguro = await confirmar('Eliminar artículo', `¿Eliminar «${articulo.titulo}»? Si estaba publicado, dejará de verse en la web.`);
       if (!seguro) return;
       try {
-        const error = (await sb().from('articulos').delete().eq('id', articulo.id)).error;
+        const error = (await sb().from('oms_articulos').delete().eq('id', articulo.id)).error;
         if (error) throw new Error(mensajeError(error));
         toast('Artículo eliminado.');
         cargar();
@@ -260,8 +260,8 @@ function abrirEditor(articulo, alGuardar) {
     boton.disabled = true;
     try {
       const error = esNuevo
-        ? (await sb().from('articulos').insert(datos)).error
-        : (await sb().from('articulos').update(datos).eq('id', articulo.id)).error;
+        ? (await sb().from('oms_articulos').insert(datos)).error
+        : (await sb().from('oms_articulos').update(datos).eq('id', articulo.id)).error;
       if (error) throw new Error(mensajeError(error));
       if (datos.estado === 'publicado') {
         const url = `/blog/articulo.html?slug=${encodeURIComponent(datos.slug)}`;

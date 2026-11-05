@@ -73,7 +73,7 @@ async function refrescarContador() {
   if (!usuarioActual || vistaPanel.hidden) return;
   try {
     const { count, error } = await sb()
-      .from('mensajes')
+      .from('oms_mensajes')
       .select('id', { count: 'exact', head: true })
       .eq('leido', false)
       .eq('archivado', false);

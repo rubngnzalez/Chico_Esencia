@@ -20,8 +20,8 @@ export default async function (contenedor) {
     zona.innerHTML = '<p class="cargando">Cargando testimonios…</p>';
     try {
       const [datosTestimonios, datosProductos] = await Promise.all([
-        asegurar(sb().from('testimonios').select('*').order('fecha', { ascending: false })),
-        asegurar(sb().from('productos').select('nombre').order('nombre')),
+        asegurar(sb().from('oms_testimonios').select('*').order('fecha', { ascending: false })),
+        asegurar(sb().from('oms_productos').select('nombre').order('nombre')),
       ]);
       testimonios = datosTestimonios || [];
       productos = datosProductos || [];
@@ -63,7 +63,7 @@ export default async function (contenedor) {
     const testimonio = testimonios.find((t) => t.id === interruptor.closest('tr').dataset.id);
     if (!testimonio) return;
     try {
-      const error = (await sb().from('testimonios').update({ aprobado: interruptor.checked }).eq('id', testimonio.id)).error;
+      const error = (await sb().from('oms_testimonios').update({ aprobado: interruptor.checked }).eq('id', testimonio.id)).error;
       if (error) throw new Error(mensajeError(error));
       testimonio.aprobado = interruptor.checked;
       toast(interruptor.checked ? 'Testimonio aprobado: ya se muestra en la web.' : 'Testimonio retirado de la web.');
@@ -85,7 +85,7 @@ export default async function (contenedor) {
     const seguro = await confirmar('Eliminar testimonio', `¿Eliminar el testimonio de «${testimonio.nombre}»?`);
     if (!seguro) return;
     try {
-      const error = (await sb().from('testimonios').delete().eq('id', testimonio.id)).error;
+      const error = (await sb().from('oms_testimonios').delete().eq('id', testimonio.id)).error;
       if (error) throw new Error(mensajeError(error));
       toast('Testimonio eliminado.');
       cargar();
@@ -160,8 +160,8 @@ function abrirFormulario(testimonio, productos, alGuardar) {
     }
     try {
       const error = esNuevo
-        ? (await sb().from('testimonios').insert(envio)).error
-        : (await sb().from('testimonios').update(envio).eq('id', testimonio.id)).error;
+        ? (await sb().from('oms_testimonios').insert(envio)).error
+        : (await sb().from('oms_testimonios').update(envio).eq('id', testimonio.id)).error;
       if (error) throw new Error(mensajeError(error));
       toast(esNuevo ? 'Testimonio creado.' : 'Testimonio actualizado.');
       cerrar();

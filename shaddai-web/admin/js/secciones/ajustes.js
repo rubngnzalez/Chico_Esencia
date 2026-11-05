@@ -24,12 +24,12 @@ export default async function (contenedor) {
   contenedor.innerHTML = '<p class="cargando">Cargando ajustes…</p>';
   try {
     ajustes = await (async () => {
-      const { data, error } = await sb().from('ajustes').select('*').eq('id', 'general').maybeSingle();
+      const { data, error } = await sb().from('oms_ajustes').select('*').eq('id', 'general').maybeSingle();
       if (error) throw new Error(mensajeError(error));
       if (!data) {
-        const { error: errorInsert } = await sb().from('ajustes').insert({ id: 'general' });
+        const { error: errorInsert } = await sb().from('oms_ajustes').insert({ id: 'general' });
         if (errorInsert) throw new Error(mensajeError(errorInsert));
-        const { data: creada } = await sb().from('ajustes').select('*').eq('id', 'general').maybeSingle();
+        const { data: creada } = await sb().from('oms_ajustes').select('*').eq('id', 'general').maybeSingle();
         return creada;
       }
       return data;
@@ -73,7 +73,7 @@ export default async function (contenedor) {
 async function guardarSeccion(seccion, valores) {
   const actual = ajustes[seccion] || {};
   const fusion = { ...actual, ...valores };
-  const error = (await sb().from('ajustes').update({ [seccion]: fusion }).eq('id', 'general')).error;
+  const error = (await sb().from('oms_ajustes').update({ [seccion]: fusion }).eq('id', 'general')).error;
   if (error) throw new Error(mensajeError(error));
   ajustes[seccion] = fusion;
   toast('Ajustes guardados.');
