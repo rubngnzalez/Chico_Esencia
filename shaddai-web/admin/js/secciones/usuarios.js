@@ -3,7 +3,7 @@
 // crean nuevas o se regeneran. Las acciones pasan por la función segura
 // «gestion-usuarios», que comprueba rol admin en el servidor.
 import { sb, asegurar, invocarFuncion, mensajeError } from '../bd.js';
-import { escapar, fechaHora, toast, abrirModal, etiquetaVacia } from '../api.js';
+import { escapar, fechaHora, toast, abrirModal, confirmar, etiquetaVacia } from '../api.js';
 
 const ROLES = ['admin', 'editor', 'lector'];
 const ETIQUETA_ROL = { admin: 'Administración', editor: 'Edición', lector: 'Lectura' };
@@ -12,7 +12,7 @@ export default async function (contenedor, contexto) {
   contenedor.innerHTML = `
     <div class="barra-herramientas">
       <p class="texto-suave">admin: todo · editor: catálogo, blog y correos · lector: solo lectura y bandeja.
-      Las contraseñas van cifradas: no se pueden ver, pero puedes crear cuentas y generar nuevas contraseñas.</p>
+      Las contraseñas van cifradas: no se pueden ver, pero puedes crear cuentas, generar nuevas contraseñas o eliminar cuentas.</p>
       <div class="acciones-barra">
         <button class="boton boton-fantasma boton-pequeno" data-accion="mi-contrasena" type="button">Cambiar mi contraseña</button>
         <button class="boton boton-primario boton-pequeno" data-accion="nuevo" type="button">+ Nuevo usuario</button>
@@ -26,7 +26,7 @@ export default async function (contenedor, contexto) {
   async function cargar() {
     zona.innerHTML = '<p class="cargando">Cargando usuarios…</p>';
     try {
-      usuarios = (await asegurar(sb().from('usuarios').select('id, nombre, email, rol, activo, creado_en').order('creado_en'))) || [];
+      usuarios = (await asegurar(sb().from('usuarios').select('id, nombre, email, rol, activo, creado_en, ultimo_acceso').order('creado_en'))) || [];
       pintar();
     } catch (error) {
       zona.innerHTML = etiquetaVacia(`No se pudieron cargar los usuarios: ${error.message}`);
@@ -36,7 +36,7 @@ export default async function (contenedor, contexto) {
   function pintar() {
     zona.innerHTML = `
       <table class="tabla">
-        <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Alta</th><th>Activo</th><th class="alineado-derecha">Acciones</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Último acceso</th><th>Alta</th><th>Activo</th><th class="alineado-derecha">Acciones</th></tr></thead>
         <tbody>
           ${usuarios.map((u) => {
             const soyYo = u.id === contexto.usuario.id;
@@ -45,11 +45,13 @@ export default async function (contenedor, contexto) {
             <td><strong>${escapar(u.nombre || '(sin nombre)')}</strong>${soyYo ? ' <span class="chip">tú</span>' : ''}</td>
             <td class="texto-suave">${escapar(u.email)}</td>
             <td><span class="chip chip-oro">${escapar(ETIQUETA_ROL[u.rol] || u.rol)}</span></td>
+            <td class="texto-suave">${u.ultimo_acceso ? fechaHora(u.ultimo_acceso) : 'nunca'}</td>
             <td class="texto-suave">${u.creado_en ? fechaHora(u.creado_en) : '—'}</td>
             <td><label class="interruptor"><input type="checkbox" data-accion="activo" ${u.activo !== false ? 'checked' : ''}><span class="interruptor-pista"></span></label></td>
             <td class="alineado-derecha">
               <button class="boton boton-fantasma boton-pequeno" data-accion="contrasena" type="button">Contraseña</button>
               <button class="boton boton-fantasma boton-pequeno" data-accion="editar" type="button">Editar</button>
+              ${soyYo ? '' : `<button class="boton boton-peligro boton-pequeno" data-accion="eliminar" type="button">Eliminar</button>`}
             </td>
           </tr>`;
           }).join('')}
@@ -193,6 +195,24 @@ export default async function (contenedor, contexto) {
       } catch (error) {
         toast(error.message, 'error');
       } finally {
+        boton.disabled = false;
+      }
+      return;
+    }
+    if (boton.dataset.accion === 'eliminar') {
+      const seguro = await confirmar(
+        'Eliminar usuario',
+        `¿Eliminar definitivamente a «${usuario.nombre || usuario.email}» (${usuario.email})? Perderá el acceso y su cuenta desaparecerá; no se puede deshacer.`,
+        'Eliminar'
+      );
+      if (!seguro) return;
+      boton.disabled = true;
+      try {
+        await llamar({ accion: 'eliminar', id: usuario.id });
+        toast('Usuario eliminado.');
+        cargar();
+      } catch (error) {
+        toast(error.message, 'error');
         boton.disabled = false;
       }
     }

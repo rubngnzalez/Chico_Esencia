@@ -37,6 +37,10 @@ create table if not exists public.usuarios (
 );
 comment on table public.usuarios is 'Perfiles del panel; el alta real vive en auth.users (Supabase Auth).';
 
+-- Último acceso: lo actualiza el panel tras cada inicio de sesión (vía tocar_acceso).
+alter table public.usuarios add column if not exists ultimo_acceso timestamptz;
+comment on column public.usuarios.ultimo_acceso is 'Fecha del último inicio de sesión (la escribe tocar_acceso); visible en la sección Usuarios.';
+
 -- Función SECURITY DEFINER: sin RLS recursion (lee usuarios como propietario).
 create or replace function public.crear_perfil_usuario()
 returns trigger
@@ -93,6 +97,17 @@ security definer
 set search_path = public
 as $$
   select coalesce((select rol from public.usuarios where id = auth.uid() and activo limit 1) in ('admin', 'editor'), false);
+$$;
+
+-- Marca el último acceso del usuario actual (el panel la llama al entrar).
+-- SECURITY DEFINER: un usuario no puede modificar su fila, solo esta marca.
+create or replace function public.tocar_acceso()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.usuarios set ultimo_acceso = now() where id = auth.uid();
 $$;
 
 -- ============================================================================

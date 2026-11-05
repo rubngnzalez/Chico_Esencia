@@ -1,7 +1,7 @@
 // Shell del panel sobre Supabase Auth: sesión, perfil con rol de la tabla
 // usuarios, navegación entre secciones, permisos por rol y contador de la
 // bandeja. (Adaptado de servidor/panel/panel.js: la capa de red es supabase-js.)
-import { configurado, sb, perfilDe, mensajeError } from './js/bd.js';
+import { configurado, sb, perfilDe, tocarAcceso, mensajeError } from './js/bd.js';
 import { toast, abrirModal } from './js/api.js';
 
 const vistaConfig = document.getElementById('vista-config');
@@ -182,6 +182,7 @@ formularioLogin.addEventListener('submit', async (evento) => {
       throw new Error('Tu cuenta está desactivada. Habla con la administración.');
     }
     formularioLogin.reset();
+    tocarAcceso();
     entrar(perfil);
   } catch (error) {
     avisoLogin.textContent = error.message;
@@ -211,6 +212,7 @@ async function iniciar() {
     }
     const perfil = await perfilDe(data.session.user.id);
     if (perfil && perfil.activo !== false) {
+      tocarAcceso();
       entrar(perfil);
     } else {
       mostrarVista('login');

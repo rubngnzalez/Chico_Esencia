@@ -72,6 +72,13 @@ export async function perfilDe(uid) {
   return datos;
 }
 
+// Marca el último acceso del usuario actual (falla en silencio: es un detalle)
+export async function tocarAcceso() {
+  try {
+    await sb().rpc('tocar_acceso');
+  } catch {}
+}
+
 // Llama a una Edge Function con la sesión actual (fase 2; opcional)
 export async function invocarFuncion(nombre, cuerpo) {
   const { data, error } = await sb().functions.invoke(nombre, { body: cuerpo });

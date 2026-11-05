@@ -5,6 +5,7 @@
 //   crear    { email, nombre, rol?, contrasena? }  → alta + devolver contraseña
 //   resetear { id }                                → nueva contraseña temporal
 //   cambiar  { contrasenaNueva }                   → cambia la del propio admin
+//   eliminar { id }                                → baja definitiva del usuario
 // Las contraseñas NUNCA se pueden consultar: solo se generan o sustituyen.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -131,6 +132,37 @@ Deno.serve(async (request: Request) => {
     const cambio = await db.auth.admin.updateUserById(quien.user.id, { password: contrasenaNueva });
     if (cambio.error) {
       return new Response(JSON.stringify({ error: `No se pudo cambiar: ${cambio.error.message}` }), { status: 400, headers: cabeceras(request) });
+    }
+    return new Response(JSON.stringify({ ok: true }), { headers: cabeceras(request) });
+  }
+
+  // ─── ELIMINAR (baja definitiva; no se permite dejar el panel sin admin) ──
+  if (accion === 'eliminar') {
+    const id = String(cuerpo.id || '');
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'Falta el usuario a eliminar.' }), { status: 400, headers: cabeceras(request) });
+    }
+    if (id === perfil.id) {
+      return new Response(JSON.stringify({ error: 'No puedes eliminar tu propio usuario.' }), { status: 400, headers: cabeceras(request) });
+    }
+    const { data: objetivo } = await db.from('usuarios').select('id, email, nombre, rol, activo').eq('id', id).maybeSingle();
+    if (!objetivo) {
+      return new Response(JSON.stringify({ error: 'Usuario no encontrado.' }), { status: 404, headers: cabeceras(request) });
+    }
+    if (objetivo.rol === 'admin') {
+      const { count: otrosAdmins } = await db
+        .from('usuarios')
+        .select('id', { count: 'exact', head: true })
+        .eq('rol', 'admin')
+        .eq('activo', true)
+        .neq('id', id);
+      if (!otrosAdmins || otrosAdmins < 1) {
+        return new Response(JSON.stringify({ error: 'No puede quedarse el panel sin ninguna administración activa.' }), { status: 400, headers: cabeceras(request) });
+      }
+    }
+    const baja = await db.auth.admin.deleteUser(id);
+    if (baja.error) {
+      return new Response(JSON.stringify({ error: `No se pudo eliminar: ${baja.error.message}` }), { status: 400, headers: cabeceras(request) });
     }
     return new Response(JSON.stringify({ ok: true }), { headers: cabeceras(request) });
   }
