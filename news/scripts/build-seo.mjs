@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const aqui = dirname(fileURLToPath(import.meta.url))
 const webNews = resolve(aqui, '../..', 'shaddai-web/news')
+const webRoot = resolve(aqui, '../..', 'shaddai-web')
 
 let env = {}
 const localEnv = resolve(aqui, '../.env')
@@ -44,42 +45,44 @@ function escapeXml(t) {
   return String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
+// La cáscara de la SPA: los stubs son ESA página con los metas OG del artículo
+// inyectados, de modo que humanos y scrapers entran directo sin redirecciones.
+const shell = readFileSync(resolve(webNews, 'index.html'), 'utf8')
+
+function shellConOg(a) {
+  const titulo = escapeXml(a.seo_title || a.title)
+  const descripcion = escapeXml(String(a.seo_description || a.excerpt || 'Que nos busquen por dentro.').slice(0, 300))
+  const destino = `${ORIGEN}/news/articulo/${a.slug}`
+  const fecha = a.published_at ? new Date(a.published_at).toISOString() : ''
+  const modificado = a.updated_at ? new Date(a.updated_at).toISOString() : fecha
+  let html = shell
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${titulo} — SHADDAI · El Umbral</title>`)
+    .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${descripcion}">`)
+    .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${titulo}">`)
+    .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${descripcion}">`)
+    .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${destino}">`)
+    .replace(/<meta property="og:type"[^>]*>/, `<meta property="og:type" content="article">\n  <meta property="article:published_time" content="${fecha}">\n  <meta property="article:modified_time" content="${modificado}">`)
+    .replace(/(<meta property="og:image"[^>]*>)/, `$1\n  <link rel="canonical" href="${destino}">`)
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: a.seo_title || a.title,
+    description: a.seo_description || a.excerpt || '',
+    image: [a.og_image || a.cover_image_url || `${ORIGEN}/img/shin-logo.png`].map(u => u.startsWith('http') ? u : ORIGEN + u),
+    datePublished: fecha || undefined,
+    dateModified: modificado,
+    inLanguage: 'es-ES',
+    mainEntityOfPage: { '@type': 'WebPage', '@id': destino },
+    publisher: { '@type': 'Organization', name: 'SHADDAI · El Umbral', url: `${ORIGEN}/news/` }
+  }
+  return html.replace('</head>', `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n</head>`)
+}
+
 for (const a of articulos) {
   slugsValidos.add(a.slug)
   const dir = resolve(articuloDir, a.slug)
   mkdirSync(dir, { recursive: true })
-  const titulo = a.seo_title || a.title
-  const descripcion = a.seo_description || a.excerpt || 'Que nos busquen por dentro.'
-  const imagen = a.og_image || a.cover_image_url || '/img/shin-logo.png'
-  const destino = `${ORIGEN}/news/articulo/${a.slug}`
-  const fecha = a.published_at ? new Date(a.published_at).toISOString() : ''
-  const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeXml(titulo)} — SHADDAI · El Umbral</title>
-<meta name="description" content="${escapeXml(String(descripcion).slice(0, 300))}">
-<meta property="og:type" content="article">
-<meta property="og:site_name" content="SHADDAI · El Umbral">
-<meta property="og:title" content="${escapeXml(titulo)}">
-<meta property="og:description" content="${escapeXml(String(descripcion).slice(0, 300))}">
-<meta property="og:url" content="${destino}">
-<meta property="og:image" content="${escapeXml(imagen)}">
-<meta property="article:published_time" content="${fecha}">
-<meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="${destino}">
-<meta http-equiv="refresh" content="0; url=/news/articulo/${a.slug}">
-</head>
-<body style="background:#f3eee2;font-family:Georgia,serif;color:#2b332c;display:grid;place-items:center;min-height:100vh;margin:0">
-<div style="text-align:center;padding:2rem">
-<p style="letter-spacing:.3em;text-transform:uppercase;font-size:.7rem;color:#c9a45f">SHADDAI · El Umbral</p>
-<h1 style="font-weight:500">${escapeXml(titulo)}</h1>
-<p><a href="/news/articulo/${a.slug}" style="color:#c9a45f">Leer el artículo en el diario →</a></p>
-</div>
-</body>
-</html>`
-  writeFileSync(resolve(dir, 'index.html'), html)
+  writeFileSync(resolve(dir, 'index.html'), shellConOg(a))
 }
 
 // Limpiar slugs que ya no están publicados
