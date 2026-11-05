@@ -917,6 +917,7 @@ body {
 /* ---------- Pedidos ---------- */
 .selector-estado { font-size: 0.85rem; }
 .detalle-pedido .totales-pedido { margin-top: 1rem; text-align: right; color: var(--texto); }
+.detalle-subtitulo { margin: 1.2rem 0 0.4rem; font-size: 1rem; color: rgba(217, 212, 197, 0.55); }
 
 /* ---------- Email marketing ---------- */
 .aviso-smtp {

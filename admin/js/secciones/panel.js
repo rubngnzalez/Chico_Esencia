@@ -23,8 +23,8 @@ export default async function (contenedor, contexto) {
     contar('productos'),
     contar('productos', { activo: true }),
     esGestion ? contar('suscriptores') : Promise.reject(new Error('sin permiso')),
-    esGestion ? asegurar(sb().from('campanas').select('id, asunto, estado, enviada_en, creado_en').order('creado_en', { ascending: false }).limit(4)) : Promise.reject(new Error('sin permiso')),
-    asegurar(sb().from('pedidos').select('id, numero, cliente, total, estado, creado_en').order('creado_en', { ascending: false }).limit(1)),
+    esGestion ? asegurar(sb().from('oms_campanas').select('id, asunto, estado, enviada_en, creado_en').order('creado_en', { ascending: false }).limit(4)) : Promise.reject(new Error('sin permiso')),
+    asegurar(sb().from('oms_pedidos').select('id, numero, cliente, total, estado, creado_en').order('creado_en', { ascending: false }).limit(1)),
   ]);
 
   const pendientes = resultados[0].status === 'fulfilled' ? resultados[0].value : 0;

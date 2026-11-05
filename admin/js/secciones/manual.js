@@ -119,9 +119,10 @@ const SECCIONES_MANUAL = [
       de firma con el importe calculado en servidor). La notificación de Redsys lo marca <strong>pagado</strong>
       automáticamente — o cancelado si el pago no se autoriza — mediante la función
       <code>redsys-notificacion</code> (fase 2).</p>
-      <p>La tabla muestra número, fecha, cliente, total y estado. La administración cambia el estado con el
-      desplegable: pendiente → pagado → enviado → entregado (o cancelado). El botón «Ver» abre el detalle con
-      las líneas del pedido, precios, envío y la respuesta de Redsys.</p>
+      <p>La tabla muestra número, fecha, cliente, número de artículos, total y estado. La administración cambia
+      el estado con el desplegable: pendiente → pagado → enviado → entregado (o cancelado). El botón «Ver» abre
+      el detalle con las líneas del pedido, precios, envío, la respuesta de Redsys y los <strong>correos del
+      pedido</strong> (confirmación, agradecimiento y aviso interno) con botón de descarga .eml.</p>
       <h3>Emails automáticos</h3>
       <p>Al confirmarse un pago, la función envía al cliente la <strong>confirmación de compra</strong> y el
       <strong>agradecimiento</strong> con las plantillas de <em>Ajustes → Emails automáticos</em> (variables
@@ -164,10 +165,14 @@ const SECCIONES_MANUAL = [
   {
     id: 'usuarios', titulo: '12 · Usuarios',
     contenido: `
-      <p>Solo la administración ve esta sección. Para <strong>dé alta de cuentas nuevas</strong>: dashboard de
-      Supabase → <strong>Authentication → Users → Add user</strong> (auto-confirmar). El trigger de la base de
-      datos les crea el perfil como <strong>lector</strong>; desde aquí puedes cambiarles nombre y rol, o
-      desactivarlos con el interruptor (bloquea el acceso sin borrar la cuenta).</p>
+      <p>Solo la administración ve esta sección. Puedes <strong>dar de alta cuentas nuevas</strong> desde el propio
+      panel («+ Nuevo usuario»: genera una contraseña segura que se muestra una sola vez) o desde el dashboard de
+      Supabase (Authentication → Users → Add user, auto-confirmando; el trigger les crea el perfil como
+      <strong>lector</strong>).</p>
+      <p>Desde la tabla puedes cambiar nombre y rol («Editar»), desactivar el acceso con el interruptor (sin borrar
+      la cuenta), generar una <strong>contraseña nueva</strong> («Contraseña»: la actual deja de funcionar) y
+      <strong>eliminar</strong> definitivamente una cuenta (nunca la tuya, y siempre queda al menos una
+      administración activa). La columna «Último acceso» muestra la última vez que cada persona entró al panel.</p>
       <p><strong>Contraseñas:</strong> se autogestionan en Supabase — «Send password recovery» en
       Authentication → Users envía el correo para fijar una nueva. Desde la esquina inferior del panel
       cualquier persona puede cambiar su propia contraseña.</p>`,

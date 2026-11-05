@@ -84,7 +84,7 @@
       const cliente = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
       // La RLS solo deja ver: publicado, o programado con fecha ya vencida
       cliente
-        .from("articulos")
+        .from("oms_articulos")
         .select("titulo, slug, extracto, contenido, imagen_portada, etiquetas, estado, fecha_publicacion, autor")
         .order("fecha_publicacion", { ascending: false })
         .limit(30)

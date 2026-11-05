@@ -50,7 +50,7 @@ const CONEXION = (() => {
   const leerConfigSupabase = async () => {
     if (!cliente) return null;
     const { data, error } = await conTiempo(
-      cliente.from("ajustes_publicos").select("*").eq("id", "general").maybeSingle()
+      cliente.from("oms_ajustes_publicos").select("*").eq("id", "general").maybeSingle()
     );
     if (error || !data) return null;
     return {
@@ -92,7 +92,7 @@ const CONEXION = (() => {
     if (!cliente) return null;
     const { data, error } = await conTiempo(
       cliente
-        .from("productos_publicos")
+        .from("oms_productos_publicos")
         .select("*")
         .order("destacado", { ascending: false })
         .order("categoria_orden", { ascending: true, nullsFirst: false })
@@ -122,7 +122,7 @@ const CONEXION = (() => {
     if (!cliente) return null;
     const { data, error } = await conTiempo(
       cliente
-        .from("testimonios")
+        .from("oms_testimonios")
         .select("nombre, ciudad, producto, texto, estrellas, fecha")
         .eq("aprobado", true)
         .order("fecha", { ascending: false })
@@ -207,7 +207,7 @@ const CONEXION = (() => {
         }
         try {
           const { error } = await conTiempo(
-            cliente.from("mensajes").insert({
+            cliente.from("oms_mensajes").insert({
               nombre: String(cuerpo.nombre || "").slice(0, 120),
               email: String(cuerpo.email || "").slice(0, 160),
               telefono: String(cuerpo.telefono || "").slice(0, 40),
@@ -224,7 +224,7 @@ const CONEXION = (() => {
       if (ruta === "/api/public/suscribirse") {
         try {
           const { error } = await conTiempo(
-            cliente.from("suscriptores").insert({ email: String((cuerpo.email || "")).slice(0, 160) })
+            cliente.from("oms_suscriptores").insert({ email: String((cuerpo.email || "")).slice(0, 160) })
           );
           if (error && error.code !== "23505") throw error; // 23505 = duplicado: bienvenida igual
           return { ok: true };
@@ -237,7 +237,7 @@ const CONEXION = (() => {
         //  1) Edge Function pagos-firma → 2) Worker → 3) null (firma en cliente)
         try {
           const { data, error } = await conTiempo(
-            cliente.functions.invoke("pagos-firma", { body: cuerpo })
+            cliente.functions.invoke("oms-pagos-firma", { body: cuerpo })
           );
           if (!error && data && data.parametrosB64) return data;
         } catch {

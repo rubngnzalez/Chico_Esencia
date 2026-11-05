@@ -90,7 +90,7 @@
       }
       const cliente = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
       cliente
-        .from("articulos")
+        .from("oms_articulos")
         .select("titulo, slug, extracto, contenido, imagen_portada, etiquetas, estado, fecha_publicacion, autor")
         .eq("slug", slug)
         .maybeSingle()

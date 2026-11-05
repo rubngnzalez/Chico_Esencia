@@ -2,7 +2,7 @@
 // Los pedidos se crean desde la Edge Function «pagos-firma» (o el Worker);
 // aquí solo se leen y se cambia el estado (solo admin, vía RLS).
 import { sb, asegurar, mensajeError } from '../bd.js';
-import { escapar, euro, fechaHora, toast, abrirModal, badgeEstado, etiquetaVacia } from '../api.js';
+import { escapar, euro, fechaHora, toast, abrirModal, badgeEstado, etiquetaVacia, descargarEml } from '../api.js';
 
 const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'];
 
@@ -25,24 +25,53 @@ export default async function (contenedor, contexto) {
   const zona = contenedor.querySelector('#zona-pedidos');
   let pedidos = [];
   const lineasPorPedido = new Map();
+  const unidadesPorPedido = new Map();
 
   async function cargar() {
     zona.innerHTML = '<p class="cargando">Cargando pedidos…</p>';
     try {
-      let consulta = sb().from('pedidos').select('*').order('creado_en', { ascending: false }).limit(300);
+      let consulta = sb().from('oms_pedidos').select('*').order('creado_en', { ascending: false }).limit(300);
       if (filtroEstado) consulta = consulta.eq('estado', filtroEstado);
       pedidos = (await asegurar(consulta)) || [];
+      await contarUnidades();
       pintar();
     } catch (error) {
       zona.innerHTML = etiquetaVacia(`No se pudieron cargar los pedidos: ${error.message}`);
     }
   }
 
+  // Unidades por pedido (columna «Artículos») con una sola lectura de líneas
+  async function contarUnidades() {
+    unidadesPorPedido.clear();
+    if (!pedidos.length) return;
+    try {
+      const lineas = (await asegurar(
+        sb().from('oms_pedidos_lineas').select('pedido, cantidad').in('pedido', pedidos.map((p) => p.id))
+      )) || [];
+      for (const linea of lineas) {
+        unidadesPorPedido.set(linea.pedido, (unidadesPorPedido.get(linea.pedido) || 0) + (linea.cantidad || 0));
+      }
+    } catch {}
+  }
+
+  const unidadesDe = (pedido) => unidadesPorPedido.get(pedido.id) || 0;
+
   async function lineasDe(pedido) {
     if (lineasPorPedido.has(pedido.id)) return lineasPorPedido.get(pedido.id);
-    const lineas = (await asegurar(sb().from('pedidos_lineas').select('*').eq('pedido', pedido.id).order('creado_en'))) || [];
+    const lineas = (await asegurar(sb().from('oms_pedidos_lineas').select('*').eq('pedido', pedido.id).order('creado_en'))) || [];
     lineasPorPedido.set(pedido.id, lineas);
     return lineas;
+  }
+
+  // Correos automáticos asociados al pedido (outbox): descargables como .eml
+  async function correosDe(pedido) {
+    try {
+      return (await asegurar(
+        sb().from('oms_outbox').select('id, asunto, estado, creado_en, eml').eq('ref_pedido', pedido.numero).order('creado_en')
+      )) || [];
+    } catch {
+      return [];
+    }
   }
 
   function nombreCliente(pedido) {
@@ -57,13 +86,14 @@ export default async function (contenedor, contexto) {
     }
     zona.innerHTML = `
       <table class="tabla">
-        <thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th class="alineado-derecha">Detalle</th></tr></thead>
+        <thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Artículos</th><th>Total</th><th>Estado</th><th class="alineado-derecha">Detalle</th></tr></thead>
         <tbody>
           ${pedidos.map((p) => `
           <tr data-id="${escapar(p.id)}">
             <td><strong>${escapar(p.numero)}</strong></td>
             <td class="texto-suave">${fechaHora(p.creado_en)}</td>
             <td>${escapar(nombreCliente(p))}<br><span class="texto-suave">${escapar(p.cliente?.email || '')}</span></td>
+            <td class="texto-suave">${unidadesDe(p)}</td>
             <td><strong>${euro(p.total)}</strong></td>
             <td>
               ${esAdmin
@@ -84,7 +114,7 @@ export default async function (contenedor, contexto) {
     const pedido = pedidos.find((p) => p.id === selector.closest('tr').dataset.id);
     if (!pedido) return;
     try {
-      const error = (await sb().from('pedidos').update({ estado: selector.value }).eq('id', pedido.id)).error;
+      const error = (await sb().from('oms_pedidos').update({ estado: selector.value }).eq('id', pedido.id)).error;
       if (error) throw new Error(mensajeError(error));
       pedido.estado = selector.value;
       toast(`Pedido ${pedido.numero}: estado «${selector.value}».`);
@@ -99,8 +129,8 @@ export default async function (contenedor, contexto) {
     if (!boton) return;
     const pedido = pedidos.find((p) => p.id === boton.closest('tr').dataset.id);
     if (!pedido) return;
-    const lineas = await lineasDe(pedido);
-    abrirDetalle(pedido, lineas);
+    const [lineas, correos] = await Promise.all([lineasDe(pedido), correosDe(pedido)]);
+    abrirDetalle(pedido, lineas, correos);
   });
 
   contenedor.querySelector('#filtro-estado').addEventListener('change', (evento) => {
@@ -111,11 +141,11 @@ export default async function (contenedor, contexto) {
   await cargar();
 }
 
-function abrirDetalle(pedido, lineas) {
+function abrirDetalle(pedido, lineas, correos = []) {
   const cliente = pedido.cliente || {};
   const direccion = [cliente.direccion, cliente.cp, cliente.poblacion, cliente.provincia].filter(Boolean).join(', ');
   const respuesta = pedido.respuesta_redsys;
-  abrirModal(`Pedido ${pedido.numero}`, `
+  const modal = abrirModal(`Pedido ${pedido.numero}`, `
     <article class="detalle-pedido">
       <p class="texto-suave">Creado el ${fechaHora(pedido.creado_en)} · ${badgeEstado(pedido.estado)} · Método: ${escapar(pedido.metodo || '—')}</p>
       <dl class="detalle-datos">
@@ -141,7 +171,20 @@ function abrirDetalle(pedido, lineas) {
       <p class="totales-pedido">
         Subtotal: ${euro(pedido.subtotal)} · Envío: ${euro(pedido.envio)} · <strong>Total: ${euro(pedido.total)}</strong>
       </p>
-      <p class="texto-suave">Los correos automáticos de este pedido (confirmación, agradecimiento y aviso interno) viven en la tabla
-      outbox: descárgalos como .eml desde <em>Email marketing → Bandeja de salida</em>.</p>
+      ${correos.length ? `
+      <h3 class="detalle-subtitulo">Correos de este pedido</h3>
+      ${correos.map((o) => `
+      <div class="barra-herramientas sin-borde" style="justify-content:space-between;">
+        <span>${escapar(o.asunto || '(sin asunto)')} · ${badgeEstado(o.estado)} <span class="texto-suave">${fechaHora(o.creado_en)}</span></span>
+        <button class="boton boton-fantasma boton-pequeno" data-eml="${escapar(o.id)}" type="button">Descargar .eml</button>
+      </div>`).join('')}` : ''}
     </article>`, '36rem');
+
+  modal.querySelectorAll('button[data-eml]').forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const correo = correos.find((o) => o.id === boton.dataset.eml);
+      if (!correo) return;
+      descargarEml(`pedido-${pedido.numero}-${(correo.asunto || 'shaddai').slice(0, 40).replace(/[^\w-]+/g, '-')}.eml`, correo.eml);
+    });
+  });
 }

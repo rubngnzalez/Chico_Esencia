@@ -26,8 +26,8 @@ export default async function (contenedor, contexto) {
     zona.innerHTML = '<p class="cargando">Cargando productos…</p>';
     try {
       const [datosProductos, datosCategorias] = await Promise.all([
-        asegurar(sb().from('productos').select('*').order('creado_en')),
-        asegurar(sb().from('categorias').select('*').order('orden')),
+        asegurar(sb().from('oms_productos').select('*').order('creado_en')),
+        asegurar(sb().from('oms_categorias').select('*').order('orden')),
       ]);
       productos = datosProductos || [];
       categorias = datosCategorias || [];
@@ -90,7 +90,7 @@ export default async function (contenedor, contexto) {
     const producto = productos.find((p) => p.id === interruptor.closest('tr').dataset.id);
     if (!producto) return;
     try {
-      const error = (await sb().from('productos').update({ activo: interruptor.checked }).eq('id', producto.id)).error;
+      const error = (await sb().from('oms_productos').update({ activo: interruptor.checked }).eq('id', producto.id)).error;
       if (error) throw new Error(mensajeError(error));
       producto.activo = interruptor.checked;
       toast(interruptor.checked ? `«${producto.nombre}» activado.` : `«${producto.nombre}» desactivado: ya no se ve en la web.`);
@@ -111,7 +111,7 @@ export default async function (contenedor, contexto) {
       const seguro = await confirmar('Eliminar producto', `¿Eliminar «${producto.nombre}»? Esta acción no se puede deshacer.`);
       if (!seguro) return;
       try {
-        const error = (await sb().from('productos').delete().eq('id', producto.id)).error;
+        const error = (await sb().from('oms_productos').delete().eq('id', producto.id)).error;
         if (error) throw new Error(mensajeError(error));
         toast('Producto eliminado.');
         cargar();
@@ -260,8 +260,8 @@ function abrirFormulario(producto, categorias, alGuardar) {
     botonGuardar.disabled = true;
     try {
       const error = esNuevo
-        ? (await sb().from('productos').insert(envio)).error
-        : (await sb().from('productos').update(envio).eq('id', producto.id)).error;
+        ? (await sb().from('oms_productos').insert(envio)).error
+        : (await sb().from('oms_productos').update(envio).eq('id', producto.id)).error;
       if (error) throw new Error(mensajeError(error));
       toast(esNuevo ? 'Producto creado.' : 'Producto actualizado.');
       cerrar();

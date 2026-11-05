@@ -16,7 +16,7 @@ export default async function (contenedor) {
   async function cargar() {
     zona.innerHTML = '<p class="cargando">Cargando categorías…</p>';
     try {
-      categorias = (await asegurar(sb().from('categorias').select('*').order('orden'))) || [];
+      categorias = (await asegurar(sb().from('oms_categorias').select('*').order('orden'))) || [];
       pintar();
     } catch (error) {
       zona.innerHTML = etiquetaVacia(`No se pudieron cargar las categorías: ${error.message}`);
@@ -52,7 +52,7 @@ export default async function (contenedor) {
   }
 
   async function actualizar(id, cambios) {
-    const error = (await sb().from('categorias').update(cambios).eq('id', id)).error;
+    const error = (await sb().from('oms_categorias').update(cambios).eq('id', id)).error;
     if (error) throw new Error(mensajeError(error));
   }
 
@@ -72,7 +72,7 @@ export default async function (contenedor) {
       const seguro = await confirmar('Eliminar categoría', `¿Eliminar la categoría «${categoria.nombre}»? Los productos quedarán sin categoría.`);
       if (!seguro) return;
       try {
-        const error = (await sb().from('categorias').delete().eq('id', categoria.id)).error;
+        const error = (await sb().from('oms_categorias').delete().eq('id', categoria.id)).error;
         if (error) throw new Error(mensajeError(error));
         toast('Categoría eliminada.');
         cargar();
@@ -141,8 +141,8 @@ function abrirFormulario(categoria, alGuardar) {
     }
     try {
       const error = esNueva
-        ? (await sb().from('categorias').insert(envio)).error
-        : (await sb().from('categorias').update(envio).eq('id', categoria.id)).error;
+        ? (await sb().from('oms_categorias').insert(envio)).error
+        : (await sb().from('oms_categorias').update(envio).eq('id', categoria.id)).error;
       if (error) throw new Error(mensajeError(error));
       toast(esNueva ? 'Categoría creada.' : 'Categoría actualizada.');
       cerrar();
