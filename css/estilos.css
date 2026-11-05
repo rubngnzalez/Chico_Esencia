@@ -334,7 +334,6 @@ p + p {
 
 .dos-columnas .columna-imagen img {
   width: 100%;
-  height: auto;
   object-fit: cover;
   border: 1px solid rgba(201, 164, 95, 0.35);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
@@ -399,24 +398,6 @@ p + p {
   margin-bottom: 1.5rem;
 }
 
-/* Imagen de tarjeta con altura identica en cualquier navegador:
-   caja 4:3 por relleno, sin depender de aspect-ratio */
-.tarjeta-foto {
-  position: relative;
-  padding-top: 75%;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-}
-
-.tarjeta.con-foto .tarjeta-foto img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  margin: 0;
-}
-
 .tarjeta.con-foto .instante {
   margin-bottom: 1rem;
   line-height: 1.7;
@@ -476,7 +457,6 @@ body[data-pagina="usos"] .tarjeta .icono {
 
 .notas-franja img {
   width: 100%;
-  height: auto;
   display: block;
 }
 /* ---------- Ritual: storyboard de los cuatro pasos ---------- */
@@ -495,7 +475,6 @@ body[data-pagina="usos"] .tarjeta .icono {
 
 .ritual-franja img {
   width: 100%;
-  height: auto;
   display: block;
 }
 /* ---------- V�deo promocional ---------- */
@@ -1671,12 +1650,12 @@ body[data-pagina="usos"] .tarjeta .icono {
 }
 /* ---------- Marcos del umbral: arcos, auras y motas doradas ---------- */
 
-/* Imagen principal de cada seccion: forma de arco-umbral con el marco pegado al borde */
+/* Imagen principal de cada seccion: forma de arco-umbral con doble marco */
 .dos-columnas .columna-imagen img {
   border-color: rgba(201, 164, 95, 0.5);
   border-radius: 50% 50% 14px 14px / 26% 26% 14px 14px;
   outline: 1px solid rgba(201, 164, 95, 0.28);
-  outline-offset: 0;
+  outline-offset: 10px;
   animation: brillo-marco 7s ease-in-out infinite;
 }
 
@@ -2274,7 +2253,6 @@ body[data-pagina="usos"] .tarjeta .icono {
 }
 /* ---------- Marco de la ficha de compra ---------- */
 .compra-figura img {
-  height: auto;
   aspect-ratio: 5 / 4;
   object-fit: cover;
   object-position: center 62%;
@@ -2320,23 +2298,6 @@ body[data-pagina="usos"] .tarjeta .icono {
 .compra-figura.vertical img {
   aspect-ratio: 4 / 5;
   object-position: center;
-}
-
-/* Dúo Ritual: encuadre desplazado hacia el frasco y el bálsamo de la derecha */
-.compra-figura img[src*="duo-esencial"],
-.compra-figura.vertical img[src*="duo-esencial"] {
-  object-position: 68% 62%;
-}
-
-/* Esencia 50 ml en marco horizontal: centrada para no cortar el tapón */
-.compra-figura img[src*="esencia-50"] {
-  object-position: center 50%;
-}
-
-@media (max-width: 900px) {
-  .compra-figura img[src*="esencia-50"] {
-    object-position: center 45%;
-  }
 }
 /* ---------- M�sica ambiente del Umbral ---------- */
 .musica-iframe {

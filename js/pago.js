@@ -19,11 +19,11 @@ const CONFIG_REDSYS = {
     test: "https://sis-t.redsys.es:25443/sis/realizarPago",
     produccion: "https://sis.redsys.es/sis/realizarPago",
   },
-  comercio: "372022558", // FUC: cÃ³digo de comercio de tu TPV
-  terminal: "1", // nÃºmero de terminal
+  comercio: "999008889", // FUC: código de comercio de tu TPV
+  terminal: "1", // número de terminal
   moneda: "978", // EUR
-  clave: "sq7HjrUOBfKmC576ILgskD5srU870gJ7", // clave secreta (en pruebas, la de test de Redsys)
-  nombreComercio: "SHADDAI Â· Esencia de Umbral",
+  clave: "sq7HjrUOBf2m7spUjazlA", // clave secreta (en pruebas, la de test de Redsys)
+  nombreComercio: "SHADDAI · Esencia de Umbral",
   urlOk: "",
   urlKo: "",
   urlNotificacion: "",

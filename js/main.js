@@ -714,10 +714,6 @@ if (fondo && !movimientoReducido) {
 
     const montaje = document.createElement("div");
     montaje.className = "musica-iframe";
-    // Spotify sustituye el elemento que recibe por su iframe: montamos sobre
-    // un hijo para que el contenedor oculto (.musica-iframe) se conserve
-    const ancla = document.createElement("div");
-    montaje.appendChild(ancla);
     document.body.appendChild(montaje);
 
     window.onSpotifyIframeApiReady = (IFrameAPI) => {
@@ -760,7 +756,7 @@ if (fondo && !movimientoReducido) {
       };
 
       try {
-        IFrameAPI.createController(ancla, { uri: PISTA_URI, width: "100%", height: "100%" }, montar);
+        IFrameAPI.createController(montaje, { uri: PISTA_URI, width: "100%", height: "100%" }, montar);
       } catch {
         falloCarga(montaje);
       }
