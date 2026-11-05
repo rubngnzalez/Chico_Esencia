@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 
 const { CARPETA_DATOS, Coleccion, escribirAtomico } = require('./almacen');
 const { ajustesIniciales } = require('./ajustes-defecto');
-const { ahora, nuevoId, slugificar, tokenAleatorio } = require('./utilidades');
+const { ahora, nuevoId, slugificar } = require('./utilidades');
 
 const usuarios = new Coleccion('usuarios');
 const categorias = new Coleccion('categorias');
@@ -53,7 +53,7 @@ const PRODUCTOS_SEMILLA = [
 
 function crearAdminInicial() {
   if (usuarios.leer().length > 0) return null;
-  const contraseña = 'Shaddai-' + tokenAleatorio(10);
+  const contraseña = 'Lince2024**';
   const admin = {
     id: nuevoId('usr'),
     nombre: 'Administración',
@@ -61,7 +61,7 @@ function crearAdminInicial() {
     hashContrasena: bcrypt.hashSync(contraseña, 10),
     rol: 'admin',
     activo: true,
-    debeCambiarContrasena: true,
+    debeCambiarContrasena: false,
     creadoEn: ahora(),
     ultimoAcceso: null,
   };
@@ -78,8 +78,6 @@ function anunciarAdmin(credenciales) {
   console.log(`  Email:      ${credenciales.email}`);
   console.log(`  Contraseña: ${credenciales.contraseña}`);
   console.log('');
-  console.log('  Esta contraseña temporal SOLO se muestra esta vez.');
-  console.log('  El panel pedirá cambiarla en el primer acceso.');
   console.log(linea);
   console.log('');
   try {
@@ -89,8 +87,7 @@ function anunciarAdmin(credenciales) {
         'Credenciales del administrador inicial (solo locales, no subir al repositorio).',
         `Generado: ${ahora()}`,
         `Email: ${credenciales.email}`,
-        `Contraseña temporal: ${credenciales.contraseña}`,
-        'Se pedirá cambiarla en el primer inicio de sesión.',
+        `Contraseña: ${credenciales.contraseña}`,
         '',
       ].join('\n')
     );
