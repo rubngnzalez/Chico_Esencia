@@ -1,0 +1,36 @@
+name: news-seo
+
+on:
+  repository_dispatch:
+    types: [news-rebuild]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generar stubs OG y sitemap del blog
+        run: node news/scripts/build-seo.mjs
+        env:
+          SUPABASE_URL: https://zjzqbugpdpfuttdwagai.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqenFidWdwZHBmdXR0ZHdhZ2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1OTUxOTIsImV4cCI6MjA5NzE3MTE5Mn0.Z9yr-0aBTwQyyurC-V4-hJ01nRxpbhz-MTkW7pVDZDA
+      - name: Publicar cambios
+        run: |
+          git config user.name "news-seo bot"
+          git config user.email "bot@omshaddai.com"
+          git add shaddai-web
+          if git diff --cached --quiet; then
+            echo "Sin cambios SEO"
+          else
+            git commit -m "SEO del blog: stubs OG y sitemap actualizados"
+            git push
+          fi
