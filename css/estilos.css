@@ -794,6 +794,31 @@ body[data-pagina="usos"] .tarjeta .icono {
   background: rgba(201, 106, 90, 0.12);
 }
 
+/* Ambiente de marca sobre el resumen del pedido (pago) */
+.pago-marca {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 1.3rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid rgba(201, 164, 95, 0.28);
+}
+
+.pago-marca .marca {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.7rem;
+}
+
+.pago-marca .marca .shin {
+  width: 4.2rem;
+  height: 4.2rem;
+}
+
+.pago-marca .marca .nombre {
+  font-size: 1.35rem;
+}
+
 .campo textarea {
   min-height: 9rem;
   resize: vertical;

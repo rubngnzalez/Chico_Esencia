@@ -154,17 +154,34 @@ const firmarParametros = (parametrosB64, pedido, claveB64) => {
 const CAMPOS_OBLIGATORIOS = ["nombre", "email", "direccion", "cp", "poblacion", "provincia"];
 const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const limpiarErroresPago = () => {
-  formularioPagoR.querySelectorAll(".campo-error").forEach((entrada) => entrada.classList.remove("campo-error"));
+// Los campos obligatorios se pintan en rojo hasta que están completados
+// (y en el caso del email, hasta que el formato es válido)
+const campoValido = (entrada) => {
+  const valor = (entrada.value || "").trim();
+  if (!valor) return false;
+  if (entrada.name === "email" && !EMAIL_VALIDO.test(valor)) return false;
+  return true;
+};
+
+const actualizarCampo = (entrada) => {
+  entrada.classList.toggle("campo-error", !campoValido(entrada));
+};
+
+const marcarPendientesPago = () => {
+  CAMPOS_OBLIGATORIOS.forEach((campo) => {
+    const entrada = formularioPagoR.elements[campo];
+    if (entrada) actualizarCampo(entrada);
+  });
 };
 
 if (formularioPagoR) {
   formularioPagoR.addEventListener("input", (evento) => {
     const entrada = evento.target;
-    if (entrada.classList && entrada.classList.contains("campo-error") && entrada.value.trim()) {
-      entrada.classList.remove("campo-error");
-    }
+    if (entrada.name && CAMPOS_OBLIGATORIOS.includes(entrada.name)) actualizarCampo(entrada);
   });
+
+  // Estado inicial: obligatorios vacíos en rojo desde el primer vistazo
+  marcarPendientesPago();
 
   formularioPagoR.addEventListener("submit", async (evento) => {
     evento.preventDefault();
@@ -172,16 +189,13 @@ if (formularioPagoR) {
     if (articulosPago.length === 0) return;
 
     // Validación de contacto/envío: no se pasa a Redsys sin estos datos
-    limpiarErroresPago();
+    marcarPendientesPago();
     const etiquetasFaltan = [];
     let primeraInvalida = null;
     CAMPOS_OBLIGATORIOS.forEach((campo) => {
       const entrada = formularioPagoR.elements[campo];
       if (!entrada) return;
-      const valor = (entrada.value || "").trim();
-      const invalido = valor === "" || (campo === "email" && !EMAIL_VALIDO.test(valor));
-      if (invalido) {
-        entrada.classList.add("campo-error");
+      if (!campoValido(entrada)) {
         if (!primeraInvalida) primeraInvalida = entrada;
         const etiqueta = entrada.closest(".campo")?.querySelector("label");
         etiquetasFaltan.push((etiqueta ? etiqueta.textContent : campo).replace(/\*/g, "").trim());
