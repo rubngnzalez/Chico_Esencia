@@ -112,6 +112,11 @@ if (typeof CONEXION !== "undefined") {
       const etiqueta = entrada.closest(".metodo-pago");
       if (etiqueta) etiqueta.hidden = !activo;
     });
+    // Nota de envío con el umbral real del panel (antes estaba fija en 80 €)
+    const notaEnvio = document.querySelector("[data-nota-envio]");
+    if (notaEnvio) {
+      notaEnvio.textContent = `El envío peninsular es gratuito a partir de ${formatearPrecio(CONFIG_ENVIO.gratisDesde)}. Preparamos cada frasco por orden de pago.`;
+    }
   });
 }
 

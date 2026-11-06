@@ -253,7 +253,13 @@ const CONEXION = (() => {
   // Coste y umbral de envío reales cuando el panel los trae
   const aplicarEnvio = (datos) => {
     const envio = datos.envio;
-    if (!envio || envio.activo === false) return;
+    if (!envio) return;
+    // «Cobrar envío» apagado = envío gratuito; los valores del panel solo
+    // se aplican cuando el interruptor está activo.
+    if (envio.activo === false) {
+      if (typeof CONFIG_ENVIO === "object" && CONFIG_ENVIO) CONFIG_ENVIO.coste = 0;
+      return;
+    }
     if (typeof CONFIG_ENVIO === "object" && CONFIG_ENVIO) {
       if (Number(envio.coste) >= 0) CONFIG_ENVIO.coste = Number(envio.coste);
       if (Number(envio.gratisDesde) >= 0) CONFIG_ENVIO.gratisDesde = Number(envio.gratisDesde);
