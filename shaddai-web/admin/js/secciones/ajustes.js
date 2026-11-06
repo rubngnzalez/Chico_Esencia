@@ -41,8 +41,8 @@ const VALORES_CODIGO = {
   githubRepo: 'https://github.com/rubngnzalez/Chico_Esencia',
   githubRama: 'main',
   despliegue: 'GitHub Pages (web + /admin) · Cloudflare Worker (API + /panel)',
-  emailGeneral: 'hola@shaddai.es',
-  emailPedidos: 'Pedidos@shaddai.es',
+  emailGeneral: 'info@omshaddai.com',
+  emailPedidos: 'pedidos@omshaddai.com',
 };
 
 // Los dos valores de conexión reales están ya cargados en esta página:
@@ -188,7 +188,7 @@ function pintarSmtp(zona, datos) {
     campoTexto('puerto', 'Puerto', datos.puerto ?? 587, 'number') +
     campoTexto('usuario', 'Usuario', datos.usuario) +
     campoTexto('contrasena', 'Contraseña', '', 'password', hayClave ? 'Hay una contraseña guardada: dejar vacío para conservarla' : 'Contraseña') +
-    campoTexto('desde', 'Remitente (De:)', datos.desde, 'text', 'SHADDAI <hola@shaddai.es>') +
+    campoTexto('desde', 'Remitente (De:)', datos.desde, 'text', 'SHADDAI <info@omshaddai.com>') +
     campoInterruptor('activo', 'SMTP activo', datos.activo),
     `<p class="nota-secreto">${hayClave ? 'Hay una contraseña guardada. Escribe una nueva solo si quieres reemplazarla.' : 'Sin contraseña guardada.'}</p>
      <div class="ayuda-seccion">
