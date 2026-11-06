@@ -150,11 +150,50 @@ const firmarParametros = (parametrosB64, pedido, claveB64) => {
   );
 };
 
+// Datos de contacto y envío obligatorios antes de pasar al pago de Redsys
+const CAMPOS_OBLIGATORIOS = ["nombre", "email", "direccion", "cp", "poblacion", "provincia"];
+const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const limpiarErroresPago = () => {
+  formularioPagoR.querySelectorAll(".campo-error").forEach((entrada) => entrada.classList.remove("campo-error"));
+};
+
 if (formularioPagoR) {
+  formularioPagoR.addEventListener("input", (evento) => {
+    const entrada = evento.target;
+    if (entrada.classList && entrada.classList.contains("campo-error") && entrada.value.trim()) {
+      entrada.classList.remove("campo-error");
+    }
+  });
+
   formularioPagoR.addEventListener("submit", async (evento) => {
     evento.preventDefault();
 
     if (articulosPago.length === 0) return;
+
+    // Validación de contacto/envío: no se pasa a Redsys sin estos datos
+    limpiarErroresPago();
+    const etiquetasFaltan = [];
+    let primeraInvalida = null;
+    CAMPOS_OBLIGATORIOS.forEach((campo) => {
+      const entrada = formularioPagoR.elements[campo];
+      if (!entrada) return;
+      const valor = (entrada.value || "").trim();
+      const invalido = valor === "" || (campo === "email" && !EMAIL_VALIDO.test(valor));
+      if (invalido) {
+        entrada.classList.add("campo-error");
+        if (!primeraInvalida) primeraInvalida = entrada;
+        const etiqueta = entrada.closest(".campo")?.querySelector("label");
+        etiquetasFaltan.push((etiqueta ? etiqueta.textContent : campo).replace(/\*/g, "").trim());
+      }
+    });
+    if (etiquetasFaltan.length > 0) {
+      avisoPagoR.textContent =
+        "Para pasar al pago necesitamos tus datos: " + etiquetasFaltan.join(", ") + ".";
+      if (primeraInvalida) primeraInvalida.focus();
+      return;
+    }
+    avisoPagoR.textContent = "";
 
     const datos = new FormData(formularioPagoR);
     const nombre = (datos.get("nombre") || "").toString().trim();

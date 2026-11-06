@@ -170,12 +170,29 @@ Deno.serve(async (request: Request) => {
     provincia: texto('provincia', 100),
   };
 
+  // Datos de contacto y envío obligatorios antes de aceptar el pago
+  const obligatorios: Array<[string, string]> = [
+    ['nombre', cliente.nombre],
+    ['correo electrónico', cliente.email],
+    ['dirección', cliente.direccion],
+    ['código postal', cliente.cp],
+    ['población', cliente.poblacion],
+    ['provincia', cliente.provincia],
+  ];
+  const faltan = obligatorios.filter(([, valor]) => !valor).map(([campo]) => campo);
+  if (faltan.length > 0) {
+    return errorJson(`Faltan datos de contacto para el envío: ${faltan.join(', ')}.`, 400, request);
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cliente.email)) {
+    return errorJson('El correo electrónico indicado no es válido.', 400, request);
+  }
+
   // 6 · URLs de retorno (ajustes o la propia web)
   const origenWeb = request.headers.get('origin') || 'https://omshaddai.com';
   const urlOk = String(redsys.urlOk || '') || `${origenWeb}/pago-ok.html`;
   const urlKo = String(redsys.urlKo || '') || `${origenWeb}/pago-ko.html`;
   const urlNotificacion = String(redsys.urlNotificacion || '') ||
-    `${Deno.env.get('SUPABASE_URL')}/functions/v1/redsys-notificacion`;
+    `${Deno.env.get('SUPABASE_URL')}/functions/v1/oms-redsys-notificacion`;
 
   // 7 · Parámetros y firma HMAC_SHA256_V1
   const parametros = {

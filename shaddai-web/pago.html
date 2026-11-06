@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="img/favicon.ico">
-  <link rel="stylesheet" href="css/estilos.css?v=8">
+  <link rel="stylesheet" href="css/estilos.css?v=9">
 </head>
 <body data-pagina="carrito">
 
@@ -77,9 +77,10 @@
 
         <form class="panel" data-formulario-pago novalidate>
           <span class="etiqueta">Tus datos</span>
+          <p class="carrito-nota" style="margin: 0.4rem 0 1rem;">Necesitamos tus datos para preparar y enviar tu pedido. Los campos con <strong>*</strong> son obligatorios antes de pasar al pago.</p>
           <div class="pago-datos">
             <div class="campo">
-              <label for="p-nombre">Nombre</label>
+              <label for="p-nombre">Nombre *</label>
               <input id="p-nombre" name="nombre" type="text" autocomplete="given-name" required>
             </div>
             <div class="campo">
@@ -87,7 +88,7 @@
               <input id="p-apellidos" name="apellidos" type="text" autocomplete="family-name">
             </div>
             <div class="campo campo--ancho">
-              <label for="p-email">Correo electrónico</label>
+              <label for="p-email">Correo electrónico *</label>
               <input id="p-email" name="email" type="email" autocomplete="email" required>
             </div>
             <div class="campo">
@@ -95,20 +96,20 @@
               <input id="p-telefono" name="telefono" type="tel" autocomplete="tel">
             </div>
             <div class="campo">
-              <label for="p-cp">Código postal</label>
-              <input id="p-cp" name="cp" type="text" inputmode="numeric" autocomplete="postal-code">
+              <label for="p-cp">Código postal *</label>
+              <input id="p-cp" name="cp" type="text" inputmode="numeric" autocomplete="postal-code" required>
             </div>
             <div class="campo campo--ancho">
-              <label for="p-direccion">Dirección de envío</label>
-              <input id="p-direccion" name="direccion" type="text" autocomplete="street-address">
+              <label for="p-direccion">Dirección de envío *</label>
+              <input id="p-direccion" name="direccion" type="text" autocomplete="street-address" required>
             </div>
             <div class="campo">
-              <label for="p-poblacion">Población</label>
-              <input id="p-poblacion" name="poblacion" type="text" autocomplete="address-level2">
+              <label for="p-poblacion">Población *</label>
+              <input id="p-poblacion" name="poblacion" type="text" autocomplete="address-level2" required>
             </div>
             <div class="campo">
-              <label for="p-provincia">Provincia</label>
-              <input id="p-provincia" name="provincia" type="text" autocomplete="address-level1">
+              <label for="p-provincia">Provincia *</label>
+              <input id="p-provincia" name="provincia" type="text" autocomplete="address-level1" required>
             </div>
           </div>
 
