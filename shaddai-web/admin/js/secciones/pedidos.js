@@ -3,6 +3,7 @@
 // aquí solo se leen y se cambia el estado (solo admin, vía RLS).
 import { sb, asegurar, mensajeError } from '../bd.js';
 import { escapar, euro, fechaHora, toast, abrirModal, badgeEstado, etiquetaVacia, descargarEml } from '../api.js';
+import { imprimirEtiqueta, remitenteActual } from './etiquetas.js';
 
 const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'];
 
@@ -171,6 +172,9 @@ function abrirDetalle(pedido, lineas, correos = []) {
       <p class="totales-pedido">
         Subtotal: ${euro(pedido.subtotal)} · Envío: ${euro(pedido.envio)} · <strong>Total: ${euro(pedido.total)}</strong>
       </p>
+      <div class="modal-acciones">
+        <button class="boton boton-primario" data-etiqueta type="button">Imprimir etiqueta de envío</button>
+      </div>
       ${correos.length ? `
       <h3 class="detalle-subtitulo">Correos de este pedido</h3>
       ${correos.map((o) => `
@@ -187,4 +191,12 @@ function abrirDetalle(pedido, lineas, correos = []) {
       descargarEml(`pedido-${pedido.numero}-${(correo.asunto || 'shaddai').slice(0, 40).replace(/[^\w-]+/g, '-')}.eml`, correo.eml);
     });
   });
+
+  const botonEtiqueta = modal.querySelector('[data-etiqueta]');
+  if (botonEtiqueta) {
+    botonEtiqueta.addEventListener('click', async () => {
+      const rem = await remitenteActual();
+      imprimirEtiqueta(pedido, lineas, rem);
+    });
+  }
 }
