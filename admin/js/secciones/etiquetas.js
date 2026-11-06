@@ -60,6 +60,7 @@ export function cuerpoEtiqueta(pedido, lineas, rem) {
       <div class="etq-nombre">${escapar([cliente.nombre, cliente.apellidos].filter(Boolean).join(' ') || '—')}</div>
       ${cliente.direccion ? `<div class="etq-linea">${escapar(cliente.direccion)}</div>` : ''}
       <div class="etq-linea etq-poblacion">${escapar([cliente.cp, cliente.poblacion].filter(Boolean).join(' '))}${cliente.provincia ? ` (${escapar(cliente.provincia)})` : ''}</div>
+      ${cliente.pais && cliente.pais !== 'España' ? `<div class="etq-linea etq-pais">${escapar(cliente.pais.toUpperCase())}</div>` : ''}
       ${cliente.telefono ? `<div class="etq-linea">Tel. ${escapar(cliente.telefono)}</div>` : ''}
       ${cliente.email ? `<div class="etq-linea etq-email">${escapar(cliente.email)}</div>` : ''}
     </div>
@@ -90,6 +91,7 @@ export function imprimirEtiqueta(pedido, lineas, rem) {
   .etq-nombre { font-weight: bold; font-size: 14pt; margin-bottom: 2mm; }
   .etq-linea { margin: 0.5mm 0; }
   .etq-poblacion { font-weight: bold; }
+  .etq-pais { font-weight: bold; letter-spacing: 0.08em; }
   .etq-email { font-size: 9.5pt; color: #222; word-break: break-all; }
   .etq-pie { border-top: 1px solid #999; padding-top: 3mm; font-size: 9pt; }
   .etq-contenido { margin: 1mm 0; }
