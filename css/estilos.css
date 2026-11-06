@@ -788,6 +788,12 @@ body[data-pagina="usos"] .tarjeta .icono {
   border-color: var(--oro);
 }
 
+/* Campo con dato obligatorio pendiente al pasar al pago */
+.campo input.campo-error {
+  border-color: #c96a5a;
+  background: rgba(201, 106, 90, 0.12);
+}
+
 .campo textarea {
   min-height: 9rem;
   resize: vertical;
