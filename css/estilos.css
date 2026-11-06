@@ -819,6 +819,17 @@ body[data-pagina="usos"] .tarjeta .icono {
   font-size: 1.35rem;
 }
 
+/* Logo oficial de Bizum en la opción de pago */
+.metodo-pago .bizum-logo {
+  height: 1.15rem;
+  width: auto;
+  vertical-align: -0.18rem;
+  margin-right: 0.3rem;
+  background: #fff;
+  border-radius: 0.15rem;
+  padding: 0.05rem 0.25rem;
+}
+
 .campo textarea {
   min-height: 9rem;
   resize: vertical;
