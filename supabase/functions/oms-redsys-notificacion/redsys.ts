@@ -196,6 +196,30 @@ export function tripleDesEcbCifrar(datos: Uint8Array, clave24: Uint8Array): Uint
   return salida;
 }
 
+// 3DES-CBC con IV cero y relleno de bytes nulos (el formato que espera el
+// SIS actual: la firma cambia respecto al ECB de las versiones antiguas).
+function tripleDesCbcCifrar(datos: Uint8Array, clave24: Uint8Array): Uint8Array {
+  if (clave24.length !== 24) throw new Error('La clave 3DES debe tener 24 bytes.');
+  const k1 = generarSubclavesDes(clave24.slice(0, 8));
+  const k2 = generarSubclavesDes(clave24.slice(8, 16));
+  const k3 = generarSubclavesDes(clave24.slice(16, 24));
+  const relleno = (8 - (datos.length % 8)) % 8;
+  const entrada = new Uint8Array(datos.length + relleno);
+  entrada.set(datos);
+  const salida = new Uint8Array(entrada.length);
+  let anterior = new Uint8Array(8);
+  for (let i = 0; i < entrada.length; i += 8) {
+    const bloque = entrada.slice(i, i + 8);
+    const mezclado = new Uint8Array(8);
+    for (let j = 0; j < 8; j++) mezclado[j] = bloque[j] ^ anterior[j];
+    const paso1 = bloqueDes(mezclado, k1, true);
+    const paso2 = bloqueDes(paso1, k2, false);
+    anterior = bloqueDes(paso2, k3, true);
+    salida.set(anterior, i);
+  }
+  return salida;
+}
+
 async function hmacSha256Base64(claveBytes: Uint8Array, datosTexto: string): Promise<string> {
   const clave = await crypto.subtle.importKey(
     'raw',
@@ -239,7 +263,8 @@ function normalizarClave(claveBase64: string): Uint8Array {
   return clave;
 }
 
-// Estándar oficial actual: clave CICLADA hasta 24 bytes.
+// Estándar oficial actual: si la clave tiene menos de 24 bytes, se CICLA
+// (se repite a sí misma) hasta completarlos.
 function claveCiclada(claveBase64: string): Uint8Array {
   let clave = base64ABytes(claveBase64);
   if (clave.length === 0) throw new Error('La clave secreta de Redsys no está configurada.');
@@ -252,7 +277,7 @@ function claveCiclada(claveBase64: string): Uint8Array {
 export function claveDeOperacion(claveBase64: string, numeroPedido: string): Uint8Array {
   if (!claveBase64) throw new Error('La clave secreta de Redsys no está configurada.');
   const clave = claveCiclada(claveBase64);
-  return tripleDesEcbCifrar(new TextEncoder().encode(String(numeroPedido)), clave);
+  return tripleDesCbcCifrar(new TextEncoder().encode(String(numeroPedido)), clave);
 }
 
 export async function firmarParametros(
@@ -261,18 +286,9 @@ export async function firmarParametros(
   claveBase64: string
 ): Promise<string> {
   const derivada = claveDeOperacion(claveBase64, numeroPedido);
-  return hmacSha256Base64(derivada, String(parametrosB64) + String(numeroPedido));
-}
-
-// Firma con la derivación antigua (relleno con ceros), alternativa de validación
-async function firmarParametrosAntiguo(
-  parametrosB64: string,
-  numeroPedido: string,
-  claveBase64: string
-): Promise<string> {
-  const clave = normalizarClave(claveBase64);
-  const derivada = tripleDesEcbCifrar(new TextEncoder().encode(String(numeroPedido)), clave);
-  return hmacSha256Base64(derivada, String(parametrosB64) + String(numeroPedido));
+  // El SIS actual valida la firma SOLO sobre la cadena Base64 de parámetros
+  // (sin añadir el número de pedido, como hacían las versiones anteriores).
+  return hmacSha256Base64(derivada, String(parametrosB64));
 }
 
 export function normalizarFirma(firma: string): string {
@@ -294,9 +310,12 @@ export async function verificarNotificacion(
   cuerpo: Record<string, string>,
   claveBase64: string
 ): Promise<Verificacion> {
-  const parametrosRecibidos = cuerpo['Ds_Merchant_Parameters'] || cuerpo['DS_MERCHANT_PARAMETERS'];
+  const parametrosRecibidos =
+    cuerpo['Ds_MerchantParameters'] ||
+    cuerpo['Ds_Merchant_Parameters'] ||
+    cuerpo['DS_MERCHANT_PARAMETERS'];
   const firmaRecibida = normalizarFirma(cuerpo['Ds_Signature'] || cuerpo['DS_MERCHANT_SIGNATURE'] || '');
-  const version = cuerpo['Ds_Signature_Version'] || cuerpo['DS_MERCHANT_SIGNATUREVERSION'];
+  const version = cuerpo['Ds_SignatureVersion'] || cuerpo['Ds_Signature_Version'] || cuerpo['DS_MERCHANT_SIGNATUREVERSION'];
 
   if (!parametrosRecibidos || !firmaRecibida) {
     return { ok: false, motivo: 'Faltan parámetros de la notificación.' };
@@ -318,12 +337,23 @@ export async function verificarNotificacion(
     return { ok: false, motivo: 'La notificación no incluye número de pedido.' };
   }
 
-  // Acepta la firma con la derivación oficial (ciclada) o la antigua (ceros)
-  const firmaCiclada = await firmarParametros(parametrosRecibidos, pedido, claveBase64);
-  const firmaAntigua = await firmarParametrosAntiguo(parametrosRecibidos, pedido, claveBase64);
-  const esperadas = [normalizarFirma(firmaCiclada), normalizarFirma(firmaAntigua)];
-  const recibida = normalizarFirma(firmaRecibida);
-  const valida = esperadas.some((e) => comparacionSeguraCadena(e, recibida));
+  // Aceptamos las variantes que puede enviar el SIS: firma solo sobre la
+  // cadena Base64 (formato actual) o sobre Base64 + pedido (clásico), con la
+  // clave derivada por 3DES-CBC o por 3DES-ECB (versiones anteriores).
+  const candidatos: string[] = [];
+  try {
+    candidatos.push(await firmarParametros(parametrosRecibidos, pedido, claveBase64));
+  } catch {}
+  try {
+    const derivadaCbc = claveDeOperacion(claveBase64, pedido);
+    candidatos.push(await hmacSha256Base64(derivadaCbc, String(parametrosRecibidos) + pedido));
+  } catch {}
+  try {
+    const derivadaEcb = tripleDesEcbCifrar(new TextEncoder().encode(pedido), claveCiclada(claveBase64));
+    candidatos.push(await hmacSha256Base64(derivadaEcb, String(parametrosRecibidos) + pedido));
+  } catch {}
+
+  const valida = candidatos.some((candidata) => comparacionSeguraCadena(normalizarFirma(candidata), firmaRecibida));
   if (!valida) {
     return { ok: false, motivo: 'La firma de la notificación no es válida.' };
   }

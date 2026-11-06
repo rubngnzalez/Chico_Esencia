@@ -129,15 +129,24 @@ const generarPedido = () => {
   );
 };
 
-// Firma HMAC_SHA256_V1: clave de operación 3DES + HMAC-SHA256 base64
+// Firma HMAC_SHA256_V1 — igual que la librería oficial de Redsys:
+// clave de operación = 3DES-CBC con IV de ceros y relleno de bytes nulos
+// (sin bloque PKCS7) sobre el número de pedido. El SIS actual valida la
+// firma SOLO sobre la cadena Base64 de parámetros, sin añadir el pedido.
 const firmarParametros = (parametrosB64, pedido, claveB64) => {
   const clave = CryptoJS.enc.Base64.parse(claveB64);
-  const claveOperacion = CryptoJS.TripleDES.encrypt(pedido, clave, {
-    mode: CryptoJS.mode.ECB,
-    padding: CryptoJS.pad.Pkcs7,
+  const datos = CryptoJS.enc.Utf8.parse(pedido);
+  const falta = (8 - (datos.sigBytes % 8)) % 8;
+  const rellenado = falta
+    ? datos.clone().concat(CryptoJS.enc.Hex.parse("00".repeat(falta)))
+    : datos;
+  const claveOperacion = CryptoJS.TripleDES.encrypt(rellenado, clave, {
+    mode: CryptoJS.mode.CBC,
+    iv: CryptoJS.enc.Hex.parse("0000000000000000"),
+    padding: CryptoJS.pad.NoPadding,
   }).ciphertext;
   return CryptoJS.enc.Base64.stringify(
-    CryptoJS.HmacSHA256(parametrosB64 + pedido, claveOperacion)
+    CryptoJS.HmacSHA256(parametrosB64, claveOperacion)
   );
 };
 
@@ -222,7 +231,9 @@ if (formularioPagoR) {
         DS_MERCHANT_PAYMETHODS: metodo === "bizum" ? "z" : "C",
       };
 
-      parametrosB64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(JSON.stringify(parametros)));
+      // Redsys exige el JSON al estilo de php json_encode: barras escapadas
+      const jsonPedido = JSON.stringify(parametros).replace(/\//g, "\\/");
+      parametrosB64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(jsonPedido));
       firma = firmarParametros(parametrosB64, pedido, CONFIG_REDSYS.clave);
     }
 
@@ -246,9 +257,9 @@ if (formularioPagoR) {
     envio.method = "POST";
     envio.action = (firmaApi && firmaApi.url) || CONFIG_REDSYS.urls[CONFIG_REDSYS.entorno];
     [
-      ["DS_MERCHANT_PARAMETERS", parametrosB64],
-      ["DS_MERCHANT_SIGNATURE", firma],
-      ["DS_MERCHANT_SIGNATUREVERSION", version],
+      ["Ds_MerchantParameters", parametrosB64],
+      ["Ds_Signature", firma],
+      ["Ds_SignatureVersion", version],
     ].forEach(([campo, valor]) => {
       const entrada = document.createElement("input");
       entrada.type = "hidden";
