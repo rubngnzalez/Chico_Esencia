@@ -45,11 +45,11 @@ function lineasTexto(lineas) {
 // HTML interior de la etiqueta (compartido por la vista previa y la impresión)
 export function cuerpoEtiqueta(pedido, lineas, rem) {
   const cliente = pedido.cliente || {};
-  const remitenteLineas = [
+  const remitenteLineas = [...new Set([
     rem.nombre,
     rem.direccion,
     [rem.telefono, rem.email].filter(Boolean).join(' · '),
-  ].filter(Boolean);
+  ].filter(Boolean).map((linea) => linea.trim()))];
 
   return `
     <div class="etq-remitente">
