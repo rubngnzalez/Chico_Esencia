@@ -237,7 +237,7 @@ if (formularioPagoR) {
       });
       if (botonEnviar) botonEnviar.disabled = false;
       if (firmaApi && !firmaApi.parametrosB64) {
-        avisoPagoR.textContent = `${firmaApi.error || "No hemos podido preparar el pago seguro."} Inténtalo de nuevo en un momento o escríbenos a hola@shaddai.es.`;
+        avisoPagoR.textContent = `${firmaApi.error || "No hemos podido preparar el pago seguro."} Inténtalo de nuevo en un momento o escríbenos a info@omshaddai.com.`;
         return;
       }
     }

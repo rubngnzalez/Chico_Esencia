@@ -141,8 +141,8 @@ if (formulario) {
     const enviarPorCorreo = () => {
       const asunto = `Mensaje de la web · ${nombre || "consulta"}`;
       const cuerpo = `Nombre: ${nombre}\nEmail: ${email}\n\n${mensaje}`;
-      window.location.href = `mailto:hola@shaddai.es?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-      aviso.textContent = "Se abre tu correo con el mensaje preparado para hola@shaddai.es: tu palabra queda registrada al enviarlo.";
+      window.location.href = `mailto:info@omshaddai.com?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+      aviso.textContent = "Se abre tu correo con el mensaje preparado para info@omshaddai.com: tu palabra queda registrada al enviarlo.";
       formulario.reset();
     };
 
@@ -156,7 +156,7 @@ if (formulario) {
           aviso.textContent = respuesta.mensaje || `Gracias, ${nombre || "alma buscadora"}. Hemos recibido tu mensaje: te responderemos con la calma que mereces.`;
           formulario.reset();
         } else {
-          aviso.textContent = `${respuesta.error || "No hemos podido enviar tu mensaje."} También puedes escribirnos a hola@shaddai.es.`;
+          aviso.textContent = `${respuesta.error || "No hemos podido enviar tu mensaje."} También puedes escribirnos a info@omshaddai.com.`;
         }
         return;
       }
@@ -345,7 +345,7 @@ const CONFIG_PAGO = {
   bizum: "600 000 000",
   iban: "ES00 0000 0000 0000 0000 0000",
   titular: "SHADDAI · Esencia de Umbral",
-  email: "hola@shaddai.es",
+  email: "info@omshaddai.com",
 };
 
 const botonPagar = document.querySelector("[data-accion-pagar]");

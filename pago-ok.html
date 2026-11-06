@@ -150,7 +150,7 @@
             `Total: ${formatear(pedido.total)}\n\n${lineasTexto}\n\n` +
             `Nombre: ${pedido.nombre || "-"}\nEmail: ${pedido.email || "-"}\nTeléfono: ${pedido.telefono || "-"}\n` +
             `Envío: ${pedido.direccion || "-"}\nFecha: ${new Date(pedido.fecha).toLocaleString("es-ES")}\n`;
-          location.href = `mailto:hola@shaddai.es?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+          location.href = `mailto:info@omshaddai.com?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
         });
       }
     })();
