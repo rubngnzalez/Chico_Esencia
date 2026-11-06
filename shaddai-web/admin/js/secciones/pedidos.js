@@ -144,7 +144,8 @@ export default async function (contenedor, contexto) {
 
 function abrirDetalle(pedido, lineas, correos = []) {
   const cliente = pedido.cliente || {};
-  const direccion = [cliente.direccion, cliente.cp, cliente.poblacion, cliente.provincia].filter(Boolean).join(', ');
+  const direccion = [cliente.direccion, cliente.cp, cliente.poblacion, cliente.provincia,
+    cliente.pais && cliente.pais !== 'España' ? cliente.pais : null].filter(Boolean).join(', ');
   const respuesta = pedido.respuesta_redsys;
   const modal = abrirModal(`Pedido ${pedido.numero}`, `
     <article class="detalle-pedido">

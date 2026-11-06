@@ -151,15 +151,21 @@ const firmarParametros = (parametrosB64, pedido, claveB64) => {
 };
 
 // Datos de contacto y envío obligatorios antes de pasar al pago de Redsys
-const CAMPOS_OBLIGATORIOS = ["nombre", "email", "direccion", "cp", "poblacion", "provincia"];
+const CAMPOS_OBLIGATORIOS = ["nombre", "email", "direccion", "cp", "poblacion", "provincia", "pais"];
 const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Los campos obligatorios se pintan en rojo hasta que están completados
-// (y en el caso del email, hasta que el formato es válido)
+// (y en el caso del email, hasta que el formato es válido). El código
+// postal se exige con 5 dígitos cuando el país es España.
 const campoValido = (entrada) => {
   const valor = (entrada.value || "").trim();
   if (!valor) return false;
   if (entrada.name === "email" && !EMAIL_VALIDO.test(valor)) return false;
+  if (entrada.name === "cp") {
+    const pais = formularioPagoR.elements.pais ? formularioPagoR.elements.pais.value : "España";
+    if (pais === "España" && !/^\d{5}$/.test(valor)) return false;
+  }
+  if ((entrada.name === "poblacion" || entrada.name === "provincia") && valor.length < 2) return false;
   return true;
 };
 
@@ -218,6 +224,7 @@ if (formularioPagoR) {
     const cp = (datos.get("cp") || "").toString().trim();
     const poblacion = (datos.get("poblacion") || "").toString().trim();
     const provincia = (datos.get("provincia") || "").toString().trim();
+    const pais = (datos.get("pais") || "España").toString().trim();
     const metodo = (datos.get("metodo") || "tarjeta").toString();
     const pedido = generarPedido();
     const botonEnviar = formularioPagoR.querySelector('button[type="submit"]');
@@ -233,7 +240,7 @@ if (formularioPagoR) {
         articulos: articulosPago.map((articulo) => ({ codigo: articulo.id, cantidad: articulo.cantidad })),
         metodo,
         numeroPedido: pedido,
-        envio: { nombre, apellidos, email, telefono, direccion, cp, poblacion, provincia },
+        envio: { nombre, apellidos, email, telefono, direccion, cp, poblacion, provincia, pais },
       });
       if (botonEnviar) botonEnviar.disabled = false;
       if (firmaApi && !firmaApi.parametrosB64) {
