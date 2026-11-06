@@ -11,7 +11,35 @@ const PESTANAS = [
   { clave: 'envio', texto: 'Envío' },
   { clave: 'emails-automaticos', texto: 'Emails automáticos' },
   { clave: 'notificaciones', texto: 'Notificaciones' },
+  { clave: 'sistema', texto: 'Sistema (oculto)' },
 ];
+
+// Inventario de todo lo que vive hardcodeado en el código (repo) y en los
+// secretos de despliegue: se muestra en la pestaña Sistema para que la
+// administración los vea y los edite (copia de consulta en la base de datos).
+const VALORES_CODIGO = {
+  supabaseUrl: 'https://zjzqbugpdpfuttdwagai.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqenFidWdwZHBmdXR0ZHdhZ2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1OTUxOTIsImV4cCI6MjA5NzE3MTE5Mn0.Z9yr-0aBTwQyyurC-V4-hJ01nRxpbhz-MTkW7pVDZDA',
+  supabaseRef: 'zjzqbugpdpfuttdwagai',
+  apiWorkerUrl: 'https://shaddai-panel.redes-301dpi.workers.dev',
+  dominioWeb: 'omshaddai.com',
+  d1Database: 'shaddai · 892de753-37a5-4361-bfa2-84d62b46689b',
+  secretosWorker: 'SECRETO_SESION · RESEND_API_KEY (solo con «npx wrangler secret put …»)',
+  redsysComercio: '372022558',
+  redsysTerminal: '1',
+  redsysMoneda: '978',
+  redsysClave: 'sq7HjrUOBfKmC576ILgskD5srU870gJ7',
+  redsysEntorno: 'test',
+  redsysUrlTest: 'https://sis-t.redsys.es:25443/sis/realizarPago',
+  redsysUrlProduccion: 'https://sis.redsys.es/sis/realizarPago',
+  redsysFucPruebas: '999008889',
+  redsysClavePruebas: 'sq7HjrUOBf2m7spUjazlA',
+  githubRepo: 'https://github.com/rubngnzalez/Chico_Esencia',
+  githubRama: 'main',
+  despliegue: 'GitHub Pages (web + /admin) · Cloudflare Worker (API + /panel)',
+  emailGeneral: 'hola@shaddai.es',
+  emailPedidos: 'Pedidos@shaddai.es',
+};
 
 let pestanaActual = 'contacto';
 
@@ -41,10 +69,13 @@ export default async function (contenedor) {
     else if (pestanaActual === 'redsys') pintarRedsys(zona, datos);
     else if (pestanaActual === 'envio') pintarEnvio(zona, datos);
     else if (pestanaActual === 'emails-automaticos') pintarEmails(zona, datos);
+    else if (pestanaActual === 'sistema') pintarSistema(zona, datos);
     else pintarNotificaciones(zona, datos);
   };
 
-  zona.addEventListener('click', (evento) => {
+  // Las pestañas viven en `contenedor` (hermanas de #zona-ajustes): el
+  // listener debe estar en `contenedor` o los clics nunca se detectan.
+  contenedor.addEventListener('click', (evento) => {
     const boton = evento.target.closest('.pestana');
     if (!boton) return;
     pestanaActual = boton.dataset.pestana;
@@ -261,4 +292,92 @@ function pintarNotificaciones(zona, datos) {
     nuevoContacto: campos.nuevoContacto.checked,
     nuevoMensaje: campos.nuevoMensaje.checked,
   }));
+}
+
+// Pestaña Sistema (oculta: solo llega aquí la administración, porque toda la
+// sección Ajustes es de rol admin). Muestra y permite editar TODO lo que hoy
+// está hardcodeado en el repo y en los secretos de despliegue. Lo guardado es
+// el inventario de referencia en la base de datos: los valores que de verdad
+// usa la web viven en los ficheros listados en cada bloque.
+function pintarSistema(zona, datos) {
+  // Un campo vacío o sin guardar muestra siempre el valor real del código.
+  const valor = (campo) => datos[campo] || VALORES_CODIGO[campo] || '';
+  const bloque = (titulo, nota, campos) => `
+    <fieldset class="plantilla-email">
+      <legend>${titulo}</legend>
+      <div class="formulario-grid">${campos}</div>
+      <p class="nota-secreto">${nota}</p>
+    </fieldset>`;
+
+  zona.innerHTML = `
+    <form class="formulario ajustes-formulario">
+      <div class="ayuda-seccion">
+        <p><strong>Sección oculta de administración.</strong> Inventario completo de la configuración
+        que está hardcodeada en el código (Supabase, GitHub, Worker, Redsys, emails por defecto).
+        Al guardar queda una copia editable en la base de datos, visible solo para administradores
+        desde esta pestaña. Los ficheros indicados en cada bloque son la fuente real que usa la web:
+        si cambias un valor aquí, sincroniza también su fichero (o pídemelo en el chat y lo actualizo).</p>
+      </div>
+
+      ${bloque('Supabase — web pública y panel /admin (GitHub Pages)', `
+        Conexión de arranque del panel /admin y de la web: vive en <code>shaddai-web/js/config-supabase.js</code>.
+        No puede venir de la base de datos (el panel la necesita para conectarse), así que el fichero es la fuente real.`,
+        campoTexto('supabaseUrl', 'URL del proyecto', valor('supabaseUrl')) +
+        campoTexto('supabaseAnonKey', 'Clave anon public (JWT)', valor('supabaseAnonKey')) +
+        campoTexto('supabaseRef', 'Referencia del proyecto (ref)', valor('supabaseRef')))}
+
+      ${bloque('API — Worker de Cloudflare', `
+        El Worker (<code>worker/</code>, nombre «shaddai-panel») sirve la API y este panel. La URL vive en
+        <code>shaddai-web/js/config-api.js</code> (SHADDAI_API_BASE) y los secretos solo se cambian con la CLI:
+        <code>npx wrangler secret put SECRETO_SESION</code> y <code>npx wrangler secret put RESEND_API_KEY</code>.`,
+        campoTexto('apiWorkerUrl', 'URL del Worker (API)', valor('apiWorkerUrl')) +
+        campoTexto('dominioWeb', 'Dominio de la web', valor('dominioWeb')) +
+        campoTexto('d1Database', 'Base de datos D1', valor('d1Database')) +
+        campoTexto('secretosWorker', 'Secretos del Worker', valor('secretosWorker')))}
+
+      ${bloque('Redsys — valores de reserva en la web (js/pago.js)', `
+        La web solo usa estos valores de <code>shaddai-web/js/pago.js</code> si la vista pública de ajustes
+        no responde. Lo vigente del TPV se gestiona en la pestaña «Pago (Redsys)». La clave de pruebas
+        <code>sq7HjrUOBf2m7spUjazlA</code> es pública en la documentación de Redsys.`,
+        campoTexto('redsysComercio', 'FUC (código de comercio) de reserva', valor('redsysComercio')) +
+        campoTexto('redsysTerminal', 'Terminal de reserva', valor('redsysTerminal')) +
+        campoTexto('redsysMoneda', 'Moneda de reserva', valor('redsysMoneda')) +
+        campoTexto('redsysEntorno', 'Entorno de reserva (test/produccion)', valor('redsysEntorno')) +
+        campoTexto('redsysClave', 'Clave de reserva del fichero pago.js', valor('redsysClave')) +
+        campoTexto('redsysUrlTest', 'URL del SIS · test', valor('redsysUrlTest')) +
+        campoTexto('redsysUrlProduccion', 'URL del SIS · producción', valor('redsysUrlProduccion')) +
+        campoTexto('redsysFucPruebas', 'FUC genérico de pruebas (ajustes por defecto)', valor('redsysFucPruebas')) +
+        campoTexto('redsysClavePruebas', 'Clave de pruebas pública de Redsys', valor('redsysClavePruebas')))}
+
+      ${bloque('GitHub — repositorio y despliegue', `
+        La web y el panel /admin se publican en GitHub Pages al actualizar la rama indicada.
+        El workflow <code>.github/workflows/news-seo.yml</code> regenera los stubs OG/sitemap del diario.`,
+        campoTexto('githubRepo', 'Repositorio', valor('githubRepo')) +
+        campoTexto('githubRama', 'Rama de publicación', valor('githubRama')) +
+        campoTexto('despliegue', 'Dónde vive cada pieza', valor('despliegue')))}
+
+      ${bloque('Emails por defecto del código', `
+        Valores con los que el código se inicializa cuando los ajustes están vacíos
+        (contacto y avisos internos por defecto).`,
+        campoTexto('emailGeneral', 'Email general (hola@)', valor('emailGeneral')) +
+        campoTexto('emailPedidos', 'Email de pedidos', valor('emailPedidos')))}
+
+      <div class="modal-acciones"><button type="submit" class="boton boton-primario">Guardar sistema</button></div>
+    </form>`;
+
+  const formulario = zona.querySelector('form');
+  formulario.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    const campos = formulario.elements;
+    const envio = {};
+    Object.keys(VALORES_CODIGO).forEach((campo) => {
+      envio[campo] = campos[campo].value.trim();
+    });
+    try {
+      await pedir('/api/ajustes/sistema', { method: 'PUT', cuerpo: envio });
+      toast('Configuración de sistema guardada.');
+    } catch (error) {
+      toast(error.message, 'error');
+    }
+  });
 }

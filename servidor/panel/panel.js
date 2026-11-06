@@ -21,6 +21,10 @@ const contadorBandeja = document.getElementById('contador-bandeja');
 const TODOS = ['admin', 'editor', 'lector'];
 const SOLO_GESTION = ['admin', 'editor'];
 
+// Cache-busting de las secciones: SUBE esta versión al cambiar cualquier
+// fichero de js/secciones/ para que el navegador no sirva el módulo viejo.
+const VERSION_SECCIONES = '2026-11-06a';
+
 const SECCIONES = {
   panel: { titulo: 'Panel', mod: './js/secciones/panel.js', roles: TODOS },
   productos: { titulo: 'Productos', mod: './js/secciones/productos.js', roles: TODOS },
@@ -91,7 +95,7 @@ async function irASeccion(clave) {
   contenidoSeccion.innerHTML = '<p class="cargando">Cargando…</p>';
   try {
     if (!modulosCargados.has(clave)) {
-      modulosCargados.set(clave, await import(SECCIONES[clave].mod));
+      modulosCargados.set(clave, await import(`${SECCIONES[clave].mod}?v=${VERSION_SECCIONES}`));
     }
     contenidoSeccion.innerHTML = '';
     const contexto = { usuario: usuarioActual, irA: irASeccion, refrescarContador, seccionActual: () => seccionActual };

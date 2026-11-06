@@ -84,6 +84,31 @@ export const ajustesPorDefecto = {
     nuevoContacto: true,
     nuevoMensaje: true,
   },
+  // Inventario de la configuración hardcodeada en el repo (pestaña Sistema,
+  // solo admin). Es copia de consulta: la fuente real están los ficheros.
+  sistema: {
+    supabaseUrl: 'https://zjzqbugpdpfuttdwagai.supabase.co',
+    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqenFidWdwZHBmdXR0ZHdhZ2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1OTUxOTIsImV4cCI6MjA5NzE3MTE5Mn0.Z9yr-0aBTwQyyurC-V4-hJ01nRxpbhz-MTkW7pVDZDA',
+    supabaseRef: 'zjzqbugpdpfuttdwagai',
+    apiWorkerUrl: 'https://shaddai-panel.redes-301dpi.workers.dev',
+    dominioWeb: 'omshaddai.com',
+    d1Database: 'shaddai · 892de753-37a5-4361-bfa2-84d62b46689b',
+    secretosWorker: 'SECRETO_SESION · RESEND_API_KEY (solo con «npx wrangler secret put …»)',
+    redsysComercio: '372022558',
+    redsysTerminal: '1',
+    redsysMoneda: '978',
+    redsysEntorno: 'test',
+    redsysClave: 'sq7HjrUOBfKmC576ILgskD5srU870gJ7',
+    redsysUrlTest: 'https://sis-t.redsys.es:25443/sis/realizarPago',
+    redsysUrlProduccion: 'https://sis.redsys.es/sis/realizarPago',
+    redsysFucPruebas: '999008889',
+    redsysClavePruebas: 'sq7HjrUOBf2m7spUjazlA',
+    githubRepo: 'https://github.com/rubngnzalez/Chico_Esencia',
+    githubRama: 'main',
+    despliegue: 'GitHub Pages (web + /admin) · Cloudflare Worker (API + /panel)',
+    emailGeneral: 'hola@shaddai.es',
+    emailPedidos: 'Pedidos@shaddai.es',
+  },
 };
 
 export function ajustesIniciales() {

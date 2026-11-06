@@ -246,6 +246,7 @@ create table if not exists public.oms_ajustes (
   envio jsonb not null default '{}'::jsonb,
   emails_automaticos jsonb not null default '{}'::jsonb,
   notificaciones jsonb not null default '{}'::jsonb,
+  sistema jsonb not null default '{}'::jsonb,
   actualizado_en timestamptz not null default now()
 );
 

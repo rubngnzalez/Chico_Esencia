@@ -16,6 +16,7 @@ const SECCIONES = [
   'envio',
   'emails-automaticos',
   'notificaciones',
+  'sistema',
 ];
 
 const ESQUEMAS = {
@@ -77,6 +78,30 @@ const ESQUEMAS = {
     nuevoPedido: { tipo: 'booleano', defecto: true },
     nuevoContacto: { tipo: 'booleano', defecto: true },
     nuevoMensaje: { tipo: 'booleano', defecto: true },
+  },
+  // Inventario de configuración hardcodeada (pestaña Sistema, solo admin).
+  sistema: {
+    supabaseUrl: { tipo: 'texto', defecto: '', max: 300 },
+    supabaseAnonKey: { tipo: 'texto', defecto: '', max: 600 },
+    supabaseRef: { tipo: 'texto', defecto: '', max: 100 },
+    apiWorkerUrl: { tipo: 'texto', defecto: '', max: 300 },
+    dominioWeb: { tipo: 'texto', defecto: '', max: 200 },
+    d1Database: { tipo: 'texto', defecto: '', max: 200 },
+    secretosWorker: { tipo: 'texto', defecto: '', max: 300 },
+    redsysComercio: { tipo: 'texto', defecto: '', max: 20 },
+    redsysTerminal: { tipo: 'texto', defecto: '', max: 5 },
+    redsysMoneda: { tipo: 'texto', defecto: '', max: 3 },
+    redsysEntorno: { tipo: 'texto', defecto: '', max: 20 },
+    redsysClave: { tipo: 'texto', defecto: '', max: 200 },
+    redsysUrlTest: { tipo: 'texto', defecto: '', max: 300 },
+    redsysUrlProduccion: { tipo: 'texto', defecto: '', max: 300 },
+    redsysFucPruebas: { tipo: 'texto', defecto: '', max: 20 },
+    redsysClavePruebas: { tipo: 'texto', defecto: '', max: 200 },
+    githubRepo: { tipo: 'texto', defecto: '', max: 300 },
+    githubRama: { tipo: 'texto', defecto: '', max: 100 },
+    despliegue: { tipo: 'texto', defecto: '', max: 300 },
+    emailGeneral: { tipo: 'texto', defecto: '', max: 200 },
+    emailPedidos: { tipo: 'texto', defecto: '', max: 200 },
   },
 };
 
