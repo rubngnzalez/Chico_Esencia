@@ -832,10 +832,20 @@ body[data-pagina="usos"] .tarjeta .icono {
   padding: 0.05rem 0.25rem;
 }
 
-.campo select,
 .campo textarea {
   min-height: 9rem;
   resize: vertical;
+}
+
+/* Desplegable del selector: tipografia verde Shaddai sobre crema */
+.campo select {
+  padding: 0.55rem 0.9rem;
+}
+
+.campo select option {
+  background: #f3eee2;
+  color: #16261b;
+  font-weight: 500;
 }
 
 .aviso-formulario {
