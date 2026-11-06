@@ -66,16 +66,7 @@ export function cuerpoEtiqueta(pedido, lineas, rem) {
     <div class="etq-pie">
       <div class="etq-pedido"><strong>Pedido ${escapar(pedido.numero)}</strong> · ${fechaCorta(pedido.creado_en)}</div>
       ${lineasTexto(lineas) ? `<div class="etq-contenido">${escapar(lineasTexto(lineas))}</div>` : ''}
-      <div class="etq-total">${badgeTexto(pedido.estado)} · ${euro(pedido.total)} · ${escapar(pedido.metodo || '—')}</div>
     </div>`;
-}
-
-function badgeTexto(estado) {
-  const etiquetas = {
-    pendiente: 'Pendiente', pagado: 'Pagado', enviado: 'Enviado',
-    entregado: 'Entregado', cancelado: 'Cancelado',
-  };
-  return etiquetas[estado] || estado || '—';
 }
 
 // Abre la ventana de impresión: papel A6 (105 × 148 mm), solo la etiqueta
