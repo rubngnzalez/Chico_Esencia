@@ -101,8 +101,8 @@ Deno.serve(async (request: Request) => {
 
   // 2 · Catálogo real y ofertas activas
   const { data: productos, error: errorProductos } = await db
-    .from('oms_productos')
-    .select('id, codigo, nombre, slug, precio, precio_oferta, stock, activo');
+.from('oms_productos')
+.select('id, codigo, slug, nombre, precio, precio_oferta, stock, activo, zonas_envio');
   if (errorProductos || !productos) {
     return errorJson('No se pudo leer el catálogo.', 500, request);
   }
@@ -117,6 +117,17 @@ Deno.serve(async (request: Request) => {
     (!o.fin || ahoraMs <= Date.parse(o.fin));
 
   // 3 · Líneas del pedido con precio efectivo EN SERVIDOR
+  //     La zona de envío viene del país del checkout (Ajustes → Envío) y
+  //     cada producto declara sus zonas disponibles en zonas_envio.
+  const envioAjustes = (filaAjustes.envio || {}) as Record<string, unknown>;
+  const datosEnvio = (cuerpo.envio || {}) as Record<string, unknown>;
+  const zonaEnvio = zonaDePais(String(datosEnvio.pais || 'España'), envioAjustes.paises);
+  const ETIQUETA_ZONA: Record<string, string> = {
+    espana: 'España',
+    unionEuropea: 'la Unión Europea',
+    latinoamerica: 'Latinoamérica',
+    resto: 'Resto del mundo',
+  };
   const lineas: Array<{ id: string; codigo: string; slug: string; nombre: string; cantidad: number; precioUnitario: number }> = [];
   for (const articulo of articulos as Array<Record<string, unknown>>) {
     const cantidad = Number(articulo.cantidad);
@@ -134,6 +145,17 @@ Deno.serve(async (request: Request) => {
     }
     if (producto.activo === false) {
       return errorJson(`El artículo «${producto.nombre}» no está disponible ahora mismo.`, 400, request);
+    }
+    // Disponibilidad por destino (columna zonas_envio del producto; vacía = todas)
+    const zonasProducto = Array.isArray(producto.zonas_envio)
+      ? (producto.zonas_envio as unknown[]).map((z) => String(z).toLowerCase())
+      : [];
+    if (zonasProducto.length > 0 && !zonasProducto.includes(zonaEnvio)) {
+      return errorJson(
+        `«${producto.nombre}» no está disponible para envío a ${ETIQUETA_ZONA[zonaEnvio] || zonaEnvio}. Quita el artículo del carrito o elige otro destino.`,
+        400,
+        request
+      );
     }
     // Precio efectivo: min entre precio_oferta y las ofertas activas ahora
     let precio = Number(producto.precio_oferta) > 0 ? Number(producto.precio_oferta) : Number(producto.precio);
@@ -158,41 +180,10 @@ Deno.serve(async (request: Request) => {
 
   const subtotal = Math.round(lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0) * 100) / 100;
 
-  // 4 · Envío por zonas desde ajustes (España / Unión Europea / Latinoamérica /
-  //     Resto del mundo) con disponibilidad de productos por destino
-  const envioAjustes = (filaAjustes.envio || {}) as Record<string, unknown>;
-  const datosEnvio = (cuerpo.envio || {}) as Record<string, unknown>;
-  const zonaEnvio = zonaDePais(String(datosEnvio.pais || 'España'), envioAjustes.paises);
+  // 4 · Coste de envío de la zona (los costes y países se definen en Ajustes
+  //     → Envío; la disponibilidad de productos se validó en el paso anterior)
   const zonasAjustes = (envioAjustes.zonas || {}) as Record<string, Record<string, unknown>>;
   const zonaCfg = zonasAjustes[zonaEnvio] || {};
-
-  const ETIQUETA_ZONA: Record<string, string> = {
-    espana: 'España',
-    unionEuropea: 'la Unión Europea',
-    latinoamerica: 'Latinoamérica',
-    resto: 'Resto del mundo',
-  };
-
-  // Disponibilidad de productos por zona (lista vacía o ausente = todos)
-  const disponibilidad = (envioAjustes.disponibilidad || {}) as Record<string, string[]>;
-  const listaZona = Array.isArray(disponibilidad[zonaEnvio]) ? disponibilidad[zonaEnvio] : [];
-  if (listaZona.length > 0) {
-    const permitidos = listaZona.map((x) => String(x).toLowerCase());
-    const bloqueados = lineas.filter(
-      (l) =>
-        !permitidos.includes(String(l.codigo || '').toLowerCase()) &&
-        !permitidos.includes(String(l.slug || '').toLowerCase())
-    );
-    if (bloqueados.length > 0) {
-      return errorJson(
-        `Para envío a ${ETIQUETA_ZONA[zonaEnvio] || zonaEnvio} no están disponibles: ${bloqueados
-          .map((l) => l.nombre)
-          .join(', ')}.`,
-        400,
-        request
-      );
-    }
-  }
 
   let costeEnvio = 0;
   if (envioAjustes.activo !== false && subtotal > 0) {

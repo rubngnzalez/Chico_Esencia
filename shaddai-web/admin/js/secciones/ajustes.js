@@ -8,10 +8,10 @@ import { escapar, toast, abrirModal, abrirVistaPrevia } from '../api.js';
 const MASCARA = '••••••••';
 
 // Zonas de envío gestionables desde el panel: cada una con su coste, su
-// umbral de gratuidad, sus países (España va aparte) y los productos que se
-// pueden enviar a ella. Los valores por defecto son los acordados:
-// España 5,90 € · Unión Europea 7,90 € (perfume, dúo y bálsamo) ·
-// Latinoamérica 9,90 € (solo bálsamo).
+// umbral de gratuidad y sus países (España va aparte). Qué productos se
+// pueden enviar a cada zona se marca en cada producto: Productos → Editar
+// (columna zonas_envio). Los valores por defecto son los acordados:
+// España 5,90 € · Unión Europea 7,90 € · Latinoamérica 9,90 € · Resto 9,90 €.
 const ZONAS_ENVIO = [
   { clave: 'espana', etiqueta: 'España', conPaises: false },
   { clave: 'unionEuropea', etiqueta: 'Unión Europea', conPaises: true },
@@ -30,13 +30,6 @@ const PAIS_ZONAS_DEFECTO = {
   unionEuropea: ['Portugal', 'Francia', 'Andorra', 'Alemania', 'Italia', 'Reino Unido', 'Países Bajos', 'Bélgica'],
   latinoamerica: ['México', 'Argentina', 'Colombia', 'Chile'],
   resto: ['Estados Unidos', 'Otro país'],
-};
-
-const DISPONIBILIDAD_DEFECTO = {
-  espana: [],
-  unionEuropea: ['esencia-umbral-50', 'duo-ritual', 'Balsamo-solido'],
-  latinoamerica: ['Balsamo-solido', 'perfume-solido', 'Balsamo-solido-natural-12-g'],
-  resto: [],
 };
 
 // Textos por defecto de los correos de seguimiento post-venta: se muestran
@@ -337,40 +330,14 @@ function pintarRedsys(zona, datos) {
 }
 
 async function pintarEnvio(zona, datos) {
-  const hayZonas = Boolean(datos.zonas);
   const configZona = (clave) => ({ ...(ZONAS_DEFECTO[clave] || {}), ...((datos.zonas || {})[clave] || {}) });
   const paisesDe = (clave) => {
     const guardados = (datos.paises || {})[clave];
     return Array.isArray(guardados) ? guardados : (PAIS_ZONAS_DEFECTO[clave] || []);
   };
-  const disponibilidadDe = (clave) => {
-    const guardada = datos.disponibilidad;
-    if (!hayZonas) return DISPONIBILIDAD_DEFECTO[clave] || [];
-    const lista = (guardada || {})[clave];
-    return Array.isArray(lista) ? lista : [];
-  };
-  const marcado = (clave, identificadores) => {
-    const lista = disponibilidadDe(clave);
-    if (lista.length === 0) return true; // sin lista = todos disponibles
-    const limpios = lista.map((x) => String(x).toLowerCase());
-    return identificadores.some((i) => limpios.includes(String(i).toLowerCase()));
-  };
-
-  let productos = [];
-  try {
-    productos = (await sb().from('oms_productos').select('codigo, slug, nombre, activo').eq('activo', true).order('nombre')) || [];
-  } catch { /* sin catálogo: solo se muestran costes */ }
 
   const campoZona = ({ clave, etiqueta, conPaises }) => {
     const cfg = configZona(clave);
-    const casillas = productos.length
-      ? productos.map((p) => {
-          const identificadores = [p.codigo, p.slug].filter(Boolean).map((x) => String(x));
-          const activo = marcado(clave, identificadores);
-          const nombre = identificadores[0] || p.nombre;
-          return `<label class="interruptor"><input type="checkbox" data-zona="${clave}" data-ident="${escapar(nombre)}" ${activo ? 'checked' : ''}><span class="interruptor-pista"></span> ${escapar(p.nombre)}</label>`;
-        }).join('')
-      : '<p class="texto-suave">No se pudo cargar el catálogo de productos.</p>';
     return `
       <fieldset class="plantilla-email">
         <legend>${escapar(etiqueta)}</legend>
@@ -387,8 +354,6 @@ async function pintarEnvio(zona, datos) {
         ${conPaises ? `
         <label>Países de esta zona (uno por línea)</label>
         <textarea name="paises__${clave}" rows="3">${escapar(paisesDe(clave).join('\n'))}</textarea>` : ''}
-        <label>Productos disponibles para esta zona (dejar todos marcados = sin restricción)</label>
-        <div class="formulario-opciones">${casillas}</div>
       </fieldset>`;
   };
 
@@ -396,10 +361,10 @@ async function pintarEnvio(zona, datos) {
     <form class="formulario ajustes-formulario">
       <div class="ayuda-seccion">
         <p><strong>Gestión de envío por zonas.</strong> La zona se decide con el país del formulario de pago:
-        España para envíos nacionales y las listas de países de cada zona para el resto. Los productos solo se
-        podrán pagar para las zonas donde estén marcados como disponibles (en la web se avisa al elegir destino).
-        Los valores se guardan en <code>envio.zonas</code>, <code>envio.paises</code> y
-        <code>envio.disponibilidad</code> de la base de datos y la web los lee al momento.</p>
+        España para envíos nacionales y las listas de países de cada zona para el resto. Los costes y países se
+        guardan en <code>envio.zonas</code> y <code>envio.paises</code> y la web los lee al momento.
+        <strong>Qué productos se pueden enviar a cada zona se marca en cada producto</strong>:
+        Productos → Editar → Zonas de envío disponibles.</p>
       </div>
       <div class="barra-herramientas sin-borde">
         ${campoInterruptor('activo', 'Cobrar envío', datos.activo !== false)}
@@ -416,14 +381,11 @@ async function pintarEnvio(zona, datos) {
     const campos = formulario.elements;
     const numero = (valor) => Number(String(valor).replace(',', '.')) || 0;
     const zonas = {};
-    const disponibilidad = {};
     ZONAS_ENVIO.forEach(({ clave }) => {
       zonas[clave] = {
         coste: numero(campos[`coste__${clave}`].value),
         gratisDesde: numero(campos[`gratis__${clave}`].value),
       };
-      disponibilidad[clave] = Array.from(formulario.querySelectorAll(`input[data-zona="${clave}"]:checked`))
-        .map((casilla) => casilla.dataset.ident);
     });
     const paises = {};
     ZONAS_ENVIO.filter((z) => z.conPaises).forEach(({ clave }) => {
@@ -440,7 +402,6 @@ async function pintarEnvio(zona, datos) {
         gratisDesdeInternacional: zonas.unionEuropea.gratisDesde,
         zonas,
         paises,
-        disponibilidad,
       });
     } catch (error) {
       toast(error.message, 'error');

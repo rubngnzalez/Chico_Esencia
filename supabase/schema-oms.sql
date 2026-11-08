@@ -96,10 +96,12 @@ create table if not exists public.oms_productos (
   imagenes text[] not null default '{}',
   destacado boolean not null default false,
   activo boolean not null default true,
+  zonas_envio text[] not null default '{}',
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now()
 );
 comment on column public.oms_productos.imagenes is 'Rutas o URLs completas; las subidas al bucket «recursos» se guardan como URL pública completa. La primera imagen es la principal.';
+comment on column public.oms_productos.zonas_envio is 'Zonas de envío disponibles para el producto (espana, unionEuropea, latinoamerica, resto). Vacío = todas. Se gestiona en el panel: Productos → Editar.';
 
 create index if not exists oms_productos_categoria_idx on public.oms_productos (categoria);
 create index if not exists oms_productos_activo_idx on public.oms_productos (activo);
@@ -294,6 +296,7 @@ select
   p.imagenes,
   p.destacado,
   p.activo,
+  p.zonas_envio,
   c.slug as categoria_slug,
   c.nombre as categoria_nombre,
   c.orden as categoria_orden,

@@ -1,9 +1,18 @@
 // Productos: catálogo con búsqueda, alta/edición en modal, imágenes del bucket
 // «recursos», interruptor de activo y borrado. (Datos: tablas productos/categorias.)
+// Cada producto marca sus zonas de envío disponibles (Ajustes → Envío define
+// los costes y los países de cada zona).
 import { sb, asegurar, subirImagen, mensajeError } from '../bd.js';
 import {
   escapar, euro, toast, confirmar, abrirModal, urlImagen, slugificar, etiquetaVacia,
 } from '../api.js';
+
+const ZONAS_ENVIO_PRODUCTO = [
+  { clave: 'espana', etiqueta: 'España' },
+  { clave: 'unionEuropea', etiqueta: 'Unión Europea' },
+  { clave: 'latinoamerica', etiqueta: 'Latinoamérica' },
+  { clave: 'resto', etiqueta: 'Resto del mundo' },
+];
 
 let textoBusqueda = '';
 
@@ -59,10 +68,15 @@ export default async function (contenedor, contexto) {
       zona.innerHTML = etiquetaVacia('Ningún producto coincide con la búsqueda.');
       return;
     }
+    const etiquetaZonasProducto = (p) => {
+      const zonas = Array.isArray(p.zonas_envio) ? p.zonas_envio : [];
+      if (zonas.length === 0 || zonas.length >= ZONAS_ENVIO_PRODUCTO.length) return 'Todas';
+      return ZONAS_ENVIO_PRODUCTO.filter((z) => zonas.includes(z.clave)).map((z) => z.etiqueta).join(', ') || 'Todas';
+    };
     zona.innerHTML = `
       <table class="tabla">
         <thead><tr>
-          <th></th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Destacado</th><th>Activo</th><th class="alineado-derecha">Acciones</th>
+          <th></th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Envío</th><th>Destacado</th><th>Activo</th><th class="alineado-derecha">Acciones</th>
         </tr></thead>
         <tbody>
           ${lista.map((p) => `
@@ -72,6 +86,7 @@ export default async function (contenedor, contexto) {
             <td>${escapar(nombreCategoria(p.categoria))}</td>
             <td>${Number(p.precio_oferta) > 0 ? `<s class="texto-suave">${euro(p.precio)}</s> <strong>${euro(p.precio_oferta)}</strong>` : euro(p.precio)}</td>
             <td>${Number(p.stock) || 0}</td>
+            <td class="texto-suave">${escapar(etiquetaZonasProducto(p))}</td>
             <td>${p.destacado ? '<span class="estrella-activa">★</span>' : '<span class="texto-suave">—</span>'}</td>
             <td><label class="interruptor" title="${p.activo !== false ? 'Desactivar' : 'Activar'}"><input type="checkbox" data-accion="activo" ${p.activo !== false ? 'checked' : ''}><span class="interruptor-pista"></span></label></td>
             <td class="alineado-derecha">
@@ -133,6 +148,9 @@ export default async function (contenedor, contexto) {
 function abrirFormulario(producto, categorias, alGuardar) {
   const esNuevo = !producto;
   const imagenes = [...(producto?.imagenes || [])];
+  // Zonas de envío guardadas (vacío = disponible para todas)
+  const zonasGuardadas = Array.isArray(producto?.zonas_envio) ? producto.zonas_envio : [];
+  const zonaMarcada = (clave) => zonasGuardadas.length === 0 || zonasGuardadas.includes(clave);
 
   const { cerrar, cuerpo } = abrirModal(esNuevo ? 'Nuevo producto' : `Editar: ${producto.nombre}`, `
     <form id="formulario-producto" class="formulario">
@@ -173,6 +191,16 @@ function abrirFormulario(producto, categorias, alGuardar) {
           <label class="interruptor"><input type="checkbox" name="activo" ${producto?.activo !== false ? 'checked' : ''}><span class="interruptor-pista"></span> Activo (visible en la web)</label>
         </div>
       </div>
+      <fieldset class="plantilla-email">
+        <legend>Zonas de envío disponibles</legend>
+        <div class="formulario-opciones">
+          ${ZONAS_ENVIO_PRODUCTO.map((z) => `
+          <label class="interruptor"><input type="checkbox" name="zona__${z.clave}" ${zonaMarcada(z.clave) ? 'checked' : ''}><span class="interruptor-pista"></span> ${z.etiqueta}</label>`).join('')}
+        </div>
+        <p class="texto-suave">Deja todas marcadas para enviar a cualquier destino. En Ajustes → Envío se
+        definen los costes y los países de cada zona; en el checkout la web avisa y bloquea los productos
+        que no están disponibles para el destino elegido.</p>
+      </fieldset>
       <label>Descripción corta</label>
       <textarea name="descripcion" rows="3" maxlength="3000">${escapar(producto?.descripcion || '')}</textarea>
       <label>Historia (página del producto)</label>
@@ -251,6 +279,7 @@ function abrirFormulario(producto, categorias, alGuardar) {
       imagenes,
       destacado: campos.destacado.checked,
       activo: campos.activo.checked,
+      zonas_envio: ZONAS_ENVIO_PRODUCTO.filter((z) => campos[`zona__${z.clave}`].checked).map((z) => z.clave),
     };
     if (!envio.nombre || !envio.slug || Number.isNaN(envio.precio)) {
       toast('Revisa el nombre, el slug y el precio del producto.', 'error');

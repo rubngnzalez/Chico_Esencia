@@ -2,22 +2,103 @@
 -- 2026-11-08 · Envío por zonas: España / Unión Europea / Latinoamérica / Resto
 -- ============================================================================
 -- Qué añade:
---   · La vista pública expone el modelo de zonas guardado en la columna
---     ajustes.envio (jsonb):
---       envio_zonas          → {espana:{coste,gratisDesde}, unionEuropea:…,
---                               latinoamerica:…, resto:…}
---       envio_paises         → {unionEuropea:[países], latinoamerica:[…],
---                               resto:[…]} (España siempre es zona «espana»)
---       envio_disponibilidad → {zona:[códigos de producto]} (vacío = todos)
---   · Se mantienen las columnas anteriores (envio_coste, envio_coste_
---     internacional…) por compatibilidad con la web ya publicada.
---   · Los valores se gestionan desde el panel: Ajustes → Envío. La zona se
---     decide con el país del formulario de pago en el checkout.
+--   1. Columna «zonas_envio» en oms_productos (text[]): zonas a las que se
+--      puede enviar cada producto. Vacía = todas (sin restricción). Valores
+--      válidos: espana, unionEuropea, latinoamerica, resto.
+--      Valores iniciales acordados:
+--        · Bálsamo Sólido (Balsamo-solido) → todas las zonas.
+--        · Perfume (esencia-umbral-50) y Dúo Ritual (duo-ritual) → todas
+--          menos Latinoamérica.
+--   2. La vista pública de productos expone zonas_envio.
+--   3. La vista pública de ajustes expone el modelo de zonas de la columna
+--      ajustes.envio (jsonb): costes y países por zona (se gestionan en el
+--      panel: Ajustes → Envío; la disponibilidad se marca en cada producto:
+--      Productos → Editar → Zonas de envío).
+--   4. Se mantienen columnas anteriores (envio_coste…) por compatibilidad.
 --
 -- Instalación: pegar TODO en el SQL Editor de Supabase y ejecutar
 -- (idempotente: se puede re-ejecutar). Este fichero SUSTITUYE al anterior
 -- «2026-11-08-envio-internacional.sql» (no llegó a ejecutarse).
 -- ============================================================================
+
+-- ─── 1 · Disponibilidad de envío por producto ──────────────────────────────
+
+alter table public.oms_productos add column if not exists zonas_envio text[] not null default '{}';
+
+comment on column public.oms_productos.zonas_envio is
+  'Zonas de envío disponibles para el producto (espana, unionEuropea, latinoamerica, resto). Vacío = todas. Se gestiona en el panel: Productos → Editar.';
+
+-- Valores iniciales: solo se rellenan si la columna está vacía (idempotente
+-- y sin sobrescribir lo que la administración haya marcado después)
+update public.oms_productos
+   set zonas_envio = array['espana', 'unionEuropea', 'latinoamerica', 'resto']::text[]
+ where zonas_envio = '{}'::text[]
+   and (lower(codigo) like 'balsamo%' or lower(slug) like 'balsamo%');
+
+update public.oms_productos
+   set zonas_envio = array['espana', 'unionEuropea', 'resto']::text[]
+ where zonas_envio = '{}'::text[]
+   and not (lower(codigo) like 'balsamo%' or lower(slug) like 'balsamo%');
+
+drop view if exists public.oms_productos_publicos;
+create view public.oms_productos_publicos as
+select
+  p.id,
+  p.codigo,
+  p.nombre,
+  p.slug,
+  p.descripcion,
+  p.historia,
+  p.precio,
+  p.precio_oferta,
+  p.stock,
+  (coalesce(p.stock, 0) <= 0) as agotado,
+  p.categoria,
+  p.imagenes,
+  p.destacado,
+  p.activo,
+  p.zonas_envio,
+  c.slug as categoria_slug,
+  c.nombre as categoria_nombre,
+  c.orden as categoria_orden,
+  round((
+    select min(candidato)
+    from (
+      select case when p.precio_oferta is not null and p.precio_oferta > 0 then p.precio_oferta else p.precio end as candidato
+      union all
+      select case o.tipo
+               when 'porcentaje' then round(p.precio * (1 - o.valor / 100), 2)
+               else round(o.valor, 2)
+             end as candidato
+      from public.oms_ofertas o
+      where o.producto = p.id
+        and o.activa
+        and (o.inicio is null or o.inicio <= now())
+        and (o.fin is null or o.fin >= now())
+        and (case o.tipo
+               when 'porcentaje' then round(p.precio * (1 - o.valor / 100), 2)
+               else round(o.valor, 2)
+             end) >= 0
+    ) candidatos
+  ), 2) as precio_efectivo,
+  coalesce((
+    select jsonb_agg(
+             jsonb_build_object('tipo', o.tipo, 'valor', o.valor, 'inicio', o.inicio, 'fin', o.fin)
+             order by o.creado_en
+           )
+    from public.oms_ofertas o
+    where o.producto = p.id
+      and o.activa
+      and (o.inicio is null or o.inicio <= now())
+      and (o.fin is null or o.fin >= now())
+  ), '[]'::jsonb) as ofertas_activas
+from public.oms_productos p
+left join public.oms_categorias c on c.id = p.categoria
+where p.activo;
+
+comment on view public.oms_productos_publicos is 'Catálogo público OMS con precio_efectivo, marca de agotado y zonas_envio (disponibilidad de envío por destino).';
+
+-- ─── 2 · Zonas de envío en la vista pública de ajustes ─────────────────────
 
 drop view if exists public.oms_ajustes_publicos;
 create view public.oms_ajustes_publicos as

@@ -187,8 +187,15 @@ const DATOS_TIENDA = [
     return seccion;
   };
 
-  // Si no hay conexión no pasa nada: queda el HTML estático actual
-  CONEXION.get("/api/productos/publico").then((cuerpo) => {
+  // Si no hay conexión no pasa nada: queda el HTML estático actual.
+  // Se espera también al mapa de zonas por producto (disponibilidad de envío)
+  const cargaProductos = CONEXION.get("/api/productos/publico");
+  const cargaZonas =
+    typeof CONEXION.zonasProductos === "function"
+      ? CONEXION.zonasProductos().catch(() => null)
+      : Promise.resolve(null);
+  Promise.all([cargaProductos, cargaZonas]).then(([cuerpo, mapa]) => {
+    if (mapa && typeof mapa === "object") MAPA_ZONAS_PRODUCTO.valor = mapa;
     const productos = cuerpo && Array.isArray(cuerpo.datos) ? cuerpo.datos : [];
     if (productos.length === 0) return;
     const estaticas = Array.from(document.querySelectorAll("[data-producto-tienda]"));

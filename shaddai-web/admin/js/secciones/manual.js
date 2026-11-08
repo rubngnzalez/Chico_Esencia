@@ -46,6 +46,11 @@ const SECCIONES_MANUAL = [
         <strong>recursos</strong> de Supabase (Storage) y se guardan como URL pública completa, así que la web
         las muestra sin tocar nada más. La primera imagen es la principal.</li>
         <li><strong>Eliminar</strong> pide confirmación y no se puede deshacer.</li>
+        <li><strong>Zonas de envío</strong>: al editar o crear un producto se marcan las zonas a las que se
+        puede enviar (España, Unión Europea, Latinoamérica, Resto del mundo); todas marcadas = sin restricción.
+        En el checkout la web avisa y bloquea los productos no disponibles para el destino elegido, y en la
+        tienda cada ficha muestra a qué zonas se envía. Los costes y los países de cada zona están en
+        Ajustes → Envío.</li>
       </ul>`,
   },
   {
@@ -179,14 +184,12 @@ const SECCIONES_MANUAL = [
         <li><strong>Redes sociales</strong>: URLs completas de Instagram, TikTok, Pinterest, Facebook, YouTube y
         WhatsApp (se pintan en el pie de la web).</li>
         <li><strong>Envío</strong>: gestión por zonas — España, Unión Europea, Latinoamérica y Resto del mundo.
-        Cada zona tiene su coste, su umbral de gratuidad («gratis desde», 0 = nunca), su lista de países
-        (editable, uno por línea) y los <strong>productos disponibles</strong> para esa zona (checkboxes por
-        producto; dejar todos marcados = sin restricción y cualquier producto nuevo se considera disponible
-        donde no haya lista guardada). La zona se decide con el país del formulario de pago en el checkout:
-        en la web, el resumen avisa y bloquea el pago si el carrito incluye algo no disponible para el destino,
-        y la ficha de cada producto en la tienda muestra a qué zonas se envía. Valores acordados: España 5,90 €
-        (todos los productos), Unión Europea 7,90 € (perfume, dúo y bálsamo), Latinoamérica 9,90 € (solo
-        bálsamo). La web, el Worker y la Edge Function usan estos valores.</li>
+        Cada zona tiene su coste, su umbral de gratuidad («gratis desde», 0 = nunca) y su lista de países
+        (editable, uno por línea). La zona se decide con el país del formulario de pago en el checkout.
+        <strong>Qué productos se pueden enviar a cada zona se marca en cada producto</strong>
+        (Productos → Editar → Zonas de envío disponibles). Valores acordados: España 5,90 € · Unión Europea
+        7,90 € · Latinoamérica 9,90 € · Resto del mundo 9,90 €. La web, el Worker y la Edge Function usan
+        estos valores.</li>
         <li><strong>Notificaciones</strong>: email interno y qué avisos se generan (pedido pagado, nuevo contacto…).</li>
         <li><strong>SMTP</strong>: se guarda el remitente (De:) y, de momento, los datos de referencia. El envío
         real de la fase 2 usa Resend (<code>RESEND_API_KEY</code>).</li>
