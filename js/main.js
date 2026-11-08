@@ -251,11 +251,23 @@ const zonaDePais = (pais) => {
 
 const etiquetaZona = (zona) => ((CONFIG_ENVIO.zonas || {})[zona] || {}).etiqueta || zona;
 
-// ¿Se puede enviar el producto a la zona? (lista vacía o ausente = todos)
+// Mapa codigo/slug/id → zonas de envío del producto (lo carga conexion.js
+// desde la vista pública de productos; null mientras no está disponible)
+const MAPA_ZONAS_PRODUCTO = { valor: null };
+
+// ¿Se puede enviar el producto a la zona?
+//  1. Columna zonas_envio del producto (vacía = todas).
+//  2. Reserva: disponibilidad global guardada en Ajustes → Envío.
+//  3. Sin dato en ninguno de los dos: disponible.
 const productoDisponible = (idProducto, zona) => {
+  const identificador = String(idProducto || "").toLowerCase();
+  const entrada = MAPA_ZONAS_PRODUCTO.valor ? MAPA_ZONAS_PRODUCTO.valor[identificador] : null;
+  if (entrada) {
+    if (!Array.isArray(entrada) || entrada.length === 0) return true;
+    return entrada.includes(zona);
+  }
   const lista = (CONFIG_ENVIO.disponibilidad || {})[zona];
   if (!Array.isArray(lista) || lista.length === 0) return true;
-  const identificador = String(idProducto || "").toLowerCase();
   return lista.some((x) => String(x).toLowerCase() === identificador);
 };
 

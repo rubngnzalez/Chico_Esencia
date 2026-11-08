@@ -119,7 +119,27 @@ const CONEXION = (() => {
       categoria: String(p.categoria_slug || ""),
       imagenes: Array.isArray(p.imagenes) ? p.imagenes : [],
       destacado: Boolean(p.destacado),
+      zonasEnvio: Array.isArray(p.zonas_envio) ? p.zonas_envio : [],
     }));
+  };
+
+  // Mapa codigo/slug/id → zonas de envío del producto (para el checkout y
+  // las notas de disponibilidad). Devuelve null si aún no está en la vista
+  // (SQL sin actualizar) o no hay conexión: la web entonces no restringe.
+  const leerZonasProductos = async () => {
+    if (!cliente) return null;
+    const { data, error } = await conTiempo(
+      cliente.from("oms_productos_publicos").select("id, codigo, slug, zonas_envio")
+    );
+    if (error || !Array.isArray(data)) return null;
+    const mapa = {};
+    data.forEach((p) => {
+      const zonas = Array.isArray(p.zonas_envio) ? p.zonas_envio : [];
+      [p.codigo, p.slug, p.id].filter(Boolean).forEach((clave) => {
+        mapa[String(clave).toLowerCase()] = zonas;
+      });
+    });
+    return mapa;
   };
 
   const leerTestimoniosSupabase = async () => {
@@ -399,6 +419,7 @@ const CONEXION = (() => {
     get,
     post,
     cuandoConfig,
+    zonasProductos: leerZonasProductos,
     get configuracion() {
       return configuracion;
     },

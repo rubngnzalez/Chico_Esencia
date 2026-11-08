@@ -119,6 +119,21 @@ if (paisPago) {
   });
 }
 
+// Zonas de envío por producto (columna zonas_envio del catálogo): al cargar
+// el mapa se repinta el resumen con la disponibilidad real
+if (typeof CONEXION !== "undefined" && typeof CONEXION.zonasProductos === "function") {
+  CONEXION
+    .zonasProductos()
+    .then((mapa) => {
+      if (mapa && typeof mapa === "object" && Object.keys(mapa).length > 0) {
+        MAPA_ZONAS_PRODUCTO.valor = mapa;
+        pintarResumen();
+        pintarNotaEnvio();
+      }
+    })
+    .catch(() => {});
+}
+
 // Entorno, comercio, métodos y envío reales del panel cuando hay conexión
 if (typeof CONEXION !== "undefined") {
   CONEXION.cuandoConfig.then((config) => {
