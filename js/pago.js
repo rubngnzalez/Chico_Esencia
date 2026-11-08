@@ -29,12 +29,13 @@ const CONFIG_REDSYS = {
   urlNotificacion: "",
 };
 
-// URLs de retorno sobre la misma raíz de la web
+// URLs de retorno sobre la misma raíz de la web; la notificación online va
+// a la Edge Function que marca el pedido pagado y envía los correos
 (() => {
   const base = location.href.replace(/pago\.html.*$/, "");
   CONFIG_REDSYS.urlOk = base + "pago-ok.html";
   CONFIG_REDSYS.urlKo = base + "pago-ko.html";
-  CONFIG_REDSYS.urlNotificacion = base + "pago-ok.html";
+  CONFIG_REDSYS.urlNotificacion = "https://xtnzamagyztndpjhiqby.supabase.co/functions/v1/redsys-notificacion";
 })();
 
 const resumenPedido = document.querySelector("[data-resumen-pedido]");
