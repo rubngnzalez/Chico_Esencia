@@ -339,8 +339,10 @@ const pintarCarrito = (articulos) => {
     lineaEnvio.classList.toggle("gratis", envio === 0);
   }
   if (notaEnvio && articulos.length > 0) {
-    const zonasTexto = Object.values(CONFIG_ENVIO.zonas || {})
-      .map((configuracion) => `${configuracion.etiqueta}: ${formatearPrecio(Number(configuracion.coste) || 0)}`)
+    // "Resto del mundo" no se lista: solo el bálsamo puede viajar ahí
+    const zonasTexto = Object.entries(CONFIG_ENVIO.zonas || {})
+      .filter(([clave]) => clave !== "resto")
+      .map(([, configuracion]) => `${configuracion.etiqueta}: ${formatearPrecio(Number(configuracion.coste) || 0)}`)
       .join(" · ");
     let texto = `Envíos — ${zonasTexto}.`;
     const restringidos = articulos.filter(
