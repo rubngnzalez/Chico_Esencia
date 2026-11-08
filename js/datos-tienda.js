@@ -64,6 +64,10 @@ const DATOS_TIENDA = [
     "perfume-solido": DATOS_TIENDA[1].imagen,
     "duo-ritual": DATOS_TIENDA[2].imagen,
   };
+  const IMAGENES_ALIAS = {
+    "balsamo-solido": "perfume-solido",
+    "balsamo-solido-natural-12-g": "perfume-solido",
+  };
   const IMAGENES_SEMILLA = [
     "img/esencia-50.jpg",
     "img/perfume-solido.jpg",
@@ -74,18 +78,20 @@ const DATOS_TIENDA = [
   ];
 
   const imagenDe = (producto) => {
+    const codigo = String(producto.codigo || producto.slug || producto.id || "").toLowerCase();
+    const clave = IMAGENES_ALIAS[codigo] || codigo;
     const actual = producto.imagenes && producto.imagenes[0];
-    if (!actual || IMAGENES_SEMILLA.includes(actual)) {
-      return IMAGENES_CONOCIDAS[producto.codigo] || actual || "";
+    if (actual && !IMAGENES_SEMILLA.includes(actual)) {
+      // Las imágenes del bucket «recursos» de Supabase son URLs completas
+      // (https://…supabase.co/storage/v1/object/public/recursos/…): se usan tal cual.
+      if (/^(https?:)?\/\//.test(actual)) return actual;
+      // Compatibilidad con rutas del almacenamiento del Worker antiguo
+      if (typeof window.SHADDAI_API_BASE === "string" && window.SHADDAI_API_BASE && /^recursos\//.test(actual)) {
+        return window.SHADDAI_API_BASE.replace(/\/$/, "") + "/" + actual;
+      }
+      return actual;
     }
-    // Las imágenes del bucket «recursos» de Supabase son URLs completas
-    // (https://…supabase.co/storage/v1/object/public/recursos/…): se usan tal cual.
-    if (/^(https?:)?\/\//.test(actual)) return actual;
-    // Compatibilidad con rutas del almacenamiento del Worker antiguo
-    if (typeof window.SHADDAI_API_BASE === "string" && window.SHADDAI_API_BASE && /^recursos\//.test(actual)) {
-      return window.SHADDAI_API_BASE.replace(/\/$/, "") + "/" + actual;
-    }
-    return actual;
+    return IMAGENES_CONOCIDAS[clave] || actual || "";
   };
 
   const precioTexto = (valor) => {
@@ -133,18 +139,30 @@ const DATOS_TIENDA = [
     return `<button class="boton boton-lleno boton-anadir" ${atributos}>Añadir al carrito</button>`;
   };
 
-  // Orden fijo de la tienda: Esencia, Perfume Sólido y Dúo al final
-  const ORDEN_TIENDA = ["esencia-umbral-50", "perfume-solido", "duo-ritual"];
+  // Orden fijo de la tienda: Esencia, Bálsamo (Perfume Sólido) segundo y
+  // Dúo Ritual al final; códigos del panel y de la web, sin distinguir mayúsculas
+  const ORDEN_TIENDA = [
+    "esencia-umbral-50",
+    "balsamo-solido",
+    "balsamo-solido-natural-12-g",
+    "perfume-solido",
+    "duo-ritual",
+  ];
 
   // Orientación y lado de cada producto (las fotos horizontales no van en marco vertical)
+  const ALIAS_DATOS = {
+    "balsamo-solido": "perfume-solido",
+    "balsamo-solido-natural-12-g": "perfume-solido",
+  };
   const datosDe = (producto) => {
-    const codigo = String(producto.codigo || producto.slug || producto.id || "");
-    return DATOS_TIENDA.find((dato) => dato.id === codigo) || null;
+    const codigo = String(producto.codigo || producto.slug || producto.id || "").toLowerCase();
+    const clave = ALIAS_DATOS[codigo] || codigo;
+    return DATOS_TIENDA.find((dato) => dato.id === clave) || null;
   };
 
   const ordenarComoTienda = (productos) => {
     const posicion = (producto) => {
-      const codigo = String(producto.codigo || producto.slug || producto.id || "");
+      const codigo = String(producto.codigo || producto.slug || producto.id || "").toLowerCase();
       const indice = ORDEN_TIENDA.indexOf(codigo);
       return indice === -1 ? ORDEN_TIENDA.length : indice;
     };
