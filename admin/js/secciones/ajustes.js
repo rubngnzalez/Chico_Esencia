@@ -330,7 +330,21 @@ function pintarRedsys(zona, datos) {
 }
 
 async function pintarEnvio(zona, datos) {
-  const configZona = (clave) => ({ ...(ZONAS_DEFECTO[clave] || {}), ...((datos.zonas || {})[clave] || {}) });
+  const configZona = (clave) => {
+    const base = { ...(ZONAS_DEFECTO[clave] || {}), ...((datos.zonas || {})[clave] || {}) };
+    if (!datos.zonas) {
+      // Sin zonas guardadas: el formulario muestra los valores clásicos que
+      // están realmente publicados (compatibilidad pre-migración)
+      if (clave === 'espana') {
+        if (datos.coste != null) base.coste = datos.coste;
+        if (datos.gratisDesde != null) base.gratisDesde = datos.gratisDesde;
+      }
+      if (clave === 'unionEuropea' && datos.costeInternacional != null) {
+        base.coste = datos.costeInternacional;
+      }
+    }
+    return base;
+  };
   const paisesDe = (clave) => {
     const guardados = (datos.paises || {})[clave];
     return Array.isArray(guardados) ? guardados : (PAIS_ZONAS_DEFECTO[clave] || []);

@@ -58,11 +58,18 @@ const CONEXION = (() => {
         activo: data.envio_activo !== false,
         // Zonas del panel (España, Unión Europea, Latinoamérica, Resto del
         // mundo): null si la vista aún no las expone (SQL sin actualizar) y
-        // la web usa sus valores por defecto
+        // la web usa los valores clásicos guardados como reserva
         zonas: data.envio_zonas && typeof data.envio_zonas === "object" ? data.envio_zonas : null,
         paises: data.envio_paises && typeof data.envio_paises === "object" ? data.envio_paises : null,
         disponibilidad:
           data.envio_disponibilidad && typeof data.envio_disponibilidad === "object" ? data.envio_disponibilidad : null,
+        // Valores clásicos (columnas compatibles que existen en toda versión
+        // de la vista): se usan de reserva mientras no haya zonas guardadas
+        coste: numero(data.envio_coste),
+        gratisDesde: numero(data.envio_gratis_desde),
+        costeInternacional: data.envio_coste_internacional == null ? null : numero(data.envio_coste_internacional),
+        gratisDesdeInternacional:
+          data.envio_gratis_desde_internacional == null ? null : numero(data.envio_gratis_desde_internacional),
       },
       redes: data.redes && typeof data.redes === "object" ? data.redes : {},
       contacto: {
@@ -299,6 +306,14 @@ const CONEXION = (() => {
           }
         }
       });
+    } else {
+      // Sin zonas guardadas (vista antigua o panel sin guardar): los costes
+      // clásicos gobiernan España y la Unión Europea
+      if (Number(envio.coste) >= 0) CONFIG_ENVIO.zonas.espana.coste = Number(envio.coste);
+      if (Number(envio.gratisDesde) >= 0) CONFIG_ENVIO.zonas.espana.gratisDesde = Number(envio.gratisDesde);
+      if (envio.costeInternacional != null && Number(envio.costeInternacional) >= 0) {
+        CONFIG_ENVIO.zonas.unionEuropea.coste = Number(envio.costeInternacional);
+      }
     }
     if (envio.paises && typeof envio.paises === "object") {
       CONFIG_ENVIO.paises = { ...CONFIG_ENVIO.paises, ...envio.paises };
