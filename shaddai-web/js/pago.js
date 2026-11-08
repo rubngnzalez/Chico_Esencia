@@ -44,24 +44,23 @@ const bloqueVacio = document.querySelector("[data-pago-vacio]");
 
 const articulosPago = typeof leerCarrito === "function" ? leerCarrito() : [];
 
-// Zona de envío según el país elegido en el formulario: España = nacional
+// Zona de envío según el país elegido en el formulario (España por defecto)
 const zonaDeEnvio = () =>
-  formularioPagoR && formularioPagoR.elements.pais && formularioPagoR.elements.pais.value !== "España"
-    ? "internacional"
-    : "nacional";
+  zonaDePais(formularioPagoR && formularioPagoR.elements.pais ? formularioPagoR.elements.pais.value : "España");
+
+// Productos del carrito que no se pueden enviar a la zona elegida
+const noDisponiblesEn = (zona) => articulosPago.filter((articulo) => !productoDisponible(articulo.id, zona));
 
 // Nota de envío adaptada a la zona (se repinta al cambiar el país)
 const pintarNotaEnvio = () => {
   const notaEnvio = document.querySelector("[data-nota-envio]");
   if (!notaEnvio) return;
-  const internacional = zonaDeEnvio() === "internacional";
-  const umbral = Number(
-    internacional ? CONFIG_ENVIO.gratisDesdeInternacional : CONFIG_ENVIO.gratisDesde
-  ) || 0;
-  const coste = calcularTotales([{ precio: 1, cantidad: 1 }], internacional ? "internacional" : "nacional").envio;
-  notaEnvio.textContent = internacional
-    ? `Envío internacional: ${formatearPrecio(coste)}${umbral > 0 ? `, gratuito a partir de ${formatearPrecio(umbral)}` : ""}. Preparamos cada frasco por orden de pago.`
-    : `Envío a España: ${formatearPrecio(coste)}${umbral > 0 ? `, gratuito a partir de ${formatearPrecio(umbral)}` : ""}. Preparamos cada frasco por orden de pago.`;
+  const zona = zonaDeEnvio();
+  const configZona = (CONFIG_ENVIO.zonas || {})[zona] || CONFIG_ENVIO.zonas.espana;
+  const umbral = Number(configZona.gratisDesde) || 0;
+  const coste = calcularTotales([{ precio: 1, cantidad: 1 }], zona).envio;
+  notaEnvio.textContent =
+    `Envío a ${etiquetaZona(zona)}: ${umbral > 0 ? `gratis a partir de ${formatearPrecio(umbral)}` : formatearPrecio(coste)}. Preparamos cada frasco por orden de pago.`;
 };
 
 // Resumen del pedido (se repinta cuando la API trae el coste de envío real
@@ -73,23 +72,40 @@ const pintarResumen = () => {
     if (bloqueVacio) bloqueVacio.hidden = false;
     return;
   }
+  const zona = zonaDeEnvio();
+  const noDisponibles = noDisponiblesEn(zona);
   const lineas = document.querySelector("[data-lineas-pedido]");
   lineas.innerHTML = "";
   articulosPago.forEach((articulo) => {
     const fila = document.createElement("div");
     fila.className = "carrito-linea";
+    const disponible = productoDisponible(articulo.id, zona);
     const nombre = document.createElement("span");
-    nombre.textContent = `${articulo.cantidad} × ${articulo.nombre}`;
+    nombre.textContent = disponible
+      ? `${articulo.cantidad} × ${articulo.nombre}`
+      : `${articulo.cantidad} × ${articulo.nombre} — no disponible para ${etiquetaZona(zona)}`;
     const precio = document.createElement("span");
     precio.textContent = formatearPrecio(articulo.precio * articulo.cantidad);
+    if (!disponible) nombre.style.color = "#9d3b3b";
     fila.append(nombre, precio);
     lineas.append(fila);
   });
 
-  const { subtotal, envio, total } = calcularTotales(articulosPago, zonaDeEnvio());
+  const { subtotal, envio, total } = calcularTotales(articulosPago, zona);
   document.querySelector("[data-subtotal]").textContent = formatearPrecio(subtotal);
   document.querySelector("[data-envio]").textContent = envio === 0 ? "Gratis" : formatearPrecio(envio);
   document.querySelector("[data-total]").textContent = formatearPrecio(total);
+
+  // Aviso persistente mientras haya productos sin disponibilidad en la zona
+  const avisoZona = document.querySelector("[data-aviso-zona]");
+  if (avisoZona) {
+    avisoZona.textContent =
+      noDisponibles.length > 0
+        ? `Para envío a ${etiquetaZona(zona)} no están disponibles: ${noDisponibles
+            .map((articulo) => articulo.nombre)
+            .join(", ")}. Quita esos artículos del carrito o elige otro destino.`
+        : "";
+  }
 };
 
 pintarResumen();
@@ -225,6 +241,20 @@ if (formularioPagoR) {
     evento.preventDefault();
 
     if (articulosPago.length === 0) return;
+
+    // Disponibilidad por destino: no se pasa al pago con productos que no
+    // se pueden enviar al país elegido
+    const zonaElegida = zonaDeEnvio();
+    const noDisponibles = noDisponiblesEn(zonaElegida);
+    if (noDisponibles.length > 0) {
+      avisoPagoR.textContent =
+        `Para envío a ${etiquetaZona(zonaElegida)} no están disponibles: ${noDisponibles
+          .map((articulo) => articulo.nombre)
+          .join(", ")}. Quita esos artículos del carrito o elige otro destino.`;
+      avisoPagoR.focus?.();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
 
     // Validación de contacto/envío: no se pasa a Redsys sin estos datos
     marcarPendientesPago();

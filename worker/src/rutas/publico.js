@@ -35,6 +35,9 @@ function datosPublicos(ajustes) {
     },
     envio: {
       activo: Boolean(ajustes.envio && ajustes.envio.activo !== false),
+      zonas: (ajustes.envio && ajustes.envio.zonas) || null,
+      paises: (ajustes.envio && ajustes.envio.paises) || null,
+      disponibilidad: (ajustes.envio && ajustes.envio.disponibilidad) || null,
       coste: Number(ajustes.envio && ajustes.envio.coste) || 0,
       costeInternacional: Number(
         ajustes.envio && ajustes.envio.costeInternacional != null
@@ -55,16 +58,34 @@ function datosPublicos(ajustes) {
   };
 }
 
-function calcularEnvio(subtotal, ajustesEnvio, internacional = false) {
+// Zonas de envío (Ajustes → Envío): país del checkout → clave de zona
+const PAIS_ZONAS_DEFECTO = {
+  unionEuropea: ['Portugal', 'Francia', 'Andorra', 'Alemania', 'Italia', 'Reino Unido', 'Países Bajos', 'Bélgica'],
+  latinoamerica: ['México', 'Argentina', 'Colombia', 'Chile'],
+  resto: ['Estados Unidos', 'Otro país'],
+};
+
+function zonaDePais(pais, paises) {
+  const destino = String(pais || 'España').trim();
+  if (!destino || destino.toLowerCase() === 'españa' || destino.toLowerCase() === 'espana') return 'espana';
+  const listas = { ...PAIS_ZONAS_DEFECTO, ...(paises && typeof paises === 'object' ? paises : {}) };
+  for (const clave of ['unionEuropea', 'latinoamerica', 'resto']) {
+    const lista = Array.isArray(listas[clave]) ? listas[clave] : [];
+    if (lista.some((x) => String(x).toLowerCase() === destino.toLowerCase())) return clave;
+  }
+  return 'resto';
+}
+
+function calcularEnvio(subtotal, ajustesEnvio, zona = 'espana') {
   if (!ajustesEnvio || ajustesEnvio.activo === false) return 0;
-  const coste = Number(
-    internacional && ajustesEnvio.costeInternacional != null
-      ? ajustesEnvio.costeInternacional
-      : ajustesEnvio.coste
-  ) || 0;
-  const gratisDesde = Number(
-    internacional ? ajustesEnvio.gratisDesdeInternacional : ajustesEnvio.gratisDesde
-  ) || 0;
+  const zonas = ajustesEnvio.zonas && typeof ajustesEnvio.zonas === 'object' ? ajustesEnvio.zonas : {};
+  const zonaCfg = zonas[zona] && typeof zonas[zona] === 'object' ? zonas[zona] : {};
+  const reservaCoste = zona === 'espana'
+    ? ajustesEnvio.coste
+    : (ajustesEnvio.costeInternacional != null ? ajustesEnvio.costeInternacional : ajustesEnvio.coste);
+  const reservaGratis = zona === 'espana' ? ajustesEnvio.gratisDesde : ajustesEnvio.gratisDesdeInternacional;
+  const coste = Number(zonaCfg.coste != null ? zonaCfg.coste : reservaCoste) || 0;
+  const gratisDesde = Number(zonaCfg.gratisDesde != null ? zonaCfg.gratisDesde : reservaGratis) || 0;
   if (subtotal === 0) return 0;
   if (gratisDesde > 0 && subtotal >= gratisDesde) return 0;
   return Math.round(coste * 100) / 100;
@@ -230,6 +251,7 @@ export function registrar(enrutador, cx) {
       lineas.push({
         id: producto.id,
         codigo: producto.codigo,
+        slug: producto.slug,
         nombre: producto.nombre,
         cantidad,
         precioUnitario,
@@ -237,8 +259,31 @@ export function registrar(enrutador, cx) {
     }
 
     const subtotal = Math.round(lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0) * 100) / 100;
-    const internacional = String(datosEnvio.pais || 'España').trim() !== 'España';
-    const costeEnvio = calcularEnvio(subtotal, ajustes.envio, internacional);
+    const zonaEnvio = zonaDePais(datosEnvio.pais, ajustes.envio && ajustes.envio.paises);
+
+    // Disponibilidad de productos por zona (lista vacía o ausente = todos)
+    const disponibilidad = (ajustes.envio && ajustes.envio.disponibilidad) || {};
+    const listaZona = Array.isArray(disponibilidad[zonaEnvio]) ? disponibilidad[zonaEnvio] : [];
+    if (listaZona.length > 0) {
+      const permitidos = listaZona.map((x) => String(x).toLowerCase());
+      const bloqueados = lineas.filter(
+        (l) =>
+          !permitidos.includes(String(l.codigo || '').toLowerCase()) &&
+          !permitidos.includes(String(l.slug || '').toLowerCase())
+      );
+      if (bloqueados.length > 0) {
+        const etiqueta =
+          zonaEnvio === 'espana' ? 'España'
+          : zonaEnvio === 'unionEuropea' ? 'la Unión Europea'
+          : zonaEnvio === 'latinoamerica' ? 'Latinoamérica'
+          : 'Resto del mundo';
+        return error400(
+          `Para envío a ${etiqueta} no están disponibles: ${bloqueados.map((l) => l.nombre).join(', ')}.`
+        );
+      }
+    }
+
+    const costeEnvio = calcularEnvio(subtotal, ajustes.envio, zonaEnvio);
     const total = Math.round((subtotal + costeEnvio) * 100) / 100;
 
     let numero = comprobacion.datos.numeroPedido || generarNumeroPedido();

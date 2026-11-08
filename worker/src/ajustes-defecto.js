@@ -61,12 +61,25 @@ export const ajustesPorDefecto = {
     metodoBizum: true,
   },
   envio: {
-    coste: 5.9,
-    costeInternacional: 12,
-    gratisDesde: 80,
-    gratisDesdeInternacional: 0,
-    plazos: 'Preparación artesanal por orden de solicitud. Envío peninsular en las semanas siguientes a cada lote.',
     activo: true,
+    plazos: 'Preparación artesanal por orden de solicitud. Envío peninsular en las semanas siguientes a cada lote.',
+    zonas: {
+      espana: { coste: 5.9, gratisDesde: 100 },
+      unionEuropea: { coste: 7.9, gratisDesde: 0 },
+      latinoamerica: { coste: 9.9, gratisDesde: 0 },
+      resto: { coste: 9.9, gratisDesde: 0 },
+    },
+    paises: {
+      unionEuropea: ['Portugal', 'Francia', 'Andorra', 'Alemania', 'Italia', 'Reino Unido', 'Países Bajos', 'Bélgica'],
+      latinoamerica: ['México', 'Argentina', 'Colombia', 'Chile'],
+      resto: ['Estados Unidos', 'Otro país'],
+    },
+    disponibilidad: {
+      espana: [],
+      unionEuropea: ['esencia-umbral-50', 'duo-ritual', 'Balsamo-solido'],
+      latinoamerica: ['Balsamo-solido', 'perfume-solido', 'Balsamo-solido-natural-12-g'],
+      resto: [],
+    },
   },
   'emails-automaticos': {
     confirmacionCompra: {

@@ -36,6 +36,28 @@ function errorJson(mensaje: string, estado = 400, request?: Request): Response {
   return new Response(JSON.stringify({ error: mensaje }), { status: estado, headers: cabeceras(request) });
 }
 
+// Zonas de envío (Ajustes → Envío): país del checkout → clave de zona.
+// Las listas del panel sobrescriben estos valores por defecto.
+const PAIS_ZONAS_DEFECTO: Record<string, string[]> = {
+  unionEuropea: ['Portugal', 'Francia', 'Andorra', 'Alemania', 'Italia', 'Reino Unido', 'Países Bajos', 'Bélgica'],
+  latinoamerica: ['México', 'Argentina', 'Colombia', 'Chile'],
+  resto: ['Estados Unidos', 'Otro país'],
+};
+
+function zonaDePais(pais: string, paises?: unknown): string {
+  const destino = String(pais || 'España').trim();
+  if (!destino || destino.toLowerCase() === 'españa' || destino.toLowerCase() === 'espana') return 'espana';
+  const listas = {
+    ...PAIS_ZONAS_DEFECTO,
+    ...(paises && typeof paises === 'object' ? (paises as Record<string, string[]>) : {}),
+  };
+  for (const clave of ['unionEuropea', 'latinoamerica', 'resto']) {
+    const lista = Array.isArray(listas[clave]) ? listas[clave] : [];
+    if (lista.some((x) => String(x).toLowerCase() === destino.toLowerCase())) return clave;
+  }
+  return 'resto';
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cabeceras(request) });
   if (request.method !== 'POST') return errorJson('Método no permitido.', 405, request);
@@ -95,7 +117,7 @@ Deno.serve(async (request: Request) => {
     (!o.fin || ahoraMs <= Date.parse(o.fin));
 
   // 3 · Líneas del pedido con precio efectivo EN SERVIDOR
-  const lineas: Array<{ id: string; codigo: string; nombre: string; cantidad: number; precioUnitario: number }> = [];
+  const lineas: Array<{ id: string; codigo: string; slug: string; nombre: string; cantidad: number; precioUnitario: number }> = [];
   for (const articulo of articulos as Array<Record<string, unknown>>) {
     const cantidad = Number(articulo.cantidad);
     if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 99) {
@@ -127,6 +149,7 @@ Deno.serve(async (request: Request) => {
     lineas.push({
       id: String(producto.id),
       codigo: String(producto.codigo || ''),
+      slug: String(producto.slug || ''),
       nombre: String(producto.nombre),
       cantidad,
       precioUnitario: Math.round(precio * 100) / 100,
@@ -135,18 +158,51 @@ Deno.serve(async (request: Request) => {
 
   const subtotal = Math.round(lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0) * 100) / 100;
 
-  // 4 · Envío desde ajustes por zona (España = nacional, resto = internacional)
+  // 4 · Envío por zonas desde ajustes (España / Unión Europea / Latinoamérica /
+  //     Resto del mundo) con disponibilidad de productos por destino
   const envioAjustes = (filaAjustes.envio || {}) as Record<string, unknown>;
   const datosEnvio = (cuerpo.envio || {}) as Record<string, unknown>;
-  const internacional = String(datosEnvio.pais || 'España').trim() !== 'España';
+  const zonaEnvio = zonaDePais(String(datosEnvio.pais || 'España'), envioAjustes.paises);
+  const zonasAjustes = (envioAjustes.zonas || {}) as Record<string, Record<string, unknown>>;
+  const zonaCfg = zonasAjustes[zonaEnvio] || {};
+
+  const ETIQUETA_ZONA: Record<string, string> = {
+    espana: 'España',
+    unionEuropea: 'la Unión Europea',
+    latinoamerica: 'Latinoamérica',
+    resto: 'Resto del mundo',
+  };
+
+  // Disponibilidad de productos por zona (lista vacía o ausente = todos)
+  const disponibilidad = (envioAjustes.disponibilidad || {}) as Record<string, string[]>;
+  const listaZona = Array.isArray(disponibilidad[zonaEnvio]) ? disponibilidad[zonaEnvio] : [];
+  if (listaZona.length > 0) {
+    const permitidos = listaZona.map((x) => String(x).toLowerCase());
+    const bloqueados = lineas.filter(
+      (l) =>
+        !permitidos.includes(String(l.codigo || '').toLowerCase()) &&
+        !permitidos.includes(String(l.slug || '').toLowerCase())
+    );
+    if (bloqueados.length > 0) {
+      return errorJson(
+        `Para envío a ${ETIQUETA_ZONA[zonaEnvio] || zonaEnvio} no están disponibles: ${bloqueados
+          .map((l) => l.nombre)
+          .join(', ')}.`,
+        400,
+        request
+      );
+    }
+  }
+
   let costeEnvio = 0;
   if (envioAjustes.activo !== false && subtotal > 0) {
-    const costeZona = internacional
-      ? Number(envioAjustes.costeInternacional ?? envioAjustes.coste) || 0
-      : Number(envioAjustes.coste) || 0;
-    const gratisDesde = Number(
-      internacional ? envioAjustes.gratisDesdeInternacional : envioAjustes.gratisDesde
-    ) || 0;
+    // Reservas de la configuración anterior (sin zonas guardadas)
+    const reservaCoste =
+      zonaEnvio === 'espana' ? envioAjustes.coste : (envioAjustes.costeInternacional ?? envioAjustes.coste);
+    const reservaGratis =
+      zonaEnvio === 'espana' ? envioAjustes.gratisDesde : envioAjustes.gratisDesdeInternacional;
+    const costeZona = Number(zonaCfg.coste ?? reservaCoste) || 0;
+    const gratisDesde = Number(zonaCfg.gratisDesde ?? reservaGratis) || 0;
     // Umbral 0 = nunca gratis (igual que en la web)
     if (gratisDesde > 0 && subtotal >= gratisDesde) costeEnvio = 0;
     else costeEnvio = costeZona;

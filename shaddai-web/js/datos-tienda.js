@@ -160,6 +160,14 @@ const DATOS_TIENDA = [
     const vertical = datos ? datos.vertical : false;
     const inversa = datos ? datos.inversa : indice % 2 === 1;
     const medidas = vertical ? 'width="900" height="1125"' : 'width="800" height="600"';
+    const codigoCarrito = String(producto.codigo || producto.slug || producto.id || "");
+    // Disponibilidad por destino (el panel la define en Ajustes → Envío)
+    const zonasProducto =
+      typeof zonasDeProducto === "function" ? zonasDeProducto(codigoCarrito) : null;
+    const notaZonas =
+      zonasProducto && zonasProducto.length && zonasProducto.length < 4
+        ? ` Envío a: ${CONEXION.escapar(zonasProducto.join(" · "))}.`
+        : "";
     seccion.innerHTML =
       `<div class="contenedor dos-columnas${inversa ? " inversa" : ""}">` +
       (imagen
@@ -173,7 +181,7 @@ const DATOS_TIENDA = [
       `<p class="texto-grande">${CONEXION.escapar(producto.descripcion || producto.historia || "")}</p>` +
       `<p class="compra-precio">${precioHtml(producto)}</p>` +
       botonHtml(producto) +
-      `<p class="compra-nota">Por orden de solicitud. Consulta la <a href="politica.html">Política de Envío Consciente</a>.</p>` +
+      `<p class="compra-nota">Por orden de solicitud.${notaZonas} Consulta la <a href="politica.html">Política de Envío Consciente</a>.</p>` +
       `</div>` +
       `</div>`;
     return seccion;

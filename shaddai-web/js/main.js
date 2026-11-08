@@ -212,28 +212,68 @@ const formatearPrecio = (valor) =>
     maximumFractionDigits: 2,
   });
 
-// Gastos de envío: edita estos datos con los tuyos (el panel los sobrescribe)
+// Gastos de envío por zonas: edita estos datos con los tuyos (el panel los
+// sobrescribe desde Ajustes → Envío cuando guarda zonas/países/disponibilidad)
 const CONFIG_ENVIO = {
-  coste: 5.9,                  // envío nacional (España) estándar
-  costeInternacional: 12,      // envío fuera de España
-  gratisDesde: 80,             // envío nacional gratuito a partir de este importe
-  gratisDesdeInternacional: 0, // 0 = el internacional nunca es gratis
+  activo: true,
+  zonas: {
+    espana: { etiqueta: "España", coste: 5.9, gratisDesde: 100 },
+    unionEuropea: { etiqueta: "Unión Europea", coste: 7.9, gratisDesde: 0 },
+    latinoamerica: { etiqueta: "Latinoamérica", coste: 9.9, gratisDesde: 0 },
+    resto: { etiqueta: "Resto del mundo", coste: 9.9, gratisDesde: 0 },
+  },
+  // País del checkout → zona (los códigos de producto se comparan sin mayúsculas)
+  paises: {
+    unionEuropea: ["Portugal", "Francia", "Andorra", "Alemania", "Italia", "Reino Unido", "Países Bajos", "Bélgica"],
+    latinoamerica: ["México", "Argentina", "Colombia", "Chile"],
+    resto: ["Estados Unidos", "Otro país"],
+  },
+  // Productos disponibles por zona (por código de producto; vacío = todos)
+  disponibilidad: {
+    espana: [],
+    unionEuropea: ["esencia-umbral-50", "duo-ritual", "Balsamo-solido"],
+    latinoamerica: ["Balsamo-solido", "perfume-solido", "Balsamo-solido-natural-12-g"],
+    resto: [],
+  },
 };
 
-// zona: "nacional" (España) o "internacional" (cualquier otro país)
-const calcularTotales = (articulos, zona = "nacional") => {
+// País del checkout → clave de zona ("espana", "unionEuropea", "latinoamerica", "resto")
+const zonaDePais = (pais) => {
+  const destino = String(pais || "España").trim();
+  if (!destino || destino.toLowerCase() === "españa" || destino.toLowerCase() === "espana") return "espana";
+  const listas = CONFIG_ENVIO.paises || {};
+  for (const clave of ["unionEuropea", "latinoamerica", "resto"]) {
+    const lista = Array.isArray(listas[clave]) ? listas[clave] : [];
+    if (lista.some((x) => String(x).toLowerCase() === destino.toLowerCase())) return clave;
+  }
+  return "resto";
+};
+
+const etiquetaZona = (zona) => ((CONFIG_ENVIO.zonas || {})[zona] || {}).etiqueta || zona;
+
+// ¿Se puede enviar el producto a la zona? (lista vacía o ausente = todos)
+const productoDisponible = (idProducto, zona) => {
+  const lista = (CONFIG_ENVIO.disponibilidad || {})[zona];
+  if (!Array.isArray(lista) || lista.length === 0) return true;
+  const identificador = String(idProducto || "").toLowerCase();
+  return lista.some((x) => String(x).toLowerCase() === identificador);
+};
+
+// Etiquetas de las zonas a las que se puede enviar un producto (notas de la web)
+const zonasDeProducto = (idProducto) =>
+  Object.keys(CONFIG_ENVIO.zonas || {})
+    .filter((zona) => productoDisponible(idProducto, zona))
+    .map((zona) => etiquetaZona(zona));
+
+const calcularTotales = (articulos, zona = "espana") => {
   const subtotal = articulos.reduce((suma, articulo) => suma + articulo.precio * articulo.cantidad, 0);
-  const internacional = zona === "internacional";
-  const coste = internacional
-    ? Number(CONFIG_ENVIO.costeInternacional) >= 0
-      ? Number(CONFIG_ENVIO.costeInternacional)
-      : CONFIG_ENVIO.coste
-    : Number(CONFIG_ENVIO.coste) || 0;
-  const umbral = Number(
-    internacional ? CONFIG_ENVIO.gratisDesdeInternacional : CONFIG_ENVIO.gratisDesde
-  ) || 0;
-  const envio = subtotal === 0 || (umbral > 0 && subtotal >= umbral) ? 0 : coste;
-  return { subtotal, envio, total: subtotal + envio };
+  const clave = zona === "nacional" ? "espana" : zona === "internacional" ? "unionEuropea" : zona;
+  const configZona = (CONFIG_ENVIO.zonas || {})[clave] || CONFIG_ENVIO.zonas.espana;
+  const coste = Number(configZona.coste) || 0;
+  const umbral = Number(configZona.gratisDesde) || 0;
+  const envio =
+    CONFIG_ENVIO.activo === false || subtotal === 0 || (umbral > 0 && subtotal >= umbral) ? 0 : coste;
+  return { subtotal, envio, total: subtotal + envio, zona: clave };
 };
 
 const pintarConteoCarrito = (articulos) => {
@@ -286,15 +326,21 @@ const pintarCarrito = (articulos) => {
     lineaEnvio.classList.toggle("gratis", envio === 0);
   }
   if (notaEnvio && articulos.length > 0) {
-    if (envio === 0) {
-      notaEnvio.textContent = "Envío gratuito aplicado a tu reserva.";
-    } else {
-      const costeInternacional = calcularTotales([{ precio: 1, cantidad: 1 }], "internacional").envio;
-      const umbralInternacional = Number(CONFIG_ENVIO.gratisDesdeInternacional) || 0;
-      notaEnvio.textContent =
-        `Envío a España: ${formatearPrecio(envio)}${Number(CONFIG_ENVIO.gratisDesde) > 0 ? `, gratis a partir de ${formatearPrecio(CONFIG_ENVIO.gratisDesde)}` : ""}.` +
-        ` Internacionales: ${formatearPrecio(costeInternacional)}${umbralInternacional > 0 ? `, gratis a partir de ${formatearPrecio(umbralInternacional)}` : ""}.`;
+    const zonasTexto = Object.values(CONFIG_ENVIO.zonas || {})
+      .map((configuracion) => `${configuracion.etiqueta}: ${formatearPrecio(Number(configuracion.coste) || 0)}`)
+      .join(" · ");
+    let texto = `Envíos — ${zonasTexto}.`;
+    const restringidos = articulos.filter(
+      (articulo) => !productoDisponible(articulo.id, "unionEuropea") || !productoDisponible(articulo.id, "latinoamerica")
+    );
+    if (restringidos.length > 0) {
+      texto +=
+        " " +
+        restringidos
+          .map((articulo) => `«${articulo.nombre}» solo se envía a: ${zonasDeProducto(articulo.id).join(" · ")}`)
+          .join(". ");
     }
+    notaEnvio.textContent = texto;
   }
 };
 
