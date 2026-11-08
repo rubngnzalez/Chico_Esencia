@@ -288,6 +288,8 @@ const CONEXION = (() => {
     const pie = document.querySelector(".pie");
     const entradas = Object.entries(datos.redes || {}).filter(([, url]) => url);
     if (!pie || entradas.length === 0) return;
+    // Los pies ya llevan los iconos en el HTML estático: evitar duplicados
+    if (pie.querySelector(".pie-social") || pie.querySelector(".pie-redes")) return;
     const nombres = {
       instagram: "Instagram",
       tiktok: "TikTok",
