@@ -212,15 +212,27 @@ const formatearPrecio = (valor) =>
     maximumFractionDigits: 2,
   });
 
-// Gastos de envío: edita estos datos con los tuyos
+// Gastos de envío: edita estos datos con los tuyos (el panel los sobrescribe)
 const CONFIG_ENVIO = {
-  coste: 5.9,        // envío peninsular estándar
-  gratisDesde: 80,   // envío gratuito a partir de este importe
+  coste: 5.9,                  // envío nacional (España) estándar
+  costeInternacional: 12,      // envío fuera de España
+  gratisDesde: 80,             // envío nacional gratuito a partir de este importe
+  gratisDesdeInternacional: 0, // 0 = el internacional nunca es gratis
 };
 
-const calcularTotales = (articulos) => {
+// zona: "nacional" (España) o "internacional" (cualquier otro país)
+const calcularTotales = (articulos, zona = "nacional") => {
   const subtotal = articulos.reduce((suma, articulo) => suma + articulo.precio * articulo.cantidad, 0);
-  const envio = subtotal === 0 || subtotal >= CONFIG_ENVIO.gratisDesde ? 0 : CONFIG_ENVIO.coste;
+  const internacional = zona === "internacional";
+  const coste = internacional
+    ? Number(CONFIG_ENVIO.costeInternacional) >= 0
+      ? Number(CONFIG_ENVIO.costeInternacional)
+      : CONFIG_ENVIO.coste
+    : Number(CONFIG_ENVIO.coste) || 0;
+  const umbral = Number(
+    internacional ? CONFIG_ENVIO.gratisDesdeInternacional : CONFIG_ENVIO.gratisDesde
+  ) || 0;
+  const envio = subtotal === 0 || (umbral > 0 && subtotal >= umbral) ? 0 : coste;
   return { subtotal, envio, total: subtotal + envio };
 };
 
@@ -274,10 +286,15 @@ const pintarCarrito = (articulos) => {
     lineaEnvio.classList.toggle("gratis", envio === 0);
   }
   if (notaEnvio && articulos.length > 0) {
-    notaEnvio.textContent =
-      envio === 0
-        ? "Envío gratuito aplicado a tu reserva."
-        : `Envío peninsular: gratis a partir de ${formatearPrecio(CONFIG_ENVIO.gratisDesde)}. Añade ${formatearPrecio(CONFIG_ENVIO.gratisDesde - subtotal)} más y el envío es gratis.`;
+    if (envio === 0) {
+      notaEnvio.textContent = "Envío gratuito aplicado a tu reserva.";
+    } else {
+      const costeInternacional = calcularTotales([{ precio: 1, cantidad: 1 }], "internacional").envio;
+      const umbralInternacional = Number(CONFIG_ENVIO.gratisDesdeInternacional) || 0;
+      notaEnvio.textContent =
+        `Envío a España: ${formatearPrecio(envio)}${Number(CONFIG_ENVIO.gratisDesde) > 0 ? `, gratis a partir de ${formatearPrecio(CONFIG_ENVIO.gratisDesde)}` : ""}.` +
+        ` Internacionales: ${formatearPrecio(costeInternacional)}${umbralInternacional > 0 ? `, gratis a partir de ${formatearPrecio(umbralInternacional)}` : ""}.`;
+    }
   }
 };
 

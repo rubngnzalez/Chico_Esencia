@@ -178,8 +178,10 @@ const SECCIONES_MANUAL = [
         teléfono, dirección y horario que muestra la web.</li>
         <li><strong>Redes sociales</strong>: URLs completas de Instagram, TikTok, Pinterest, Facebook, YouTube y
         WhatsApp (se pintan en el pie de la web).</li>
-        <li><strong>Envío</strong>: coste, umbral de gratuidad («gratis desde»), texto de plazos y un interruptor
-        para cobrar o no envío. La web y el cálculo del pedido usan estos valores.</li>
+        <li><strong>Envío</strong>: coste y umbral de gratuidad («gratis desde») para España (nacional) y para
+        el resto del mundo (internacional), texto de plazos y un interruptor para cobrar o no envío. La zona se
+        decide con el país del formulario de pago en el checkout: España = nacional; cualquier otro país =
+        internacional. La web y el cálculo del pedido (web, Worker y Edge Function) usan estos valores.</li>
         <li><strong>Notificaciones</strong>: email interno y qué avisos se generan (pedido pagado, nuevo contacto…).</li>
         <li><strong>SMTP</strong>: se guarda el remitente (De:) y, de momento, los datos de referencia. El envío
         real de la fase 2 usa Resend (<code>RESEND_API_KEY</code>).</li>

@@ -44,7 +44,28 @@ const bloqueVacio = document.querySelector("[data-pago-vacio]");
 
 const articulosPago = typeof leerCarrito === "function" ? leerCarrito() : [];
 
-// Resumen del pedido (se repinta cuando la API trae el coste de envío real)
+// Zona de envío según el país elegido en el formulario: España = nacional
+const zonaDeEnvio = () =>
+  formularioPagoR && formularioPagoR.elements.pais && formularioPagoR.elements.pais.value !== "España"
+    ? "internacional"
+    : "nacional";
+
+// Nota de envío adaptada a la zona (se repinta al cambiar el país)
+const pintarNotaEnvio = () => {
+  const notaEnvio = document.querySelector("[data-nota-envio]");
+  if (!notaEnvio) return;
+  const internacional = zonaDeEnvio() === "internacional";
+  const umbral = Number(
+    internacional ? CONFIG_ENVIO.gratisDesdeInternacional : CONFIG_ENVIO.gratisDesde
+  ) || 0;
+  const coste = calcularTotales([{ precio: 1, cantidad: 1 }], internacional ? "internacional" : "nacional").envio;
+  notaEnvio.textContent = internacional
+    ? `Envío internacional: ${formatearPrecio(coste)}${umbral > 0 ? `, gratuito a partir de ${formatearPrecio(umbral)}` : ""}. Preparamos cada frasco por orden de pago.`
+    : `Envío a España: ${formatearPrecio(coste)}${umbral > 0 ? `, gratuito a partir de ${formatearPrecio(umbral)}` : ""}. Preparamos cada frasco por orden de pago.`;
+};
+
+// Resumen del pedido (se repinta cuando la API trae el coste de envío real
+// y cuando se cambia el país del formulario)
 const pintarResumen = () => {
   if (articulosPago.length === 0) {
     if (resumenPedido) resumenPedido.hidden = true;
@@ -65,13 +86,22 @@ const pintarResumen = () => {
     lineas.append(fila);
   });
 
-  const { subtotal, envio, total } = calcularTotales(articulosPago);
+  const { subtotal, envio, total } = calcularTotales(articulosPago, zonaDeEnvio());
   document.querySelector("[data-subtotal]").textContent = formatearPrecio(subtotal);
   document.querySelector("[data-envio]").textContent = envio === 0 ? "Gratis" : formatearPrecio(envio);
   document.querySelector("[data-total]").textContent = formatearPrecio(total);
 };
 
 pintarResumen();
+
+// El país decide la zona de envío: al cambiarlo se recalcula el resumen
+const paisPago = formularioPagoR ? formularioPagoR.elements.pais : null;
+if (paisPago) {
+  paisPago.addEventListener("change", () => {
+    pintarResumen();
+    pintarNotaEnvio();
+  });
+}
 
 // Entorno, comercio, métodos y envío reales del panel cuando hay conexión
 if (typeof CONEXION !== "undefined") {
@@ -112,11 +142,8 @@ if (typeof CONEXION !== "undefined") {
       const etiqueta = entrada.closest(".metodo-pago");
       if (etiqueta) etiqueta.hidden = !activo;
     });
-    // Nota de envío con el umbral real del panel (antes estaba fija en 80 €)
-    const notaEnvio = document.querySelector("[data-nota-envio]");
-    if (notaEnvio) {
-      notaEnvio.textContent = `El envío peninsular es gratuito a partir de ${formatearPrecio(CONFIG_ENVIO.gratisDesde)}. Preparamos cada frasco por orden de pago.`;
-    }
+    // Nota de envío con los umbrales reales del panel, según la zona elegida
+    pintarNotaEnvio();
   });
 }
 
@@ -255,7 +282,7 @@ if (formularioPagoR) {
     }
 
     let numeroFinal = pedido;
-    let total = calcularTotales(articulosPago).total;
+    let total = calcularTotales(articulosPago, zonaDeEnvio()).total;
     let parametrosB64;
     let firma;
     let version = "HMAC_SHA256_V1";
