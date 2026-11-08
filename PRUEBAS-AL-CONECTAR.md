@@ -99,6 +99,22 @@ Con la clave de test sembrada (entorno test, FUC 999008889) y SIN funciones desp
   - `/admin/` muestra el aviso claro de «Falta conectar con Supabase».
 - [ ] Restaurar los valores y recargar.
 
+## 13 · Seguimiento post-venta (los 4 correos)
+
+Requisito previo: ejecutar `supabase/actualizaciones/2026-11-08-seguimiento-postventa.sql` en el SQL Editor.
+
+- [ ] Panel → Pedidos → cambiar un pedido pagado a **«En camino»** → se abre un modal pidiendo enlace de
+  seguimiento y plazo → guardar → el pedido queda «enviado» con fecha.
+- [ ] Panel → Email marketing → **Seguimiento post-venta**: aparece el correo «En camino» pendiente con el pedido.
+- [ ] Pulsar **«Procesar pendientes ahora»** → avisa de correos procesados → en **Bandeja de salida** aparece
+  «Tu pedido … ya va en camino 📦» con el botón de descarga .eml (se abre con el enlace y el plazo).
+- [ ] Volver a Pedidos → marcar el pedido **«Entregado»** → confirmación → en Seguimiento post-venta aparecen
+  «Consejos de uso» y «Petición de opinión» programados a los días configurados (Ajustes → Emails automáticos).
+- [ ] Cancelar uno de los dos correos → pasa a estado «cancelado» y no se procesa.
+- [ ] (Opcional, cron) Con pg_cron activa, esperar la hora en punto → los vencidos se procesan solos.
+- [ ] (Opcional, envío real) Con `vault.create_secret('re_…', 'resend_api_key')` y pg_net activas → los
+  correos salen por Resend y quedan en la bandeja como «enviado».
+
 ## Notas
 
 - Si algo no aparece en la web pública, primero Ctrl+F5 (caché) y revisa la consola del navegador.

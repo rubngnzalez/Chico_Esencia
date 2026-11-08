@@ -142,6 +142,43 @@ Cuando quieras el paso a producción de verdad:
 
 ---
 
+## AUTOMATISMOS POST-VENTA · Los 4 correos del cliente (opcional pero recomendado)
+
+La web mantiene informado al cliente con un journey de 4 correos automáticos:
+
+| # | Correo | Cuándo se dispara | Dónde se edita |
+|---|---|---|---|
+| 1 | Confirmación de compra + agradecimiento | Al confirmarse el pago (función `redsys-notificacion`) | Ajustes → Emails automáticos |
+| 2 | «Tu pedido ya va en camino» 📦 | Al marcar el pedido **En camino** en Pedidos (pide enlace de seguimiento y plazo) | Ajustes → Emails automáticos |
+| 3 | Consejos de uso | X días después de marcar el pedido **Entregado** (por defecto 4) | Ajustes → Emails automáticos |
+| 4 | Petición de opinión | Y días después de la entrega (por defecto 12) | Ajustes → Emails automáticos |
+
+Los mensajes 2-4 se guardan en la tabla `seguimientos` y los envía la función de base de datos
+`oms_procesar_seguimientos()` cada hora (cron) o al pulsar «Procesar pendientes ahora» en
+**Email marketing → Seguimiento post-venta**, donde también pueden cancelarse uno a uno.
+Si un pedido se cancela, sus correos pendientes se cancelan solos.
+
+### Instalación (una vez)
+
+1. En el SQL Editor del proyecto, copia y ejecuta TODO el contenido de
+   `supabase/actualizaciones/2026-11-08-seguimiento-postventa.sql` (idempotente).
+2. En **Database → Extensions** activa `pg_cron` y `pg_net` y vuelve a ejecutar el mismo fichero:
+   así queda programado el envío automático cada hora (sin cron también funciona con el botón del panel).
+3. **Envío real automático (opcional):** en el SQL Editor ejecuta
+   `select vault.create_secret('re_tu_api_key_de_resend', 'resend_api_key');`
+   (la misma API key de Resend de la fase 2). Sin este paso, los correos quedan en la
+   **Bandeja de salida** como .eml descargables, igual que las campañas.
+
+### Uso diario
+
+- En **Pedidos**, al cambiar el estado a *En camino* el panel pide el enlace de seguimiento del
+  transporte y el plazo estimado; al cambiar a *Entregado* avisa de los dos correos que se programan.
+- El detalle de cada pedido muestra los correos post-venta programados (y permite cancelarlos).
+- Los textos, los días de espera y el interruptor «Enviar este correo» de cada mensaje están en
+  **Ajustes → Emails automáticos**.
+
+---
+
 ## Copias de seguridad
 
 - **Table Editor** permite exportar cada tabla a **CSV** (botón de la tabla).
@@ -163,6 +200,8 @@ Cuando quieras el paso a producción de verdad:
 | Copiar URL + anon key | Settings → API |
 | Ver logs de las Edge Functions | Edge Functions → (función) → Logs |
 | Secretos (RESEND_API_KEY…) | Edge Functions → Secrets |
+| Activar pg_cron / pg_net (cron de seguimientos) | Database → Extensions |
+| Guardar la clave de Resend para el cron post-venta | SQL Editor → `vault.create_secret(...)` |
 
 ## Qué pedirle al coordinador
 

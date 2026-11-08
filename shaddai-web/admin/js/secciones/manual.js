@@ -96,7 +96,14 @@ const SECCIONES_MANUAL = [
         <li>Si no, la campaña queda <strong>pendiente</strong> y los correos se guardan en la
         <strong>Bandeja de salida</strong>, descargables como archivos .eml (se abren con cualquier gestor de
         correo y pueden reenviarse a mano).</li>
-      </ul>`,
+      </ul>
+      <h3>Seguimiento post-venta</h3>
+      <p>Pestaña con los <strong>correos automáticos de post-venta</strong> de cada pedido: el aviso de
+      «En camino» y los de consejos y opinión. Muestra para qué pedido y fecha está programado cada uno;
+      puedes <strong>cancelar</strong> uno concreto o forzar el envío con <strong>«Procesar pendientes
+      ahora»</strong> (útil si el cron de Supabase no está activo: sin envío real los correos van a la
+      Bandeja de salida como .eml). Se programan solos al cambiar el estado de un pedido; los textos y los
+      días se editan en <em>Ajustes → Emails automáticos</em>.</p>`,
   },
   {
     id: 'bandeja', titulo: '8 · Bandeja de entrada',
@@ -128,7 +135,23 @@ const SECCIONES_MANUAL = [
       <strong>agradecimiento</strong> con las plantillas de <em>Ajustes → Emails automáticos</em> (variables
       <code>{{nombre}}</code>, <code>{{pedido}}</code>, <code>{{total}}</code>, <code>{{articulos}}</code>).
       Si no hay envío real, todo queda en la Bandeja de salida (.eml). El equipo recibe un aviso interno si
-      <em>Ajustes → Notificaciones</em> lo tiene activado.</p>`,
+      <em>Ajustes → Notificaciones</em> lo tiene activado.</p>
+      <h3>Seguimiento post-venta automático</h3>
+      <p>El cliente recibe hasta 4 correos en todo el viaje de su pedido, sin que tengas que hacer nada más
+      que mantener el estado al día:</p>
+      <ol>
+        <li><strong>Confirmación</strong> — sale sola al confirmarse el pago.</li>
+        <li><strong>«En camino»</strong> — al marcar el pedido <em>En camino</em> el panel pide el
+        <strong>enlace de seguimiento</strong> del transporte y el plazo estimado; el correo sale enseguida con
+        un botón «Seguir mi envío».</li>
+        <li><strong>Consejos de uso</strong> — al marcar <em>Entregado</em> se programa a los días indicados en
+        Ajustes (por defecto 4).</li>
+        <li><strong>Petición de opinión</strong> — se programa a los días indicados en Ajustes (por defecto 12).</li>
+      </ol>
+      <p>Los correos se procesan cada hora (cron de Supabase) o con el botón «Procesar pendientes ahora» de
+      <em>Email marketing → Seguimiento post-venta</em>, donde también pueden cancelarse. El detalle de cada
+      pedido muestra los correos programados. Si el pedido se cancela, sus correos pendientes se cancelan
+      solos.</p>`,
   },
   {
     id: 'redsys', titulo: '10 · Pago (Redsys): test y producción',

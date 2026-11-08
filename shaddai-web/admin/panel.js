@@ -25,7 +25,7 @@ const SOLO_GESTION = ['admin', 'editor'];
 
 // Cache-busting de las secciones: SUBE esta versión al cambiar cualquier
 // fichero de js/secciones/ para que el navegador no sirva el módulo viejo.
-const VERSION_SECCIONES = '2026-11-06b';
+const VERSION_SECCIONES = '2026-11-08a';
 
 const SECCIONES = {
   panel: { titulo: 'Panel', mod: './js/secciones/panel.js', roles: TODOS },

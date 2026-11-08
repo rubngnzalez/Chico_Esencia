@@ -1,11 +1,19 @@
-// Email marketing: pestañas de Suscriptores, Campañas y Bandeja de salida.
-// Sin la Edge Function «enviar-campana» (o sin RESEND_API_KEY), los envíos
-// quedan «pendientes»: la campaña se marca y los correos van a la tabla
-// outbox, descargables como .eml desde aquí.
+// Email marketing: pestañas de Suscriptores, Campañas, Bandeja de salida y
+// Seguimiento post-venta. Sin la Edge Function «enviar-campana» (o sin
+// RESEND_API_KEY), los envíos quedan «pendientes»: la campaña se marca y los
+// correos van a la tabla outbox, descargables como .eml desde aquí.
+// El seguimiento post-venta lo programa el trigger de oms_seguimientos y lo
+// procesa la función oms_procesar_seguimientos (cron horario o botón).
 import { sb, asegurar, invocarFuncion, mensajeError } from '../bd.js';
 import {
   escapar, fechaHora, toast, confirmar, abrirModal, abrirVistaPrevia, badgeEstado, etiquetaVacia, descargarEml,
 } from '../api.js';
+
+const TIPOS_SEGUIMIENTO = {
+  envio: 'En camino',
+  cuidado: 'Consejos de uso',
+  opinion: 'Petición de opinión',
+};
 
 export default async function (contenedor, contexto) {
   contenedor.innerHTML = `
@@ -13,6 +21,7 @@ export default async function (contenedor, contexto) {
       <button class="pestana activa" data-pestana="suscriptores" type="button">Suscriptores</button>
       <button class="pestana" data-pestana="campanas" type="button">Campañas</button>
       <button class="pestana" data-pestana="outbox" type="button">Bandeja de salida</button>
+      <button class="pestana" data-pestana="seguimientos" type="button">Seguimiento post-venta</button>
     </div>
     <div id="zona-email"></div>`;
 
@@ -24,6 +33,7 @@ export default async function (contenedor, contexto) {
     zona.querySelectorAll('.pestana').forEach((p) => p.classList.toggle('activa', p === boton));
     if (boton.dataset.pestana === 'suscriptores') pintarSuscriptores(zona);
     else if (boton.dataset.pestana === 'campanas') pintarCampanas(zona, contexto);
+    else if (boton.dataset.pestana === 'seguimientos') pintarSeguimientos(zona);
     else pintarOutbox(zona);
   });
 
@@ -192,6 +202,87 @@ async function pintarCampanas(zona, contexto) {
       } catch (error) {
         toast(error.message, 'error');
       }
+    }
+  });
+}
+
+// Seguimiento post-venta: correos programados por pedido (envio/cuidado/opinion)
+async function pintarSeguimientos(zona) {
+  zona.innerHTML = '<p class="cargando">Cargando seguimientos…</p>';
+  let filas;
+  try {
+    filas = (await asegurar(
+      sb().from('oms_seguimientos').select('*, oms_pedidos(numero)').order('enviar_desde', { ascending: true }).limit(200)
+    )) || [];
+  } catch (error) {
+    zona.innerHTML = etiquetaVacia(`No se pudieron cargar los seguimientos: ${error.message}`);
+    return;
+  }
+
+  const pendientes = filas.filter((f) => f.estado === 'pendiente');
+  const plural = (n, texto) => `${n} ${texto}${n === 1 ? '' : 's'}`;
+
+  zona.innerHTML = `
+    <div class="aviso-smtp">
+      <p><strong>Correos post-venta automáticos.</strong> Se programan al cambiar el estado de un pedido en
+      <em>Pedidos</em>: «En camino» programa el aviso de envío (con el enlace de seguimiento) y «Entregado» los
+      de consejos de uso y de opinión, a los días configurados en <em>Ajustes → Emails automáticos</em>.
+      Se envían solos cada hora (cron de Supabase) o al pulsar «Procesar pendientes ahora»; sin envío real
+      quedan en la <em>Bandeja de salida</em> como .eml.</p>
+    </div>
+    <div class="barra-herramientas">
+      <p class="texto-suave">${plural(filas.length, 'correo')} programado${filas.length === 1 ? '' : 's'} · ${plural(pendientes.length, 'pendiente')}.</p>
+      <button class="boton boton-primario" data-procesar type="button" ${pendientes.length ? '' : 'disabled'}>Procesar pendientes ahora</button>
+    </div>
+    <div class="zona-tabla">
+    ${filas.length ? `
+      <table class="tabla">
+        <thead><tr><th>Correo</th><th>Pedido</th><th>Para</th><th>Se envía</th><th>Estado</th><th class="alineado-derecha">Acciones</th></tr></thead>
+        <tbody>
+          ${filas.map((f) => `
+          <tr data-id="${escapar(f.id)}">
+            <td><strong>${escapar(TIPOS_SEGUIMIENTO[f.tipo] || f.tipo)}</strong></td>
+            <td class="texto-suave">${escapar(f.oms_pedidos?.numero || '—')}</td>
+            <td class="texto-suave">${escapar(f.para)}</td>
+            <td class="texto-suave">${f.estado === 'pendiente' ? fechaHora(f.enviar_desde) : '—'}</td>
+            <td>${badgeEstado(f.estado)}${f.procesado_en ? `<br><span class="texto-suave">${fechaHora(f.procesado_en)}</span>` : ''}</td>
+            <td class="alineado-derecha">
+              ${f.estado === 'pendiente' ? '<button class="boton boton-fantasma boton-pequeno" data-accion="cancelar" type="button">Cancelar</button>' : ''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : etiquetaVacia('No hay correos programados. Se crean solos al marcar un pedido como «En camino» o «Entregado» en la sección Pedidos.')}
+    </div>`;
+
+  zona.querySelector('[data-procesar]').addEventListener('click', async (evento) => {
+    const boton = evento.currentTarget;
+    boton.disabled = true;
+    try {
+      const total = await asegurar(sb().rpc('oms_procesar_seguimientos'));
+      toast(Number(total) > 0
+        ? `${plural(Number(total), 'correo')} procesado${Number(total) === 1 ? '' : 's'}: enviado${Number(total) === 1 ? '' : 's'} con Resend o guardado${Number(total) === 1 ? '' : 's'} en la bandeja de salida.`
+        : 'No hay correos pendientes de enviar.');
+      pintarSeguimientos(zona);
+    } catch (error) {
+      toast(error.message, 'error');
+      boton.disabled = false;
+    }
+  });
+
+  zona.querySelector('.zona-tabla').addEventListener('click', async (evento) => {
+    const boton = evento.target.closest('button[data-accion="cancelar"]');
+    if (!boton) return;
+    const fila = filas.find((f) => f.id === boton.closest('tr').dataset.id);
+    if (!fila) return;
+    const seguro = await confirmar('Cancelar correo', `¿Cancelar el correo «${TIPOS_SEGUIMIENTO[fila.tipo] || fila.tipo}» del pedido ${fila.oms_pedidos?.numero || ''}?`);
+    if (!seguro) return;
+    try {
+      const error = (await sb().from('oms_seguimientos').update({ estado: 'cancelado' }).eq('id', fila.id)).error;
+      if (error) throw new Error(mensajeError(error));
+      toast('Correo programado cancelado.');
+      pintarSeguimientos(zona);
+    } catch (error) {
+      toast(error.message, 'error');
     }
   });
 }
