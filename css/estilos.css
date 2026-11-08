@@ -2576,3 +2576,37 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: var(--oro);
   opacity: 1;
 }
+
+/* ---------- Redes sociales del pie (iconos) ---------- */
+.pie-social {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2.4rem;
+  padding-top: 2.2rem;
+  border-top: 1px solid rgba(201, 164, 95, 0.22);
+}
+
+.pie-social a {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(201, 164, 95, 0.4);
+  border-radius: 50%;
+  color: var(--oro);
+  transition: background 0.35s ease, color 0.35s ease, transform 0.35s ease;
+}
+
+.pie-social a:hover {
+  background: var(--oro);
+  color: var(--verde);
+  transform: translateY(-3px);
+}
+
+.pie-social svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
