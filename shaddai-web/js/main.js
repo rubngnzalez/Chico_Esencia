@@ -233,7 +233,8 @@ const CONFIG_ENVIO = {
     espana: [],
     unionEuropea: ["esencia-umbral-50", "duo-ritual", "Balsamo-solido"],
     latinoamerica: ["Balsamo-solido", "perfume-solido", "Balsamo-solido-natural-12-g"],
-    resto: [],
+    // Solo el bálsamo cruza a "Resto del mundo": la Esencia (alcohol) no viaja ahí
+    resto: ["perfume-solido", "Balsamo-solido", "Balsamo-solido-natural-12-g"],
   },
 };
 
