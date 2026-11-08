@@ -30,12 +30,14 @@ const CONFIG_REDSYS = {
 };
 
 // URLs de retorno sobre la misma raíz de la web; la notificación online va
-// a la Edge Function que marca el pedido pagado y envía los correos
+// a la Edge Function del proyecto OMS que valida, marca el pedido pagado
+// y dispara los correos
 (() => {
   const base = location.href.replace(/pago\.html.*$/, "");
   CONFIG_REDSYS.urlOk = base + "pago-ok.html";
   CONFIG_REDSYS.urlKo = base + "pago-ko.html";
-  CONFIG_REDSYS.urlNotificacion = "https://xtnzamagyztndpjhiqby.supabase.co/functions/v1/redsys-notificacion";
+  CONFIG_REDSYS.urlNotificacion =
+    "https://zjzqbugpdpfuttdwagai.supabase.co/functions/v1/oms-redsys-notificacion";
 })();
 
 const resumenPedido = document.querySelector("[data-resumen-pedido]");
@@ -153,19 +155,11 @@ if (typeof CONEXION !== "undefined") {
       if (config.pago.urlNotificacion) CONFIG_REDSYS.urlNotificacion = config.pago.urlNotificacion;
     }
     if (config.clavePago) {
+      // Solo llega en test: firma en cliente con la clave de pruebas pública
       CONFIG_REDSYS.clave = String(config.clavePago);
-    } else if (CONFIG_REDSYS.entorno === "produccion") {
-      // Producción sin clave pública en la vista: la firma en cliente no es
-      // posible; sin Edge Function/Worker desplegados el pago no puede
-      // completarse y el panel avisa al equipo.
-      document
-        .querySelectorAll(".metodo-pago input[name='metodo']")
-        .forEach((entrada) => {
-          entrada.disabled = true;
-          const etiqueta = entrada.closest(".metodo-pago");
-          if (etiqueta) etiqueta.hidden = true;
-        });
     }
+    // En producción la clave permanece en servidor: la firma la hace la
+    // Edge Function oms-pagos-firma y los métodos siguen visibles
     pintarResumen();
     const metodos = config.metodosPago || {};
     document.querySelectorAll(".metodo-pago input[name='metodo']").forEach((entrada) => {
