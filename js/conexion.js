@@ -55,14 +55,14 @@ const CONEXION = (() => {
     if (error || !data) return null;
     return {
       envio: {
-        coste: numero(data.envio_coste),
-        // null = la vista aún no expone el internacional (SQL sin actualizar):
-        // la web usará el coste nacional como reserva
-        costeInternacional: data.envio_coste_internacional == null ? null : numero(data.envio_coste_internacional),
-        gratisDesde: numero(data.envio_gratis_desde),
-        gratisDesdeInternacional: data.envio_gratis_desde_internacional == null ? null : numero(data.envio_gratis_desde_internacional),
-        plazos: String(data.envio_plazos || ""),
         activo: data.envio_activo !== false,
+        // Zonas del panel (España, Unión Europea, Latinoamérica, Resto del
+        // mundo): null si la vista aún no las expone (SQL sin actualizar) y
+        // la web usa sus valores por defecto
+        zonas: data.envio_zonas && typeof data.envio_zonas === "object" ? data.envio_zonas : null,
+        paises: data.envio_paises && typeof data.envio_paises === "object" ? data.envio_paises : null,
+        disponibilidad:
+          data.envio_disponibilidad && typeof data.envio_disponibilidad === "object" ? data.envio_disponibilidad : null,
       },
       redes: data.redes && typeof data.redes === "object" ? data.redes : {},
       contacto: {
@@ -254,39 +254,45 @@ const CONEXION = (() => {
     return postTrabajador(ruta, cuerpo);
   };
 
-  // Coste y umbral de envío reales cuando el panel los trae
+  // Coste, umbrales, países y disponibilidad reales cuando el panel los trae
   const aplicarEnvio = (datos) => {
     const envio = datos.envio;
     if (!envio) return;
-    // «Cobrar envío» apagado = envío gratuito (en ambas zonas); los valores
-    // del panel solo se aplican cuando el interruptor está activo.
+    if (typeof CONFIG_ENVIO !== "object" || !CONFIG_ENVIO) return;
+    // «Cobrar envío» apagado = envío gratuito en todas las zonas
     if (envio.activo === false) {
-      if (typeof CONFIG_ENVIO === "object" && CONFIG_ENVIO) {
-        CONFIG_ENVIO.coste = 0;
-        CONFIG_ENVIO.costeInternacional = 0;
-      }
+      CONFIG_ENVIO.activo = false;
+      Object.keys(CONFIG_ENVIO.zonas || {}).forEach((clave) => {
+        CONFIG_ENVIO.zonas[clave].coste = 0;
+      });
       return;
     }
-    if (typeof CONFIG_ENVIO === "object" && CONFIG_ENVIO) {
-      if (Number(envio.coste) >= 0) CONFIG_ENVIO.coste = Number(envio.coste);
-      if (Number(envio.gratisDesde) >= 0) CONFIG_ENVIO.gratisDesde = Number(envio.gratisDesde);
-      // Internacional: solo si la vista lo trae; sin dato, se usa el nacional
-      if (envio.costeInternacional != null && Number(envio.costeInternacional) >= 0) {
-        CONFIG_ENVIO.costeInternacional = Number(envio.costeInternacional);
-      } else {
-        CONFIG_ENVIO.costeInternacional = CONFIG_ENVIO.coste;
-      }
-      if (envio.gratisDesdeInternacional != null && Number(envio.gratisDesdeInternacional) >= 0) {
-        CONFIG_ENVIO.gratisDesdeInternacional = Number(envio.gratisDesdeInternacional);
-      }
-      // Repinta el carrito visible con el envío real
-      if (
-        document.body.dataset.pagina === "carrito" &&
-        typeof pintarCarrito === "function" &&
-        typeof leerCarrito === "function"
-      ) {
-        pintarCarrito(leerCarrito());
-      }
+    CONFIG_ENVIO.activo = true;
+    const zonas = envio.zonas && typeof envio.zonas === "object" ? envio.zonas : null;
+    if (zonas) {
+      Object.keys(CONFIG_ENVIO.zonas).forEach((clave) => {
+        const zona = zonas[clave];
+        if (zona && typeof zona === "object") {
+          if (Number(zona.coste) >= 0) CONFIG_ENVIO.zonas[clave].coste = Number(zona.coste);
+          if (zona.gratisDesde != null && Number(zona.gratisDesde) >= 0) {
+            CONFIG_ENVIO.zonas[clave].gratisDesde = Number(zona.gratisDesde);
+          }
+        }
+      });
+    }
+    if (envio.paises && typeof envio.paises === "object") {
+      CONFIG_ENVIO.paises = { ...CONFIG_ENVIO.paises, ...envio.paises };
+    }
+    if (envio.disponibilidad && typeof envio.disponibilidad === "object") {
+      CONFIG_ENVIO.disponibilidad = { ...CONFIG_ENVIO.disponibilidad, ...envio.disponibilidad };
+    }
+    // Repinta el carrito visible con el envío real
+    if (
+      document.body.dataset.pagina === "carrito" &&
+      typeof pintarCarrito === "function" &&
+      typeof leerCarrito === "function"
+    ) {
+      pintarCarrito(leerCarrito());
     }
   };
 
