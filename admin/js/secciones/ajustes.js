@@ -7,6 +7,44 @@ import { escapar, toast, abrirModal, abrirVistaPrevia } from '../api.js';
 
 const MASCARA = '••••••••';
 
+// Textos por defecto de los correos de seguimiento post-venta: se muestran
+// rellenos en el formulario (editables) y la base de datos usa los suyos
+// (oms_plantilla_seguimiento_defecto) si el ajuste se guarda vacío.
+const PLANTILLAS_DEFECTO = {
+  seguimientoEnvio: {
+    asunto: 'Tu pedido {{pedido}} ya va en camino 📦',
+    html: `<p>Hola, {{nombre}}:</p>
+<p>Tu paquete acaba de salir. Queremos que el trayecto sea tan fluido como esperas.</p>
+{{bloqueSeguimiento}}
+<p>Tiempo estimado de entrega: {{plazo}}.</p>
+<p>Prepara un momento de calma para cuando lo recibas; nos hemos asegurado de cuidar cada detalle del embalaje.</p>
+<p>Nos seguimos leyendo,<br>SHADDAI · Esencia de Umbral</p>`,
+  },
+  seguimientoCuidado: {
+    asunto: '¿Cómo ha sido tu primer contacto con tu pedido?',
+    html: `<p>Hola, {{nombre}}:</p>
+<p>Hace unos días que tu pedido debió llegar a tus manos. Esperamos que la llegada haya ido sobre ruedas.</p>
+<p>Para que le saques el máximo partido desde el primer momento, hemos preparado una breve guía con algunos consejos esenciales de uso y conservación:</p>
+<ul>
+<li><strong>Conservación:</strong> guarda tu esencia lejos de la luz solar directa y de fuentes de calor; así el aroma se mantiene intacto mucho más tiempo.</li>
+<li><strong>Aplicación:</strong> aplícala sobre piel hidratada (muñecas, cuello o interior de los codos): la fragancia fija mejor y se desarrolla por capas.</li>
+<li><strong>Truco:</strong> espera unos segundos tras aplicarla antes de acercarla a la nariz; las notas de salida se abren con la calidez de la piel.</li>
+</ul>
+<p>Si te ha surgido cualquier duda sobre cómo integrarlo en tu rutina, solo tienes que responder a este mensaje. Estamos aquí para ayudarte.</p>
+<p>Con aprecio,<br>SHADDAI · Esencia de Umbral</p>`,
+  },
+  seguimientoOpinion: {
+    asunto: 'Tu opinión nos importa (de verdad)',
+    html: `<p>Hola, {{nombre}}:</p>
+<p>Esperamos que estés disfrutando de tu pedido {{pedido}}.</p>
+<p>Para nosotros, el trabajo no termina cuando entregamos un pedido; nos importa conocer el impacto real que tiene en quien lo recibe. Tu experiencia nos ayuda a seguir afinando cada fórmula y cada detalle.</p>
+<p>¿Nos dedicarías 2 minutos para contarnos tus impresiones?</p>
+<p style="text-align:center;margin:24px 0;"><a href="https://omshaddai.com/contacto.html" style="display:inline-block;background:#16261b;color:#f3eee2;font-family:Verdana,Arial,sans-serif;font-size:14px;padding:12px 22px;text-decoration:none;border-radius:4px;">Dejar mi valoración</a></p>
+<p>Gracias por formar parte de esto.</p>
+<p>Un abrazo,<br>SHADDAI · Esencia de Umbral</p>`,
+  },
+};
+
 const PESTANAS = [
   { clave: 'contacto', texto: 'Contacto' },
   { clave: 'redes', texto: 'Redes sociales' },
@@ -291,7 +329,11 @@ function pintarEnvio(zona, datos) {
 
 function pintarEmails(zona, datos) {
   const plantilla = (nombre, titulo) => {
-    const p = datos[nombre] || {};
+    const p = {
+      activo: true, asunto: '', html: '',
+      ...(PLANTILLAS_DEFECTO[nombre] || {}),
+      ...(datos[nombre] || {}),
+    };
     return `
       <fieldset class="plantilla-email">
         <legend>${titulo}</legend>
@@ -302,17 +344,38 @@ function pintarEmails(zona, datos) {
         <textarea name="${nombre}.html" rows="8" class="campo-mono">${escapar(p.html || '')}</textarea>
       </fieldset>`;
   };
+  const diasSeguimiento = datos.seguimiento || {};
   zona.innerHTML = `
     <form class="formulario ajustes-formulario">
       <div class="ayuda-seccion">
-        <p>Se envían cuando la función <code>redsys-notificacion</code> confirma un pago autorizado. Variables disponibles:
-        <code>{{nombre}}</code> <code>{{pedido}}</code> <code>{{total}}</code> <code>{{articulos}}</code>.
-        Sin funciones desplegadas (fase 2) los correos quedan pendientes en la bandeja de salida.</p>
+        <p><strong>Journey post-venta de 4 correos.</strong> Los dos primeros se envían cuando la función
+        <code>redsys-notificacion</code> confirma un pago autorizado. Los de seguimiento se programan al cambiar
+        el estado del pedido: «En camino» dispara el mensaje 2 y «Entregado» programa los mensajes 3 y 4 a los
+        días indicados abajo (se procesan cada hora con el cron de Supabase o desde
+        <em>Email marketing → Seguimiento post-venta</em>). Variables disponibles:
+        <code>{{nombre}}</code> <code>{{pedido}}</code> <code>{{total}}</code> <code>{{articulos}}</code>
+        <code>{{plazo}}</code> <code>{{seguimientoUrl}}</code> y <code>{{bloqueSeguimiento}}</code>
+        (botón «Seguir mi envío» con el enlace, o texto alternativo si no hay enlace).
+        Sin funciones desplegadas ni cron, los correos quedan pendientes en la bandeja de salida.</p>
       </div>
-      ${plantilla('confirmacionCompra', 'Confirmación de compra')}
-      ${plantilla('agradecimiento', 'Agradecimiento (llega más tarde, cuando el pedido ya está en casa)')}
+      ${plantilla('confirmacionCompra', 'Mensaje 1 · Confirmación de compra (al confirmarse el pago)')}
+      ${plantilla('agradecimiento', 'Mensaje 1b · Agradecimiento (llega con la confirmación del pago)')}
+      <div class="formulario-grid">
+        <div>
+          <label>Días tras la entrega → correo de consejos (3-5 recomendado)</label>
+          <input name="seguimiento.diasCuidado" type="number" min="0" max="30" value="${escapar(diasSeguimiento.diasCuidado ?? 4)}">
+        </div>
+        <div>
+          <label>Días tras la entrega → correo de opinión (10-14 recomendado)</label>
+          <input name="seguimiento.diasOpinion" type="number" min="0" max="60" value="${escapar(diasSeguimiento.diasOpinion ?? 12)}">
+        </div>
+      </div>
+      ${plantilla('seguimientoEnvio', 'Mensaje 2 · En camino (al pasar el pedido a «En camino»)')}
+      ${plantilla('seguimientoCuidado', 'Mensaje 3 · Consejos de uso (días después de la entrega)')}
+      ${plantilla('seguimientoOpinion', 'Mensaje 4 · Petición de opinión (días después de la entrega)')}
       <div class="barra-herramientas sin-borde">
         <button type="button" class="boton boton-fantasma" data-vista-previa>Vista previa</button>
+        <button type="button" class="boton boton-fantasma" data-vista-previa-seguimiento>Vista previa del seguimiento</button>
       </div>
       <div class="modal-acciones"><button type="submit" class="boton boton-primario">Guardar plantillas</button></div>
     </form>`;
@@ -320,6 +383,9 @@ function pintarEmails(zona, datos) {
   const formulario = zona.querySelector('form');
   zona.querySelector('[data-vista-previa]').addEventListener('click', () => {
     abrirVistaPrevia('Plantilla de correo', formulario.elements['confirmacionCompra.html'].value || '<p>(sin contenido)</p>');
+  });
+  zona.querySelector('[data-vista-previa-seguimiento]').addEventListener('click', () => {
+    abrirVistaPrevia('Seguimiento post-venta', formulario.elements['seguimientoEnvio.html'].value || '<p>(sin contenido)</p>');
   });
   formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
@@ -332,6 +398,13 @@ function pintarEmails(zona, datos) {
       await guardarSeccion('emails_automaticos', {
         confirmacionCompra: construir('confirmacionCompra'),
         agradecimiento: construir('agradecimiento'),
+        seguimiento: {
+          diasCuidado: Number.parseInt(formulario.elements['seguimiento.diasCuidado'].value, 10) || 4,
+          diasOpinion: Number.parseInt(formulario.elements['seguimiento.diasOpinion'].value, 10) || 12,
+        },
+        seguimientoEnvio: construir('seguimientoEnvio'),
+        seguimientoCuidado: construir('seguimientoCuidado'),
+        seguimientoOpinion: construir('seguimientoOpinion'),
       });
     } catch (error) {
       toast(error.message, 'error');
