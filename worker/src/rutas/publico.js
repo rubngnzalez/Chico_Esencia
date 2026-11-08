@@ -36,7 +36,13 @@ function datosPublicos(ajustes) {
     envio: {
       activo: Boolean(ajustes.envio && ajustes.envio.activo !== false),
       coste: Number(ajustes.envio && ajustes.envio.coste) || 0,
+      costeInternacional: Number(
+        ajustes.envio && ajustes.envio.costeInternacional != null
+          ? ajustes.envio.costeInternacional
+          : ajustes.envio && ajustes.envio.coste
+      ) || 0,
       gratisDesde: Number(ajustes.envio && ajustes.envio.gratisDesde) || 0,
+      gratisDesdeInternacional: Number(ajustes.envio && ajustes.envio.gratisDesdeInternacional) || 0,
       plazos: (ajustes.envio && ajustes.envio.plazos) || '',
     },
     contacto: {
@@ -49,10 +55,16 @@ function datosPublicos(ajustes) {
   };
 }
 
-function calcularEnvio(subtotal, ajustesEnvio) {
+function calcularEnvio(subtotal, ajustesEnvio, internacional = false) {
   if (!ajustesEnvio || ajustesEnvio.activo === false) return 0;
-  const coste = Number(ajustesEnvio.coste) || 0;
-  const gratisDesde = Number(ajustesEnvio.gratisDesde) || 0;
+  const coste = Number(
+    internacional && ajustesEnvio.costeInternacional != null
+      ? ajustesEnvio.costeInternacional
+      : ajustesEnvio.coste
+  ) || 0;
+  const gratisDesde = Number(
+    internacional ? ajustesEnvio.gratisDesdeInternacional : ajustesEnvio.gratisDesde
+  ) || 0;
   if (subtotal === 0) return 0;
   if (gratisDesde > 0 && subtotal >= gratisDesde) return 0;
   return Math.round(coste * 100) / 100;
@@ -225,7 +237,8 @@ export function registrar(enrutador, cx) {
     }
 
     const subtotal = Math.round(lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0) * 100) / 100;
-    const costeEnvio = calcularEnvio(subtotal, ajustes.envio);
+    const internacional = String(datosEnvio.pais || 'España').trim() !== 'España';
+    const costeEnvio = calcularEnvio(subtotal, ajustes.envio, internacional);
     const total = Math.round((subtotal + costeEnvio) * 100) / 100;
 
     let numero = comprobacion.datos.numeroPedido || generarNumeroPedido();

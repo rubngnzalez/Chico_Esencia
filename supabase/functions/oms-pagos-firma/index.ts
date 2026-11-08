@@ -135,13 +135,21 @@ Deno.serve(async (request: Request) => {
 
   const subtotal = Math.round(lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0) * 100) / 100;
 
-  // 4 · Envío desde ajustes (gratis desde el umbral)
+  // 4 · Envío desde ajustes por zona (España = nacional, resto = internacional)
   const envioAjustes = (filaAjustes.envio || {}) as Record<string, unknown>;
+  const datosEnvio = (cuerpo.envio || {}) as Record<string, unknown>;
+  const internacional = String(datosEnvio.pais || 'España').trim() !== 'España';
   let costeEnvio = 0;
   if (envioAjustes.activo !== false && subtotal > 0) {
-    const coste = Number(envioAjustes.coste) || 0;
-    const gratisDesde = Number(envioAjustes.gratisDesde) || 0;
-    if (gratisDesde <= 0 || subtotal < gratisDesde) costeEnvio = coste;
+    const costeZona = internacional
+      ? Number(envioAjustes.costeInternacional ?? envioAjustes.coste) || 0
+      : Number(envioAjustes.coste) || 0;
+    const gratisDesde = Number(
+      internacional ? envioAjustes.gratisDesdeInternacional : envioAjustes.gratisDesde
+    ) || 0;
+    // Umbral 0 = nunca gratis (igual que en la web)
+    if (gratisDesde > 0 && subtotal >= gratisDesde) costeEnvio = 0;
+    else costeEnvio = costeZona;
   }
   const total = Math.round((subtotal + costeEnvio) * 100) / 100;
 
@@ -157,7 +165,6 @@ Deno.serve(async (request: Request) => {
     return errorJson('Ese número de pedido ya existe. Genera uno nuevo.', 400, request);
   }
 
-  const datosEnvio = cuerpo.envio || {};
   const texto = (campo: string, max: number) => String(datosEnvio[campo] || '').trim().slice(0, max);
   const cliente = {
     nombre: texto('nombre', 60),
@@ -168,6 +175,7 @@ Deno.serve(async (request: Request) => {
     cp: texto('cp', 10),
     poblacion: texto('poblacion', 100),
     provincia: texto('provincia', 100),
+    pais: texto('pais', 60) || 'España',
   };
 
   // Datos de contacto y envío obligatorios antes de aceptar el pago

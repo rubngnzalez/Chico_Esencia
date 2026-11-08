@@ -306,18 +306,28 @@ function pintarRedsys(zona, datos) {
 
 function pintarEnvio(zona, datos) {
   const formulario = formularioSimple(zona,
-    campoTexto('coste', 'Coste de envío (€)', datos.coste ?? 0, 'number') +
-    campoTexto('gratisDesde', 'Envío gratis desde (€, 0 = nunca)', datos.gratisDesde ?? 0, 'number'),
+    campoTexto('coste', 'Coste de envío nacional (€)', datos.coste ?? 0, 'number') +
+    campoTexto('costeInternacional', 'Coste de envío internacional (€)', datos.costeInternacional ?? '', 'number') +
+    campoTexto('gratisDesde', 'Envío gratis nacional desde (€, 0 = nunca)', datos.gratisDesde ?? 0, 'number') +
+    campoTexto('gratisDesdeInternacional', 'Envío gratis internacional desde (€, 0 = nunca)', datos.gratisDesdeInternacional ?? 0, 'number'),
     `<label>Plazos y texto de envío (se muestra en la web)</label>
      <textarea name="plazos" rows="3" maxlength="2000">${escapar(datos.plazos || '')}</textarea>
-     ${campoInterruptor('activo', 'Cobrar envío', datos.activo !== false)}`);
+     ${campoInterruptor('activo', 'Cobrar envío', datos.activo !== false)}
+     <div class="ayuda-seccion">
+       <p>La zona se decide con el país del formulario de pago: España = nacional; cualquier otro país =
+       internacional. Si dejas vacío el coste internacional, se usa el nacional.</p>
+     </div>`);
   formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const campos = formulario.elements;
+    const costeNacional = Number(String(campos.coste.value).replace(',', '.')) || 0;
+    const costeInternacionalTexto = String(campos.costeInternacional.value).replace(',', '.').trim();
     try {
       await guardarSeccion('envio', {
-        coste: Number(String(campos.coste.value).replace(',', '.')) || 0,
+        coste: costeNacional,
+        costeInternacional: costeInternacionalTexto === '' ? costeNacional : Number(costeInternacionalTexto) || 0,
         gratisDesde: Number(String(campos.gratisDesde.value).replace(',', '.')) || 0,
+        gratisDesdeInternacional: Number(String(campos.gratisDesdeInternacional.value).replace(',', '.')) || 0,
         plazos: campos.plazos.value.trim(),
         activo: campos.activo.checked,
       });

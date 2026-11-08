@@ -56,7 +56,11 @@ const CONEXION = (() => {
     return {
       envio: {
         coste: numero(data.envio_coste),
+        // null = la vista aún no expone el internacional (SQL sin actualizar):
+        // la web usará el coste nacional como reserva
+        costeInternacional: data.envio_coste_internacional == null ? null : numero(data.envio_coste_internacional),
         gratisDesde: numero(data.envio_gratis_desde),
+        gratisDesdeInternacional: data.envio_gratis_desde_internacional == null ? null : numero(data.envio_gratis_desde_internacional),
         plazos: String(data.envio_plazos || ""),
         activo: data.envio_activo !== false,
       },
@@ -254,15 +258,27 @@ const CONEXION = (() => {
   const aplicarEnvio = (datos) => {
     const envio = datos.envio;
     if (!envio) return;
-    // «Cobrar envío» apagado = envío gratuito; los valores del panel solo
-    // se aplican cuando el interruptor está activo.
+    // «Cobrar envío» apagado = envío gratuito (en ambas zonas); los valores
+    // del panel solo se aplican cuando el interruptor está activo.
     if (envio.activo === false) {
-      if (typeof CONFIG_ENVIO === "object" && CONFIG_ENVIO) CONFIG_ENVIO.coste = 0;
+      if (typeof CONFIG_ENVIO === "object" && CONFIG_ENVIO) {
+        CONFIG_ENVIO.coste = 0;
+        CONFIG_ENVIO.costeInternacional = 0;
+      }
       return;
     }
     if (typeof CONFIG_ENVIO === "object" && CONFIG_ENVIO) {
       if (Number(envio.coste) >= 0) CONFIG_ENVIO.coste = Number(envio.coste);
       if (Number(envio.gratisDesde) >= 0) CONFIG_ENVIO.gratisDesde = Number(envio.gratisDesde);
+      // Internacional: solo si la vista lo trae; sin dato, se usa el nacional
+      if (envio.costeInternacional != null && Number(envio.costeInternacional) >= 0) {
+        CONFIG_ENVIO.costeInternacional = Number(envio.costeInternacional);
+      } else {
+        CONFIG_ENVIO.costeInternacional = CONFIG_ENVIO.coste;
+      }
+      if (envio.gratisDesdeInternacional != null && Number(envio.gratisDesdeInternacional) >= 0) {
+        CONFIG_ENVIO.gratisDesdeInternacional = Number(envio.gratisDesdeInternacional);
+      }
       // Repinta el carrito visible con el envío real
       if (
         document.body.dataset.pagina === "carrito" &&

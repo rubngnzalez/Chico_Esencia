@@ -62,7 +62,9 @@ export const ajustesPorDefecto = {
   },
   envio: {
     coste: 5.9,
+    costeInternacional: 12,
     gratisDesde: 80,
+    gratisDesdeInternacional: 0,
     plazos: 'Preparación artesanal por orden de solicitud. Envío peninsular en las semanas siguientes a cada lote.',
     activo: true,
   },
