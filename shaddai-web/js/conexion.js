@@ -11,7 +11,7 @@
 // Exporta el mismo CONTRATO que consumían las páginas: escapar, get, post,
 // cuandoConfig y configuracion.
 const CONEXION = (() => {
-  const TIEMPO_MS = 4000; // espera máxima: en estático la carga no se ralentiza
+  const TIEMPO_MS = 15000; // margen alto: la firma de pago puede arrancar en frío (SIS0042 si se corta)
   const BASE = typeof window.SHADDAI_API_BASE === "string" ? window.SHADDAI_API_BASE.replace(/\/$/, "") : "";
   const pendientes = new Map(); // respuestas GET reutilizables dentro de la misma página
 
