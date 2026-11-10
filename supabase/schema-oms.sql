@@ -212,6 +212,7 @@ create index if not exists oms_outbox_pedido_idx on public.oms_outbox (ref_pedid
 create table if not exists public.oms_pedidos (
   id uuid primary key default gen_random_uuid(),
   numero text not null unique,
+  numero_publico text unique,
   cliente jsonb not null default '{}'::jsonb,
   subtotal numeric(10, 2) not null default 0,
   envio numeric(10, 2) not null default 0,
@@ -223,6 +224,7 @@ create table if not exists public.oms_pedidos (
   creado_en timestamptz not null default now()
 );
 comment on table public.oms_pedidos is 'Se crean SOLO desde la Edge Function pagos-firma (service_role); nadie más inserta.';
+comment on column public.oms_pedidos.numero_publico is 'Número definitivo por lotes (p. ej. SHAD01-00001); lo asigna el trigger oms_numerar_pedido al verificar el pago. «numero» es la referencia interna del TPV de Redsys.';
 create index if not exists oms_pedidos_estado_idx on public.oms_pedidos (estado);
 create index if not exists oms_pedidos_creado_idx on public.oms_pedidos (creado_en desc);
 
@@ -236,6 +238,74 @@ create table if not exists public.oms_pedidos_lineas (
   creado_en timestamptz not null default now()
 );
 create index if not exists oms_pedidos_lineas_pedido_idx on public.oms_pedidos_lineas (pedido);
+
+-- Numeración por lotes: una fila (id='unica') con el lote y el último
+-- secuencial repartido; el número definitivo se forma LOTE-00001.
+create table if not exists public.oms_numeracion (
+  id text primary key default 'unica' check (id = 'unica'),
+  lote text not null default 'SHAD01',
+  ultimo integer not null default 0,
+  actualizado_en timestamptz not null default now(),
+  constraint oms_numeracion_lote_formato check (lote ~ '^[A-Z0-9]{3,8}$')
+);
+comment on table public.oms_numeracion is
+  'Contador de números de pedido por lotes (una fila). Editable desde el panel: Ajustes → Pedidos (solo admin).';
+
+insert into public.oms_numeracion (id, lote, ultimo)
+values ('unica', 'SHAD01', 0)
+on conflict (id) do nothing;
+
+-- Reparto secuencial a prueba de pagos simultáneos (bloqueo de fila)
+create or replace function public.oms_siguiente_numero_publico()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  lote text;
+  siguiente integer;
+begin
+  insert into public.oms_numeracion (id, lote, ultimo)
+  values ('unica', 'SHAD01', 0)
+  on conflict (id) do nothing;
+
+  select lote, ultimo + 1
+    into lote, siguiente
+    from public.oms_numeracion
+   where id = 'unica'
+   for update;
+
+  update public.oms_numeracion
+     set ultimo = siguiente, actualizado_en = now()
+   where id = 'unica';
+
+  return upper(btrim(coalesce(lote, 'SHAD01'))) || '-' || lpad(siguiente::text, 5, '0');
+end;
+$$;
+
+-- Asigna el número de lote solo cuando el pedido queda verificado con su pago
+create or replace function public.oms_numerar_pedido_pagado()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.estado = 'pagado'
+     and old.estado is distinct from 'pagado'
+     and coalesce(new.numero_publico, '') = '' then
+    new.numero_publico := public.oms_siguiente_numero_publico();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists oms_numerar_pedido on public.oms_pedidos;
+create trigger oms_numerar_pedido
+  before update of estado on public.oms_pedidos
+  for each row
+  execute function public.oms_numerar_pedido_pagado();
 
 -- ─── 6 · AJUSTES (una fila id='general', una columna jsonb por sección) ────
 
@@ -508,6 +578,14 @@ drop policy if exists "oms modificacion solo admin" on public.oms_pedidos_lineas
 create policy "oms modificacion solo admin" on public.oms_pedidos_lineas
   for all to authenticated using (public.oms_es_admin()) with check (public.oms_es_admin());
 
+-- ---- numeración por lotes ----
+drop policy if exists "oms lectura autenticados" on public.oms_numeracion;
+create policy "oms lectura autenticados" on public.oms_numeracion
+  for select to authenticated using (true);
+drop policy if exists "oms escritura solo admin" on public.oms_numeracion;
+create policy "oms escritura solo admin" on public.oms_numeracion
+  for all to authenticated using (public.oms_es_admin()) with check (public.oms_es_admin());
+
 -- ---- ajustes ----
 drop policy if exists "oms solo admin" on public.oms_ajustes;
 create policy "oms solo admin" on public.oms_ajustes
@@ -520,7 +598,7 @@ grant insert on public.oms_mensajes, public.oms_suscriptores to anon, authentica
 grant all on public.oms_usuarios, public.oms_categorias, public.oms_productos, public.oms_ofertas,
   public.oms_testimonios, public.oms_articulos, public.oms_mensajes, public.oms_suscriptores,
   public.oms_campanas, public.oms_outbox, public.oms_pedidos, public.oms_pedidos_lineas,
-  public.oms_ajustes to service_role;
+  public.oms_numeracion, public.oms_ajustes to service_role;
 grant execute on function public.oms_tocar_acceso() to authenticated;
 
 -- ─── 11 · STORAGE: bucket «recursos» para las imágenes del panel ───────────

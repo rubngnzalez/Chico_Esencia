@@ -1,6 +1,9 @@
 // Pedidos: tabla con estados, cambio de estado (admin) y detalle con líneas.
 // Los pedidos se crean desde la Edge Function «pagos-firma» (o el Worker);
 // aquí solo se leen y se cambia el estado (solo admin, vía RLS).
+// Numeración por lotes: al verificarse el pago (estado «pagado») el trigger
+// de la base de datos asigna el número definitivo SHAD01-00001 (columna
+// numero_publico); «numero» queda como referencia de pago de Redsys.
 // Al pasar a «enviado» se pide enlace/plazo de seguimiento y al pasar a
 // «entregado» se confirman los correos post-venta (trigger oms_seguimientos).
 import { sb, asegurar, mensajeError } from '../bd.js';
@@ -14,6 +17,10 @@ const ETIQUETAS_SEGUIMIENTO = {
   cuidado: 'Consejos de uso',
   opinion: 'Petición de opinión',
 };
+
+// Número que ve el equipo y el cliente: el de lote (SHAD01-00001) cuando el
+// pago está verificado; antes de eso, la referencia de pago de Redsys.
+const numeroDe = (pedido) => pedido.numero_publico || pedido.numero;
 
 let filtroEstado = '';
 
@@ -110,7 +117,7 @@ export default async function (contenedor, contexto) {
         <tbody>
           ${pedidos.map((p) => `
           <tr data-id="${escapar(p.id)}">
-            <td><strong>${escapar(p.numero)}</strong></td>
+            <td><strong>${escapar(numeroDe(p))}</strong>${p.numero_publico ? `<br><span class="texto-suave">ref. ${escapar(p.numero)}</span>` : ''}</td>
             <td class="texto-suave">${fechaHora(p.creado_en)}</td>
             <td>${escapar(nombreCliente(p))}<br><span class="texto-suave">${escapar(p.cliente?.email || '')}</span></td>
             <td class="texto-suave">${unidadesDe(p)}</td>
@@ -133,13 +140,13 @@ export default async function (contenedor, contexto) {
     const error = (await sb().from('oms_pedidos').update({ estado, ...camposExtra }).eq('id', pedido.id)).error;
     if (error) throw new Error(mensajeError(error));
     Object.assign(pedido, { estado, ...camposExtra });
-    toast(`Pedido ${pedido.numero}: estado «${estado}».`);
+    toast(`Pedido ${numeroDe(pedido)}: estado «${estado}».`);
   }
 
   // Estado «enviado»: pide enlace de seguimiento y plazo antes de guardar
   function flujoEnviado(pedido) {
     return new Promise((resolver) => {
-      const modal = abrirModal(`Pedido ${pedido.numero} · En camino`, `
+      const modal = abrirModal(`Pedido ${numeroDe(pedido)} · En camino`, `
         <form class="formulario">
           <p class="texto-suave">Al guardar se programa el correo «Tu pedido ya va en camino» con estos datos.
           Cuando lo marques como <strong>entregado</strong> se programarán los correos de consejos y de opinión.</p>
@@ -176,7 +183,7 @@ export default async function (contenedor, contexto) {
   async function flujoEntregado(pedido) {
     const seguro = await confirmar(
       'Marcar entregado',
-      `Pedido ${pedido.numero}: al confirmar se programan los correos de «consejos de uso» y de «opinión» (los días de espera se configuran en Ajustes → Emails automáticos).`,
+      `Pedido ${numeroDe(pedido)}: al confirmar se programan los correos de «consejos de uso» y de «opinión» (los días de espera se configuran en Ajustes → Emails automáticos).`,
       'Marcar entregado'
     );
     if (!seguro) return;
@@ -229,12 +236,13 @@ function abrirDetalle(pedido, lineas, correos = [], seguimientos = [], esAdmin =
   const direccion = [cliente.direccion, cliente.cp, cliente.poblacion, cliente.provincia,
     cliente.pais && cliente.pais !== 'España' ? cliente.pais : null].filter(Boolean).join(', ');
   const respuesta = pedido.respuesta_redsys;
-  const modal = abrirModal(`Pedido ${pedido.numero}`, `
+  const modal = abrirModal(`Pedido ${numeroDe(pedido)}`, `
     <article class="detalle-pedido">
       <p class="texto-suave">Creado el ${fechaHora(pedido.creado_en)} · ${badgeEstado(pedido.estado)} · Método: ${escapar(pedido.metodo || '—')}</p>
       <dl class="detalle-datos">
         <div><dt>Cliente</dt><dd>${escapar([cliente.nombre, cliente.apellidos].filter(Boolean).join(' ') || '—')}</dd></div>
         <div><dt>Email</dt><dd>${escapar(cliente.email || '—')}</dd></div>
+        ${pedido.numero_publico ? `<div><dt>Referencia de pago (Redsys)</dt><dd>${escapar(pedido.numero)}</dd></div>` : ''}
         ${cliente.telefono ? `<div><dt>Teléfono</dt><dd>${escapar(cliente.telefono)}</dd></div>` : ''}
         ${direccion ? `<div><dt>Envío</dt><dd>${escapar(direccion)}</dd></div>` : ''}
         ${pedido.pagado_en ? `<div><dt>Pagado el</dt><dd>${fechaHora(pedido.pagado_en)}</dd></div>` : ''}
@@ -312,7 +320,7 @@ function abrirDetalle(pedido, lineas, correos = [], seguimientos = [], esAdmin =
     boton.addEventListener('click', () => {
       const correo = correos.find((o) => o.id === boton.dataset.eml);
       if (!correo) return;
-      descargarEml(`pedido-${pedido.numero}-${(correo.asunto || 'shaddai').slice(0, 40).replace(/[^\w-]+/g, '-')}.eml`, correo.eml);
+      descargarEml(`pedido-${numeroDe(pedido)}-${(correo.asunto || 'shaddai').slice(0, 40).replace(/[^\w-]+/g, '-')}.eml`, correo.eml);
     });
   });
 

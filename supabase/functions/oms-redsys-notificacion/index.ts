@@ -2,7 +2,9 @@
 // Sustituye a POST /api/public/redsys-notificacion del Worker:
 //  1. Recibe el POST urlencoded de Redsys.
 //  2. Valida la firma HMAC_SHA256_V1 con la clave guardada en ajustes.
-//  3. Marca el pedido «pagado» (o «cancelado» si no se autoriza).
+//  3. Marca el pedido «pagado» (o «cancelado» si no se autoriza). Al quedar
+//     verificado el pago, el trigger oms_numerar_pedido le asigna el número
+//     definitivo de lote (SHAD01-00001), que es el que ven los correos.
 //  4. Dispara los emails automáticos (plantillas de ajustes) → outbox y,
 //     si existe el secreto RESEND_API_KEY, envío real con Resend.
 //
@@ -157,7 +159,9 @@ Deno.serve(async (request: Request) => {
     return textoPlano('El importe notificado no coincide con el pedido', 400);
   }
 
-  await db
+  // Al pasar a «pagado», el trigger oms_numerar_pedido asigna el número
+  // definitivo de lote (SHAD01-00001): lo leemos para usarlo en los correos.
+  const { data: pedidoPagado } = await db
     .from('oms_pedidos')
     .update({
       estado: 'pagado',
@@ -168,7 +172,13 @@ Deno.serve(async (request: Request) => {
         importe: verificacion.importe,
       },
     })
-    .eq('id', pedidoInfo.id);
+    .eq('id', pedidoInfo.id)
+    .select('numero, numero_publico')
+    .single();
+
+  const numeroDefinitivo = String(
+    pedidoPagado?.numero_publico || pedidoPagado?.numero || pedidoInfo.numero
+  );
 
   // 5 · Líneas para las plantillas
   const { data: lineasPedido } = await db
@@ -182,7 +192,7 @@ Deno.serve(async (request: Request) => {
   const nombre = String(pedidoInfo.cliente?.nombre || 'alma buscadora');
   const variables = {
     nombre,
-    pedido: pedidoInfo.numero,
+    pedido: numeroDefinitivo,
     total: formatearEuro(pedidoInfo.total),
     articulos: listaArticulosHtml((lineasPedido || []) as Array<Record<string, unknown>>),
   };
@@ -214,9 +224,10 @@ Deno.serve(async (request: Request) => {
       db,
       {
         para: destinos,
-        asunto: `Nuevo pedido pagado — ${pedidoInfo.numero}`,
+        asunto: `Nuevo pedido pagado — ${numeroDefinitivo}`,
         html: `<div style="font-family:Georgia,serif;color:#16261b;line-height:1.7;">
-          <p><strong>Pedido:</strong> ${pedidoInfo.numero}</p>
+          <p><strong>Pedido:</strong> ${numeroDefinitivo}</p>
+          <p><strong>Referencia de pago:</strong> ${pedidoInfo.numero}</p>
           <p><strong>Cliente:</strong> ${nombre} (${emailCliente})</p>
           <p><strong>Total:</strong> ${formatearEuro(pedidoInfo.total)}</p>
           ${listaArticulosHtml((lineasPedido || []) as Array<Record<string, unknown>>)}
