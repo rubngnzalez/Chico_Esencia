@@ -263,24 +263,24 @@ security definer
 set search_path = public
 as $$
 declare
-  lote text;
-  siguiente integer;
+  v_lote text;
+  v_siguiente integer;
 begin
   insert into public.oms_numeracion (id, lote, ultimo)
   values ('unica', 'SHAD01', 0)
   on conflict (id) do nothing;
 
-  select lote, ultimo + 1
-    into lote, siguiente
-    from public.oms_numeracion
-   where id = 'unica'
+  select n.lote, n.ultimo + 1
+    into v_lote, v_siguiente
+    from public.oms_numeracion n
+   where n.id = 'unica'
    for update;
 
   update public.oms_numeracion
-     set ultimo = siguiente, actualizado_en = now()
+     set ultimo = v_siguiente, actualizado_en = now()
    where id = 'unica';
 
-  return upper(btrim(coalesce(lote, 'SHAD01'))) || '-' || lpad(siguiente::text, 5, '0');
+  return upper(btrim(coalesce(v_lote, 'SHAD01'))) || '-' || lpad(v_siguiente::text, 5, '0');
 end;
 $$;
 
