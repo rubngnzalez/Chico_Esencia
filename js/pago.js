@@ -19,11 +19,11 @@ const CONFIG_REDSYS = {
     test: "https://sis-t.redsys.es:25443/sis/realizarPago",
     produccion: "https://sis.redsys.es/sis/realizarPago",
   },
-  comercio: "372022558", // FUC: cÃ³digo de comercio de tu TPV
-  terminal: "1", // nÃºmero de terminal
+  comercio: "372022558", // FUC: código de comercio de tu TPV
+  terminal: "1", // número de terminal
   moneda: "978", // EUR
   clave: "sq7HjrUOBfKmC576ILgskD5srU870gJ7", // clave secreta (en pruebas, la de test de Redsys)
-  nombreComercio: "SHADDAI Â· Esencia de Umbral",
+  nombreComercio: "SHADDAI · Esencia de Umbral",
   urlOk: "",
   urlKo: "",
   urlNotificacion: "",
@@ -183,6 +183,27 @@ if (typeof CONEXION !== "undefined" && typeof CONEXION.zonasProductos === "funct
         pintarResumen();
         pintarNotaEnvio();
       }
+    })
+    .catch(() => {});
+}
+
+// Sincronización del checkout con el catálogo vigente: los carritos guardados
+// en el navegador arrastran precios antiguos (ofertas retiradas, cambios del
+// panel) y el servidor firma siempre con el precio actual de la base de datos.
+// Sin este paso, el total mostrado aquí y el cobrado en Redsys divergen.
+if (typeof CONEXION !== "undefined") {
+  CONEXION.get("/api/productos/publico")
+    .then((cuerpo) => {
+      const sincronizado =
+        typeof sincronizarPreciosCarrito === "function"
+          ? sincronizarPreciosCarrito(cuerpo && cuerpo.datos, ALIAS_ARTICULOS)
+          : null;
+      if (!sincronizado) return;
+      if (typeof escribirCarrito === "function") escribirCarrito(sincronizado);
+      articulosPago.length = 0;
+      sincronizado.forEach((articulo) => articulosPago.push(articulo));
+      pintarResumen();
+      pintarNotaEnvio();
     })
     .catch(() => {});
 }
@@ -415,6 +436,19 @@ if (formularioPagoR) {
       if (firmaApi.resumen && Number(firmaApi.resumen.total) > 0) total = Number(firmaApi.resumen.total);
       parametrosB64 = firmaApi.parametrosB64;
       firma = firmaApi.firma;
+      // Red de seguridad: el servidor manda. Si el precio cambió mientras se
+      // firmaba (oferta caducada en el ínterin), el resumen mostrado se
+      // ajusta a lo que se va a cobrar de verdad antes del salto al banco.
+      if (firmaApi.resumen) {
+        const resumenServidor = firmaApi.resumen;
+        const subtotalServidor = Number(resumenServidor.subtotal);
+        const envioServidor = Number(resumenServidor.envio);
+        if (Number.isFinite(subtotalServidor) && subtotalServidor >= 0 && document.querySelector("[data-subtotal]"))
+          document.querySelector("[data-subtotal]").textContent = formatearPrecio(subtotalServidor);
+        if (Number.isFinite(envioServidor) && envioServidor >= 0 && document.querySelector("[data-envio]"))
+          document.querySelector("[data-envio]").textContent = envioServidor === 0 ? "Gratis" : formatearPrecio(envioServidor);
+        if (document.querySelector("[data-total]")) document.querySelector("[data-total]").textContent = formatearPrecio(total);
+      }
     } else {
       // 3) Sin servidor disponible: firma en cliente con la configuración
       //    cargada de la vista pública (clave solo en entorno test).
