@@ -9,6 +9,10 @@ const ESTADOS = ['pagado', 'enviado', 'pendiente', 'entregado', 'cancelado'];
 let filtroEstado = 'pagado';
 let remitenteCache = null;
 
+// Número que se imprime: el definitivo de lote (SHAD01-00001) cuando el pago
+// está verificado; antes de eso, la referencia de pago de Redsys.
+const numeroDe = (pedido) => pedido.numero_publico || pedido.numero;
+
 // Datos del remitente (la tienda) desde Ajustes; si no hay conexión o el rol
 // no puede leer ajustes, se usa el nombre por defecto y se dejan en blanco
 // la dirección y el teléfono.
@@ -65,7 +69,7 @@ export function cuerpoEtiqueta(pedido, lineas, rem) {
       ${cliente.email ? `<div class="etq-linea etq-email">${escapar(cliente.email)}</div>` : ''}
     </div>
     <div class="etq-pie">
-      <div class="etq-pedido"><strong>Pedido ${escapar(pedido.numero)}</strong> · ${fechaCorta(pedido.creado_en)}</div>
+      <div class="etq-pedido"><strong>Pedido ${escapar(numeroDe(pedido))}</strong> · ${fechaCorta(pedido.creado_en)}</div>
       ${lineasTexto(lineas) ? `<div class="etq-contenido">${escapar(lineasTexto(lineas))}</div>` : ''}
     </div>`;
 }
@@ -74,7 +78,7 @@ export function cuerpoEtiqueta(pedido, lineas, rem) {
 export function imprimirEtiqueta(pedido, lineas, rem) {
   const documento = `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8">
-<title>Etiqueta ${escapar(pedido.numero)}</title>
+<title>Etiqueta ${escapar(numeroDe(pedido))}</title>
 <style>
   @page { size: 105mm 148mm; margin: 5mm; }
   * { box-sizing: border-box; }
@@ -165,7 +169,7 @@ export default async function (contenedor, contexto) {
         <tbody>
           ${pedidos.map((p) => `
           <tr data-id="${escapar(p.id)}">
-            <td><strong>${escapar(p.numero)}</strong></td>
+            <td><strong>${escapar(numeroDe(p))}</strong></td>
             <td class="texto-suave">${fechaCorta(p.creado_en)}</td>
             <td>${escapar(nombreCliente(p))}<br><span class="texto-suave">${escapar(p.cliente?.email || '')}</span></td>
             <td class="texto-suave">${escapar(destino(p))}</td>
@@ -204,7 +208,7 @@ export default async function (contenedor, contexto) {
 
 // Vista previa en modal + botón de impresión
 export function abrirVista(pedido, lineas, rem) {
-  const { cerrar, cuerpo } = abrirModal(`Etiqueta · ${pedido.numero}`, `
+  const { cerrar, cuerpo } = abrirModal(`Etiqueta · ${numeroDe(pedido)}`, `
     <div class="etiqueta-prev">${cuerpoEtiqueta(pedido, lineas, rem)}</div>
     <p class="texto-suave" style="margin:.8rem 0 0;">Se imprime en A6 (105 × 148 mm). Comprueba que el destino no quede cortado en tu plantilla de etiquetas.</p>
     <div class="modal-acciones">

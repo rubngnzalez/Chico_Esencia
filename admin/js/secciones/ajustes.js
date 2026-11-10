@@ -76,6 +76,7 @@ const PESTANAS = [
   { clave: 'smtp', texto: 'SMTP' },
   { clave: 'redsys', texto: 'Pago (Redsys)' },
   { clave: 'envio', texto: 'Envío' },
+  { clave: 'numeracion', texto: 'Pedidos' },
   { clave: 'emails_automaticos', texto: 'Emails automáticos' },
   { clave: 'notificaciones', texto: 'Notificaciones' },
   { clave: 'sistema', texto: 'Sistema (oculto)' },
@@ -144,6 +145,10 @@ export default async function (contenedor) {
   const zona = contenedor.querySelector('#zona-ajustes');
 
   const pintar = () => {
+    if (pestanaActual === 'numeracion') {
+      pintarNumeracion(zona);
+      return;
+    }
     const datos = ajustes[pestanaActual] || {};
     if (pestanaActual === 'contacto') pintarContacto(zona, datos);
     else if (pestanaActual === 'redes') pintarRedes(zona, datos);
@@ -421,6 +426,86 @@ async function pintarEnvio(zona, datos) {
       toast(error.message, 'error');
     }
   });
+}
+
+// Pestaña Pedidos: numeración por lotes de los pedidos pagados. Vive en la
+// tabla oms_numeracion (una fila): «lote» es el prefijo (SHAD01) y «ultimo»
+// el último secuencial repartido. El número definitivo (SHAD01-00001) lo
+// asigna la base de datos al verificarse el pago; aquí solo se cambia el
+// lote (sin tocar el contador) y se consulta por dónde va la numeración.
+function pintarNumeracion(zona) {
+  zona.innerHTML = '<p class="cargando">Cargando numeración…</p>';
+  let fila = null;
+
+  const siguienteDe = () => {
+    const lote = String(fila?.lote || 'SHAD01').toUpperCase();
+    const ultimo = Number(fila?.ultimo) || 0;
+    return `${lote}-${String(ultimo + 1).padStart(5, '0')}`;
+  };
+
+  const pintarFormulario = () => {
+    const ultimo = Number(fila?.ultimo) || 0;
+    zona.innerHTML = `
+      <form class="formulario ajustes-formulario">
+        <div class="ayuda-seccion">
+          <p><strong>Numeración por lotes.</strong> Cada pedido recibe su número definitivo solo cuando la compra
+          queda verificada con su pago (el TPV confirma vía Redsys): <code>LOTE-00001</code>, <code>LOTE-00002</code>…
+          El número interno que viaja al TPV (columna «ref.» del listado de Pedidos) lo genera la pasarela y no se
+          muestra al cliente. Al abrir un lote nuevo (p. ej. <code>SHAD02</code>) el contador sigue su curso; para
+          reiniciarlo hay que hacerlo en la base de datos.</p>
+        </div>
+        <div class="formulario-grid">
+          <div>
+            <label>Número de lote actual</label>
+            <input name="lote" maxlength="8" value="${escapar(fila?.lote || 'SHAD01')}" placeholder="SHAD01">
+          </div>
+          <div>
+            <label>Último pedido numerado de este lote</label>
+            <input type="text" value="${ultimo === 0 ? '—' : `${escapar(String(fila?.lote || 'SHAD01').toUpperCase())}-${String(ultimo).padStart(5, '0')}`}" readonly disabled>
+          </div>
+          <div>
+            <label>Próximo número a asignar</label>
+            <input type="text" value="${siguienteDe()}" readonly disabled>
+          </div>
+        </div>
+        <div class="modal-acciones"><button type="submit" class="boton boton-primario">Guardar numeración</button></div>
+      </form>`;
+
+    zona.querySelector('form').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const lote = evento.target.elements.lote.value.trim().toUpperCase();
+      if (!/^[A-Z0-9]{3,8}$/.test(lote)) {
+        toast('El lote debe tener entre 3 y 8 letras o números (p. ej. SHAD01).', 'error');
+        return;
+      }
+      const boton = evento.target.querySelector('button[type="submit"]');
+      boton.disabled = true;
+      try {
+        const { error } = await sb()
+          .from('oms_numeracion')
+          .upsert({ id: 'unica', lote }, { onConflict: 'id' });
+        if (error) throw new Error(mensajeError(error));
+        fila = { ...(fila || {}), id: 'unica', lote };
+        toast('Numeración guardada.');
+        pintarFormulario();
+      } catch (error) {
+        toast(error.message, 'error');
+        boton.disabled = false;
+      }
+    });
+  };
+
+  (async () => {
+    try {
+      const { data, error } = await sb().from('oms_numeracion').select('*').eq('id', 'unica').maybeSingle();
+      if (error) throw new Error(mensajeError(error));
+      fila = data;
+    } catch (error) {
+      zona.innerHTML = `<p class="estado-vacio">No se pudo cargar la numeración: ${error.message}</p>`;
+      return;
+    }
+    pintarFormulario();
+  })();
 }
 
 function pintarEmails(zona, datos) {

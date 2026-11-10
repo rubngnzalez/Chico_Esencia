@@ -135,7 +135,7 @@
           .map((articulo) => `<div class="carrito-linea"><span>${articulo.cantidad} × ${articulo.nombre}</span><span>${formatear(articulo.precio * articulo.cantidad)}</span></div>`)
           .join("");
         contenedor.innerHTML =
-          `<div class="carrito-linea"><span>Pedido</span><span>${pedido.pedido}</span></div>` +
+          `<div class="carrito-linea"><span>Referencia de pago</span><span>${pedido.pedido}</span></div>` +
           `<div class="carrito-linea"><span>Método</span><span>${metodoTexto}</span></div>` +
           lineas +
           `<div class="carrito-total"><span class="etiqueta">Total pagado</span><span class="importe">${formatear(pedido.total)}</span></div>` +
@@ -149,9 +149,9 @@
           const lineasTexto = (pedido.articulos || [])
             .map((articulo) => `${articulo.cantidad} × ${articulo.nombre}`)
             .join("\n");
-          const asunto = `Pedido confirmado SHADDAI · ${pedido.pedido}`;
+          const asunto = `Pago confirmado SHADDAI · ${pedido.pedido}`;
           const cuerpo =
-            `Pago confirmado a través de Redsys.\n\nPedido: ${pedido.pedido}\nMétodo: ${metodoTexto}\n` +
+            `Pago confirmado a través de Redsys.\n\nReferencia de pago: ${pedido.pedido}\nMétodo: ${metodoTexto}\n` +
             `Total: ${formatear(pedido.total)}\n\n${lineasTexto}\n\n` +
             `Nombre: ${pedido.nombre || "-"}\nEmail: ${pedido.email || "-"}\nTeléfono: ${pedido.telefono || "-"}\n` +
             `Envío: ${pedido.direccion || "-"}\nFecha: ${new Date(pedido.fecha).toLocaleString("es-ES")}\n`;

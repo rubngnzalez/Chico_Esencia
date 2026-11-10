@@ -2610,3 +2610,24 @@ body[data-pagina="usos"] .tarjeta .icono {
   height: 20px;
   fill: currentColor;
 }
+
+/* Aceptación de suscripción al boletín en el checkout (pago.html) */
+.campo-check {
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  margin: 1.6rem 0 0;
+  cursor: pointer;
+  font-size: .92rem;
+  line-height: 1.55;
+  color: #3d4a41;
+}
+.campo-check input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: .15rem;
+  accent-color: #c9a45f;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.campo-check:hover { color: #16261b; }

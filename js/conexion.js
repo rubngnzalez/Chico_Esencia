@@ -329,6 +329,8 @@ const CONEXION = (() => {
     ) {
       pintarCarrito(leerCarrito());
     }
+    // El checkout (pago.html) repinta costes, umbrales y países al oír esto
+    document.dispatchEvent(new CustomEvent("shaddai:envio-actualizado"));
   };
 
   // Redes sociales del pie: iconos con las URLs del panel (Ajustes → Redes)
