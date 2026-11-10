@@ -56,6 +56,13 @@ const zonaDeEnvio = () =>
 const noDisponiblesEn = (zona) => articulosPago.filter((articulo) => !productoDisponible(articulo.id, zona));
 const disponiblesEn = (zona) => articulosPago.filter((articulo) => productoDisponible(articulo.id, zona));
 
+// Alias de artículos: los carritos guardados antes del cambio conservan ids
+// del HTML estático que ya no existen en el catálogo del panel (el servidor
+// busca por codigo/slug/id/nombre). Sin el alias, el pedido entero se cae
+// con «No reconocemos el artículo» y el checkout nunca llega al banco.
+const ALIAS_ARTICULOS = { "perfume-solido": "Balsamo-solido" };
+const codigoDeArticulo = (articulo) => ALIAS_ARTICULOS[articulo.id] || articulo.id;
+
 // Nota de envío adaptada a la zona (se repinta al cambiar el país)
 const pintarNotaEnvio = () => {
   const notaEnvio = document.querySelector("[data-nota-envio]");
@@ -211,6 +218,16 @@ if (typeof CONEXION !== "undefined") {
       const etiqueta = entrada.closest(".metodo-pago");
       if (etiqueta) etiqueta.hidden = !activo;
     });
+    // Si el panel deja los dos métodos apagados, el checkout no puede pagar:
+    // lo decimos claro en lugar de dejar un formulario mudo
+    const hayMetodo = Array.prototype.some.call(
+      document.querySelectorAll(".metodo-pago input[name='metodo']"),
+      (entrada) => !entrada.disabled
+    );
+    if (!hayMetodo && avisoPagoR) {
+      avisoPagoR.textContent =
+        "Ahora mismo no hay ningún método de pago activo. Vuelve a intentarlo en unos minutos o escríbenos a info@omshaddai.com.";
+    }
     // Nota de envío con los umbrales reales del panel, según la zona elegida
     pintarNotaEnvio();
     // Países del checkout según las zonas configuradas en el panel
@@ -368,7 +385,11 @@ if (formularioPagoR) {
       avisoPagoR.textContent = "Preparando tu pago seguro…";
       if (botonEnviar) botonEnviar.disabled = true;
       firmaApi = await CONEXION.post("/api/pagos/firma", {
-        articulos: articulosEnviables.map((articulo) => ({ codigo: articulo.id, cantidad: articulo.cantidad })),
+        articulos: articulosEnviables.map((articulo) => ({
+          codigo: codigoDeArticulo(articulo),
+          nombre: articulo.nombre,
+          cantidad: articulo.cantidad,
+        })),
         metodo,
         numeroPedido: pedido,
         envio: { nombre, apellidos, email, telefono, direccion, cp, poblacion, provincia, pais },
