@@ -122,6 +122,37 @@ if (paisPago) {
   });
 }
 
+// Lista de países del checkout construida desde el panel (Ajustes → Envío):
+// España siempre primero, luego las zonas (UE, Latinoamérica, Resto) con sus
+// países configurados, y «Otro país» como destino comodín. Sin conexión, el
+// select estático del HTML sigue sirviendo igual.
+const poblarPaises = () => {
+  if (!paisPago) return;
+  const elegido = paisPago.value || "España";
+  const paises = ["España"];
+  const listas = CONFIG_ENVIO.paises || {};
+  ["unionEuropea", "latinoamerica", "resto"].forEach((clave) => {
+    (Array.isArray(listas[clave]) ? listas[clave] : []).forEach((pais) => {
+      if (!paises.some((x) => x.toLowerCase() === String(pais).toLowerCase())) paises.push(String(pais));
+    });
+  });
+  if (!paises.some((x) => x.toLowerCase() === "otro país")) paises.push("Otro país");
+  paisPago.innerHTML = paises
+    .map(
+      (pais) =>
+        `<option value="${pais.replace(/"/g, "&quot;")}" ${pais.toLowerCase() === elegido.toLowerCase() ? "selected" : ""}>${pais}</option>`
+    )
+    .join("");
+  if (paisPago.value !== elegido) paisPago.value = "España";
+};
+
+// Cuando el panel trae costes/umbrales/países nuevos, el checkout se repinta
+window.addEventListener("shaddai:envio-actualizado", () => {
+  poblarPaises();
+  pintarResumen();
+  pintarNotaEnvio();
+});
+
 // Zonas de envío por producto (columna zonas_envio del catálogo): al cargar
 // el mapa se repinta el resumen con la disponibilidad real
 if (typeof CONEXION !== "undefined" && typeof CONEXION.zonasProductos === "function") {
@@ -170,7 +201,13 @@ if (typeof CONEXION !== "undefined") {
     });
     // Nota de envío con los umbrales reales del panel, según la zona elegida
     pintarNotaEnvio();
+    // Países del checkout según las zonas configuradas en el panel
+    poblarPaises();
   });
+
+  // Red de seguridad: si el envío del panel llega antes que este bloque,
+  // el evento ya se disparó — repintamos con lo que haya ahora
+  poblarPaises();
 }
 
 // Número de pedido: fecha + hora, 12 dígitos únicos
@@ -286,6 +323,16 @@ if (formularioPagoR) {
       return;
     }
     avisoPagoR.textContent = "";
+
+    // Suscripción al Boletín del Umbral si el cliente la ha aceptado: mismo
+    // endpoint que el formulario del pie (tabla oms_suscriptores). Va antes
+    // del salto a Redsys para que la navegación no la cancele.
+    const quiereSuscribirse = formularioPagoR.elements.suscribirse?.checked;
+    if (quiereSuscribirse && email && typeof CONEXION !== "undefined") {
+      try {
+        await CONEXION.post("/api/public/suscribirse", { email });
+      } catch {}
+    }
 
     const datos = new FormData(formularioPagoR);
     const nombre = (datos.get("nombre") || "").toString().trim();
