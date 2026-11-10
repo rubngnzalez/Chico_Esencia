@@ -16,6 +16,12 @@
   box-sizing: border-box;
 }
 
+/* El atributo hidden siempre oculta de verdad, aunque el elemento tenga un
+   display propio (p. ej. .metodo-pago es flex y anulaba el display:none) */
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
