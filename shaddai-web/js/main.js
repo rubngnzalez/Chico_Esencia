@@ -367,6 +367,63 @@ const escribirCarrito = (articulos) => {
   }
 };
 
+// Sincroniza el carrito guardado en el navegador con el catálogo vigente del
+// panel: los carritos arrastran el precio del momento en que se añadió cada
+// artículo (ofertas retiradas, cambios de precio) y el servidor firma SIEMPRE
+// con el precio actual de la base de datos. Sin esta sincronización, el total
+// mostrado en el carrito y el cobrado en el banco pueden divergir. Actualiza
+// precio y nombre al valor vigente (precio efectivo) y quita los artículos que
+// ya no existen en el catálogo (el servidor rechazaría el pedido entero).
+// Devuelve el carrito sincronizado, o null si no hubo nada que cambiar.
+const sincronizarPreciosCarrito = (productos, alias = { "perfume-solido": "Balsamo-solido" }) => {
+  if (!Array.isArray(productos) || productos.length === 0) return null;
+  const articulos = typeof leerCarrito === "function" ? leerCarrito() : [];
+  if (!Array.isArray(articulos) || articulos.length === 0) return null;
+  const buscar = (id) => {
+    const claves = [String(id || ""), String((alias || {})[id] || "")]
+      .map((x) => x.toLowerCase())
+      .filter(Boolean);
+    return productos.find(
+      (p) =>
+        claves.includes(String(p.codigo || "").toLowerCase()) ||
+        claves.includes(String(p.slug || "").toLowerCase()) ||
+        claves.includes(String(p.id || "").toLowerCase())
+    );
+  };
+  let cambio = false;
+  const sincronizado = [];
+  articulos.forEach((articulo) => {
+    const producto = buscar(articulo.id);
+    if (!producto) {
+      cambio = true;
+      return;
+    }
+    const efectivo = Number(producto.precioEfectivo != null ? producto.precioEfectivo : producto.precio) || 0;
+    if (efectivo > 0 && Math.abs(efectivo - Number(articulo.precio)) > 0.001) {
+      articulo.precio = efectivo;
+      cambio = true;
+    }
+    const nombre = String(producto.nombre || articulo.nombre || "");
+    if (nombre && nombre !== articulo.nombre) {
+      articulo.nombre = nombre;
+      cambio = true;
+    }
+    sincronizado.push(articulo);
+  });
+  return cambio ? sincronizado : null;
+};
+
+// En la página del carrito: precios y nombres vigentes del catálogo al abrir.
+// La tienda ya pinta precios frescos; el carrito guardado es lo único heredado.
+if (document.body.dataset.pagina === "carrito" && typeof CONEXION !== "undefined" && leerCarrito().length > 0) {
+  CONEXION.get("/api/productos/publico")
+    .then((cuerpo) => {
+      const sincronizado = sincronizarPreciosCarrito(cuerpo && cuerpo.datos);
+      if (sincronizado) escribirCarrito(sincronizado);
+    })
+    .catch(() => {});
+}
+
 // Anadir productos desde la tienda (delegado: cubre también los que llegan de la API)
 const anadirAlCarrito = (boton) => {
   const { id, nombre, precio, imagen } = boton.dataset;
