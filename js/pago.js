@@ -51,8 +51,10 @@ const articulosPago = typeof leerCarrito === "function" ? leerCarrito() : [];
 const zonaDeEnvio = () =>
   zonaDePais(formularioPagoR && formularioPagoR.elements.pais ? formularioPagoR.elements.pais.value : "España");
 
-// Productos del carrito que no se pueden enviar a la zona elegida
+// Productos del carrito que no se pueden enviar a la zona elegida, y los
+// que sí: solo los disponibles entran en el sumatorio y en el pago
 const noDisponiblesEn = (zona) => articulosPago.filter((articulo) => !productoDisponible(articulo.id, zona));
+const disponiblesEn = (zona) => articulosPago.filter((articulo) => productoDisponible(articulo.id, zona));
 
 // Nota de envío adaptada a la zona (se repinta al cambiar el país)
 const pintarNotaEnvio = () => {
@@ -77,6 +79,7 @@ const pintarResumen = () => {
   }
   const zona = zonaDeEnvio();
   const noDisponibles = noDisponiblesEn(zona);
+  const disponibles = disponiblesEn(zona);
   const lineas = document.querySelector("[data-lineas-pedido]");
   lineas.innerHTML = "";
   articulosPago.forEach((articulo) => {
@@ -86,15 +89,22 @@ const pintarResumen = () => {
     const nombre = document.createElement("span");
     nombre.textContent = disponible
       ? `${articulo.cantidad} × ${articulo.nombre}`
-      : `${articulo.cantidad} × ${articulo.nombre} — no disponible para ${etiquetaZona(zona)}`;
+      : `${articulo.cantidad} × ${articulo.nombre} — no disponible para ${etiquetaZona(zona)} (fuera del total)`;
     const precio = document.createElement("span");
     precio.textContent = formatearPrecio(articulo.precio * articulo.cantidad);
-    if (!disponible) nombre.style.color = "#9d3b3b";
+    if (!disponible) {
+      nombre.style.color = "#9d3b3b";
+      precio.style.color = "#9d3b3b";
+      precio.style.textDecoration = "line-through";
+    }
     fila.append(nombre, precio);
     lineas.append(fila);
   });
 
-  const { subtotal, envio, total } = calcularTotales(articulosPago, zona);
+  // El sumatorio solo cuenta lo disponible para el destino: el cliente paga
+  // únicamente lo que puede recibir (el servidor firma sobre esas mismas
+  // líneas, así que ambos lados calculan lo mismo)
+  const { subtotal, envio, total } = calcularTotales(disponibles, zona);
   document.querySelector("[data-subtotal]").textContent = formatearPrecio(subtotal);
   document.querySelector("[data-envio]").textContent = envio === 0 ? "Gratis" : formatearPrecio(envio);
   document.querySelector("[data-total]").textContent = formatearPrecio(total);
@@ -103,11 +113,13 @@ const pintarResumen = () => {
   const avisoZona = document.querySelector("[data-aviso-zona]");
   if (avisoZona) {
     avisoZona.textContent =
-      noDisponibles.length > 0
-        ? `Para envío a ${etiquetaZona(zona)} no están disponibles: ${noDisponibles
+      noDisponibles.length > 0 && disponibles.length > 0
+        ? `No se pueden enviar a ${etiquetaZona(zona)} y quedan fuera del pago: ${noDisponibles
             .map((articulo) => articulo.nombre)
-            .join(", ")}. Quita esos artículos del carrito o elige otro destino.`
-        : "";
+            .join(", ")}. El total refleja solo lo disponible; quita esos artículos o cambia el destino si quieres incluirlos.`
+        : noDisponibles.length > 0
+          ? `Ninguno de los artículos de tu selección se puede enviar a ${etiquetaZona(zona)}. Quita los artículos o elige otro destino para continuar.`
+          : "";
   }
 };
 
@@ -289,15 +301,15 @@ if (formularioPagoR) {
 
     if (articulosPago.length === 0) return;
 
-    // Disponibilidad por destino: no se pasa al pago con productos que no
-    // se pueden enviar al país elegido
+    // Disponibilidad por destino: el pago se prepara solo con los artículos
+    // que sí se pueden enviar al país elegido (los no disponibles quedan
+    // fuera del sumatorio y del cobro); si no queda nada enviable, no se pasa
     const zonaElegida = zonaDeEnvio();
+    const articulosEnviables = disponiblesEn(zonaElegida);
     const noDisponibles = noDisponiblesEn(zonaElegida);
-    if (noDisponibles.length > 0) {
+    if (articulosEnviables.length === 0) {
       avisoPagoR.textContent =
-        `Para envío a ${etiquetaZona(zonaElegida)} no están disponibles: ${noDisponibles
-          .map((articulo) => articulo.nombre)
-          .join(", ")}. Quita esos artículos del carrito o elige otro destino.`;
+        `Ninguno de los artículos de tu selección se puede enviar a ${etiquetaZona(zonaElegida)}. Quita los artículos o elige otro destino para continuar.`;
       avisoPagoR.focus?.();
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -356,7 +368,7 @@ if (formularioPagoR) {
       avisoPagoR.textContent = "Preparando tu pago seguro…";
       if (botonEnviar) botonEnviar.disabled = true;
       firmaApi = await CONEXION.post("/api/pagos/firma", {
-        articulos: articulosPago.map((articulo) => ({ codigo: articulo.id, cantidad: articulo.cantidad })),
+        articulos: articulosEnviables.map((articulo) => ({ codigo: articulo.id, cantidad: articulo.cantidad })),
         metodo,
         numeroPedido: pedido,
         envio: { nombre, apellidos, email, telefono, direccion, cp, poblacion, provincia, pais },
@@ -369,7 +381,7 @@ if (formularioPagoR) {
     }
 
     let numeroFinal = pedido;
-    let total = calcularTotales(articulosPago, zonaDeEnvio()).total;
+    let total = calcularTotales(articulosEnviables, zonaElegida).total;
     let parametrosB64;
     let firma;
     let version = "HMAC_SHA256_V1";
@@ -388,7 +400,7 @@ if (formularioPagoR) {
           "No se pudo cargar el módulo de firma segura. Comprueba tu conexión y recarga la página.";
         return;
       }
-      const descripcion = articulosPago
+      const descripcion = articulosEnviables
         .map((articulo) => `${articulo.cantidad}× ${articulo.nombre}`)
         .join(" · ")
         .slice(0, 120);
@@ -416,7 +428,8 @@ if (formularioPagoR) {
       firma = firmarParametros(parametrosB64, pedido, CONFIG_REDSYS.clave);
     }
 
-    // Pedido pendiente: lo muestra la página de confirmación
+    // Pedido pendiente: lo muestra la página de confirmación (solo las líneas
+    // enviables, que son las que se han cobrado)
     localStorage.setItem(
       "shaddai-pedido-pendiente",
       JSON.stringify({
@@ -428,7 +441,7 @@ if (formularioPagoR) {
         telefono,
         direccion: [direccion, cp, poblacion, provincia].filter(Boolean).join(", "),
         fecha: new Date().toISOString(),
-        articulos: articulosPago,
+        articulos: articulosEnviables,
       })
     );
 
