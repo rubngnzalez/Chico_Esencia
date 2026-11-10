@@ -353,16 +353,6 @@ if (formularioPagoR) {
     }
     avisoPagoR.textContent = "";
 
-    // Suscripción al Boletín del Umbral si el cliente la ha aceptado: mismo
-    // endpoint que el formulario del pie (tabla oms_suscriptores). Va antes
-    // del salto a Redsys para que la navegación no la cancele.
-    const quiereSuscribirse = formularioPagoR.elements.suscribirse?.checked;
-    if (quiereSuscribirse && email && typeof CONEXION !== "undefined") {
-      try {
-        await CONEXION.post("/api/public/suscribirse", { email });
-      } catch {}
-    }
-
     const datos = new FormData(formularioPagoR);
     const nombre = (datos.get("nombre") || "").toString().trim();
     const apellidos = (datos.get("apellidos") || "").toString().trim();
@@ -374,6 +364,18 @@ if (formularioPagoR) {
     const provincia = (datos.get("provincia") || "").toString().trim();
     const pais = (datos.get("pais") || "España").toString().trim();
     const metodo = (datos.get("metodo") || "tarjeta").toString();
+
+    // Suscripción al Boletín del Umbral si el cliente la ha aceptado: mismo
+    // endpoint que el formulario del pie (tabla oms_suscriptores). Va después
+    // de leer los datos del formulario (email incluido) y antes del salto a
+    // Redsys para que la navegación no la cancele.
+    const quiereSuscribirse = formularioPagoR.elements.suscribirse?.checked;
+    if (quiereSuscribirse && email && typeof CONEXION !== "undefined") {
+      try {
+        await CONEXION.post("/api/public/suscribirse", { email });
+      } catch {}
+    }
+
     const pedido = generarPedido();
     const botonEnviar = formularioPagoR.querySelector('button[type="submit"]');
 
