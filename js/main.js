@@ -1017,3 +1017,75 @@ if (carruselUniverso) {
   mostrarUniverso(0);
   iniciarTemporizador();
 }
+
+// Música del Umbral: botón flotante en todas las páginas. Sin autoplay
+// (los navegadores lo bloquean con sonido): si la preferencia guardada es
+// «on», la música arranca sola en el primer gesto del visitante.
+(() => {
+  const CLAVE_MUSICA = "shaddai-musica";
+  const TITULO_MUSICA = "Madre María ✧ Llave Tonal — Ayn Du Bois";
+
+  const ICONO_NOTA =
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>';
+  const ICONO_PAUSA =
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+  const audio = document.createElement("audio");
+  audio.src = "audio/musica-web.mp3";
+  audio.loop = true;
+  audio.preload = "none";
+  audio.volume = 0.55;
+
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.className = "musica-boton";
+  boton.title = `Música: ${TITULO_MUSICA}`;
+  boton.setAttribute("aria-label", `Escuchar música: ${TITULO_MUSICA}`);
+  boton.innerHTML = ICONO_NOTA;
+
+  const pintarEstado = (sonando) => {
+    boton.innerHTML = sonando ? ICONO_PAUSA : ICONO_NOTA;
+    boton.classList.toggle("sonando", sonando);
+    boton.setAttribute(
+      "aria-label",
+      (sonando ? "Pausar música: " : "Escuchar música: ") + TITULO_MUSICA
+    );
+  };
+
+  const alternar = () => {
+    if (audio.paused) {
+      audio.play().then(() => localStorage.setItem(CLAVE_MUSICA, "on")).catch(() => {});
+    } else {
+      audio.pause();
+      localStorage.setItem(CLAVE_MUSICA, "off");
+    }
+  };
+
+  audio.addEventListener("play", () => pintarEstado(true));
+  audio.addEventListener("pause", () => pintarEstado(false));
+  boton.addEventListener("click", alternar);
+
+  const estilo = document.createElement("style");
+  estilo.textContent =
+    ".musica-boton{position:fixed;right:1.2rem;bottom:1.2rem;z-index:900;width:46px;height:46px;display:grid;place-items:center;border:1px solid rgba(201,164,95,.45);border-radius:50%;background:rgba(29,51,37,.92);color:var(--oro);cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:background .3s ease,color .3s ease,transform .3s ease}" +
+    ".musica-boton svg{width:22px;height:22px;fill:currentColor}" +
+    ".musica-boton:hover{background:var(--oro);color:var(--verde);transform:translateY(-2px)}" +
+    ".musica-boton.sonando{border-color:var(--oro)}" +
+    ".musica-boton.sonando svg{animation:latido-musica 2.4s ease-in-out infinite}" +
+    "@keyframes latido-musica{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}" +
+    "@media (max-width:700px){.musica-boton{right:.9rem;bottom:.9rem}}" +
+    "@media (prefers-reduced-motion:reduce){.musica-boton.sonando svg{animation:none}}";
+  document.head.appendChild(estilo);
+  document.body.append(audio, boton);
+
+  // Preferencia guardada: reanudar con el primer gesto del visitante
+  if (localStorage.getItem(CLAVE_MUSICA) === "on") {
+    const reanudar = () => {
+      document.removeEventListener("pointerdown", reanudar);
+      document.removeEventListener("keydown", reanudar);
+      audio.play().catch(() => {});
+    };
+    document.addEventListener("pointerdown", reanudar, { once: true });
+    document.addEventListener("keydown", reanudar, { once: true });
+  }
+})();
