@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="img/favicon.ico">
-  <link rel="stylesheet" href="css/estilos.css?v=13">
+  <link rel="stylesheet" href="css/estilos.css?v=14">
 </head>
 <body data-pagina="carrito">
 
@@ -73,6 +73,10 @@
           <div class="carrito-linea">
             <span>Gastos de envío</span>
             <span data-envio>—</span>
+          </div>
+          <div class="carrito-linea" data-linea-descuento hidden>
+            <span data-cupon-etiqueta>Descuento</span>
+            <span data-descuento>—</span>
           </div>
           <div class="carrito-total">
             <span class="etiqueta">Total a pagar</span>
@@ -160,6 +164,13 @@
             </span>
           </label>
 
+          <span class="etiqueta" style="display: block; margin: 2rem 0 1rem;">¿Tienes un cupón?</span>
+          <div class="cupon-zona">
+            <input id="p-cupon" name="cupon" type="text" maxlength="40" autocomplete="off" placeholder="Código (p. ej. PRIMAVERA10)">
+            <button type="button" class="boton" data-cupon-aplicar>Aplicar</button>
+          </div>
+          <p class="aviso-formulario" aria-live="polite" data-aviso-cupon style="margin: 0.6rem 0 0;"></p>
+
           <p class="aviso-formulario" aria-live="polite" data-aviso-zona style="margin: 1.2rem 0 0; color: #9d3b3b;"></p>
 <p class="aviso-formulario" aria-live="polite" data-aviso-pago style="margin: 1.2rem 0 0;"></p>
 
@@ -226,7 +237,7 @@
   <script src="js/supabase.js"></script>
   <script src="js/config-supabase.js"></script>
   <script src="js/conexion.js?v=16"></script>
-  <script src="js/main.js?v=13"></script>
-  <script src="js/pago.js?v=20261110e"></script>
+  <script src="js/main.js?v=14"></script>
+  <script src="js/pago.js?v=20261112a"></script>
 </body>
 </html>

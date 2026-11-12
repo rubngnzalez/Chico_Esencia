@@ -68,7 +68,7 @@ Deno.serve(async (request: Request) => {
     return errorJson('La función no está configurada (faltan secretos del proyecto).', 500, request);
   }
 
-  let cuerpo: { articulos?: unknown; metodo?: string; numeroPedido?: string; envio?: Record<string, unknown> };
+  let cuerpo: { articulos?: unknown; metodo?: string; numeroPedido?: string; envio?: Record<string, unknown>; cupon?: unknown };
   try {
     cuerpo = await request.json();
   } catch {
@@ -200,6 +200,71 @@ Deno.serve(async (request: Request) => {
   }
   const total = Math.round((subtotal + costeEnvio) * 100) / 100;
 
+  // 4b · Cupón de descuento (Ofertas → Cupones): la MISMA validación que hace
+  //      «cupon-validar». Si el cliente envía un cupón inválido se rechaza el
+  //      pedido con un mensaje claro en lugar de cobrar un precio distinto al
+  //      que el checkout enseñó.
+  const codigoCupon = String(cuerpo.cupon || '').trim().toUpperCase().slice(0, 40);
+  let descuentoCupon = 0;
+  let cuponAplicado: { codigo: string; tipo: string; valor: number; importe: number } | null = null;
+
+  if (codigoCupon) {
+    const { data: cupon, error: errorCupon } = await db
+      .from('oms_cupones')
+      .select('codigo, tipo, valor, minimo_subtotal, inicio, fin, usos_maximos, usos, activo')
+      .eq('codigo', codigoCupon)
+      .maybeSingle();
+    if (errorCupon) return errorJson('No se pudo comprobar el cupón.', 500, request);
+    const cuponInfo = cupon as {
+      codigo: string;
+      tipo: string;
+      valor: number;
+      minimo_subtotal: number;
+      inicio: string | null;
+      fin: string | null;
+      usos_maximos: number | null;
+      usos: number;
+      activo: boolean;
+    } | null;
+    if (!cuponInfo) return errorJson('El cupón no existe. Revisa el código o quítalo para continuar.', 400, request);
+    if (!cuponInfo.activo) return errorJson('El cupón no está activo. Quítalo para continuar.', 400, request);
+    const ahoraCupon = Date.now();
+    if (cuponInfo.inicio && Date.parse(cuponInfo.inicio) > ahoraCupon) {
+      return errorJson('El cupón aún no está disponible. Quítalo para continuar.', 400, request);
+    }
+    if (cuponInfo.fin && ahoraCupon > Date.parse(cuponInfo.fin)) {
+      return errorJson('El cupón ha caducado. Quítalo para continuar.', 400, request);
+    }
+    if (cuponInfo.usos_maximos != null && cuponInfo.usos >= cuponInfo.usos_maximos) {
+      return errorJson('El cupón ha agotado sus usos. Quítalo para continuar.', 400, request);
+    }
+    if (Number(cuponInfo.minimo_subtotal) > 0 && subtotal < Number(cuponInfo.minimo_subtotal)) {
+      return errorJson(
+        `El cupón necesita un subtotal mínimo de ${Number(cuponInfo.minimo_subtotal).toFixed(2)} €.`,
+        400,
+        request
+      );
+    }
+    if (cuponInfo.tipo === 'envio') {
+      descuentoCupon = costeEnvio;
+    } else if (cuponInfo.tipo === 'porcentaje') {
+      descuentoCupon = Math.round(subtotal * (Number(cuponInfo.valor) / 100) * 100) / 100;
+    } else {
+      descuentoCupon = Math.min(Number(cuponInfo.valor) || 0, subtotal);
+    }
+    descuentoCupon = Math.max(0, Math.round(descuentoCupon * 100) / 100);
+    if (descuentoCupon > 0) {
+      cuponAplicado = {
+        codigo: cuponInfo.codigo,
+        tipo: cuponInfo.tipo,
+        valor: Number(cuponInfo.valor),
+        importe: descuentoCupon,
+      };
+    }
+  }
+
+  const totalConCupon = Math.max(0, Math.round((subtotal + costeEnvio - descuentoCupon) * 100) / 100);
+
   // 5 · Número de pedido único
   let numero = String(cuerpo.numeroPedido || generarNumeroPedido())
     .toUpperCase()
@@ -251,7 +316,7 @@ Deno.serve(async (request: Request) => {
 
   // 7 · Parámetros y firma HMAC_SHA256_V1
   const parametros = {
-    DS_MERCHANT_AMOUNT: String(Math.round(total * 100)),
+    DS_MERCHANT_AMOUNT: String(Math.round(totalConCupon * 100)),
     DS_MERCHANT_ORDER: numero,
     DS_MERCHANT_MERCHANTCODE: String(redsys.fuc || ''),
     DS_MERCHANT_CURRENCY: String(redsys.moneda || '978'),
@@ -283,7 +348,16 @@ Deno.serve(async (request: Request) => {
   // 8 · Pedido pendiente + líneas (service_role: es la única vía de escritura)
   const { data: pedidoCreado, error: errorPedido } = await db
     .from('oms_pedidos')
-    .insert({ numero, cliente, subtotal, envio: costeEnvio, total, metodo, estado: 'pendiente' })
+    .insert({
+      numero,
+      cliente,
+      subtotal,
+      envio: costeEnvio,
+      total: totalConCupon,
+      metodo,
+      estado: 'pendiente',
+      cupon: cuponAplicado ? cuponAplicado.codigo : null,
+    })
     .select('id')
     .single();
   if (errorPedido || !pedidoCreado) {
@@ -306,7 +380,7 @@ Deno.serve(async (request: Request) => {
       parametrosB64,
       firma,
       parametros,
-      resumen: { subtotal, envio: costeEnvio, total, articulos: lineas },
+      resumen: { subtotal, envio: costeEnvio, total: totalConCupon, descuento: descuentoCupon, cupon: cuponAplicado, articulos: lineas },
       pedidoId: pedidoCreado.id,
     }),
     { headers: cabeceras(request) }

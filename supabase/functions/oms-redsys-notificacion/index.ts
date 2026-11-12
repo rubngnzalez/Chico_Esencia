@@ -125,7 +125,7 @@ Deno.serve(async (request: Request) => {
   const numero = String(verificacion.pedido);
   const { data: pedido } = await db
     .from('oms_pedidos')
-    .select('id, numero, cliente, subtotal, envio, total, estado')
+    .select('id, numero, cliente, subtotal, envio, total, estado, cupon')
     .eq('numero', numero)
     .single();
   if (!pedido) return textoPlano('Pedido no encontrado para esta notificación', 404);
@@ -135,6 +135,7 @@ Deno.serve(async (request: Request) => {
     cliente: Record<string, string>;
     total: number;
     estado: string;
+    cupon?: string | null;
   };
 
   if (pedidoInfo.estado === 'pagado') return textoPlano('Pedido ya marcado como pagado');
@@ -179,6 +180,11 @@ Deno.serve(async (request: Request) => {
   const numeroDefinitivo = String(
     pedidoPagado?.numero_publico || pedidoPagado?.numero || pedidoInfo.numero
   );
+
+  // 4b · Contar el uso del cupón SOLO ahora que el pago está confirmado
+  if (pedidoInfo.cupon) {
+    await db.rpc('oms_cupon_contar_uso', { codigo_cupon: pedidoInfo.cupon });
+  }
 
   // 5 · Líneas para las plantillas
   const { data: lineasPedido } = await db

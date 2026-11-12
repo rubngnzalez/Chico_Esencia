@@ -63,6 +63,118 @@ const disponiblesEn = (zona) => articulosPago.filter((articulo) => productoDispo
 const ALIAS_ARTICULOS = { "perfume-solido": "Balsamo-solido" };
 const codigoDeArticulo = (articulo) => ALIAS_ARTICULOS[articulo.id] || articulo.id;
 
+// ─── Cupón de descuento (QR o código) ────────────────────────────────────────
+// La web solo lo VALIDA y lo enseña: el descuento real lo recalcula siempre
+// el servidor (oms-cupon-validar aquí, oms-pagos-firma al firmar). El uso del
+// cupón solo se cuenta cuando Redsys confirma el pago.
+const entradaCupon = formularioPagoR ? formularioPagoR.elements.cupon : null;
+const botonCupon = document.querySelector("[data-cupon-aplicar]");
+const avisoCupon = document.querySelector("[data-aviso-cupon]");
+const lineaDescuento = document.querySelector("[data-linea-descuento]");
+let cuponActivo = null; // {codigo, tipo, valor, importe} | null
+
+const leerCuponGuardado = () => {
+  try {
+    return (localStorage.getItem("shaddai-cupon") || "").trim().toUpperCase();
+  } catch {
+    return "";
+  }
+};
+
+const guardarCupon = (codigo) => {
+  try {
+    if (codigo) localStorage.setItem("shaddai-cupon", codigo);
+    else localStorage.removeItem("shaddai-cupon");
+  } catch {}
+};
+
+// Importe del cupón sobre estos totales (espejo del cálculo del servidor)
+const importeCupon = (cupon, subtotal, envio) => {
+  if (!cupon) return 0;
+  if (cupon.tipo === "envio") return envio;
+  if (cupon.tipo === "porcentaje") return Math.round(subtotal * (Number(cupon.valor) / 100) * 100) / 100;
+  return Math.min(Number(cupon.valor) || 0, subtotal);
+};
+
+const validarCupon = async (codigo) => {
+  if (typeof CONEXION === "undefined") return null;
+  const zona = zonaDeEnvio();
+  return await CONEXION.post("/api/pagos/cupon", {
+    cupon: codigo,
+    articulos: disponiblesEn(zona).map((articulo) => ({
+      codigo: codigoDeArticulo(articulo),
+      nombre: articulo.nombre,
+      cantidad: articulo.cantidad,
+    })),
+    pais: formularioPagoR.elements.pais ? formularioPagoR.elements.pais.value : "España",
+  });
+};
+
+const quitarCupon = (aviso = "") => {
+  cuponActivo = null;
+  guardarCupon("");
+  if (entradaCupon) entradaCupon.value = "";
+  if (avisoCupon) avisoCupon.textContent = aviso;
+  if (lineaDescuento) lineaDescuento.hidden = true;
+  pintarResumen();
+};
+
+const aplicarCupon = async (codigoManual) => {
+  const codigo = String(codigoManual != null ? codigoManual : entradaCupon ? entradaCupon.value : "")
+    .trim()
+    .toUpperCase()
+    .slice(0, 40);
+  if (!codigo) {
+    // Campo vacío: si había un cupón activo, esto lo quita
+    if (cuponActivo) quitarCupon("Cupón quitado.");
+    else if (avisoCupon) avisoCupon.textContent = "Escribe el código de tu cupón.";
+    return;
+  }
+  if (disponiblesEn(zonaDeEnvio()).length === 0) {
+    if (avisoCupon) avisoCupon.textContent = "Añade artículos disponibles antes de aplicar el cupón.";
+    return;
+  }
+  if (avisoCupon) avisoCupon.textContent = "Comprobando el cupón…";
+  if (botonCupon) botonCupon.disabled = true;
+  const respuesta = await validarCupon(codigo);
+  if (botonCupon) botonCupon.disabled = false;
+
+  if (respuesta && respuesta.ok && respuesta.cupon) {
+    cuponActivo = respuesta.cupon;
+    guardarCupon(cuponActivo.codigo);
+    if (entradaCupon) entradaCupon.value = cuponActivo.codigo;
+    const etiqueta =
+      cuponActivo.tipo === "envio"
+        ? "Envío gratis con el cupón"
+        : cuponActivo.tipo === "porcentaje"
+          ? `Cupón ${cuponActivo.codigo} (−${Number(cuponActivo.valor)} %)`
+          : `Cupón ${cuponActivo.codigo}`;
+    if (lineaDescuento) {
+      document.querySelector("[data-cupon-etiqueta]").textContent = etiqueta;
+      lineaDescuento.hidden = false;
+    }
+    if (avisoCupon) avisoCupon.textContent = "Cupón aplicado: lo descontaremos al pasar al pago. Para quitarlo, borra el código y vuelve a pulsar Aplicar.";
+    pintarResumen();
+    return;
+  }
+  cuponActivo = null;
+  guardarCupon("");
+  if (lineaDescuento) lineaDescuento.hidden = true;
+  const motivo = respuesta && respuesta.error ? respuesta.error : "No hemos podido comprobar el cupón ahora mismo.";
+  if (avisoCupon) avisoCupon.textContent = `${motivo}`;
+  pintarResumen();
+};
+
+if (botonCupon) botonCupon.addEventListener("click", () => aplicarCupon());
+if (entradaCupon) {
+  entradaCupon.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      aplicarCupon();
+    }
+  });
+}
+
 // Nota de envío adaptada a la zona (se repinta al cambiar el país)
 const pintarNotaEnvio = () => {
   const notaEnvio = document.querySelector("[data-nota-envio]");
@@ -114,7 +226,23 @@ const pintarResumen = () => {
   const { subtotal, envio, total } = calcularTotales(disponibles, zona);
   document.querySelector("[data-subtotal]").textContent = formatearPrecio(subtotal);
   document.querySelector("[data-envio]").textContent = envio === 0 ? "Gratis" : formatearPrecio(envio);
-  document.querySelector("[data-total]").textContent = formatearPrecio(total);
+
+  // Descuento del cupón activo (el servidor lo recalcula al firmar; aquí es
+  // solo la vista previa del checkout)
+  const totalFinal = (() => {
+    const importe = importeCupon(cuponActivo, subtotal, envio);
+    if (lineaDescuento) {
+      if (importe > 0) {
+        lineaDescuento.hidden = false;
+        document.querySelector("[data-descuento]").textContent = `−${formatearPrecio(importe)}`;
+      } else {
+        lineaDescuento.hidden = true;
+      }
+    }
+    return Math.max(0, Math.round((total - importe) * 100) / 100);
+  })();
+
+  document.querySelector("[data-total]").textContent = formatearPrecio(totalFinal);
 
   // Aviso persistente mientras haya productos sin disponibilidad en la zona
   const avisoZona = document.querySelector("[data-aviso-zona]");
@@ -138,6 +266,9 @@ if (paisPago) {
   paisPago.addEventListener("change", () => {
     pintarResumen();
     pintarNotaEnvio();
+    // El destino cambia el envío (y los mínimos importan por subtotal):
+    // revalidar el cupón para no enseñar un descuento caducado
+    if (cuponActivo) aplicarCupon(cuponActivo.codigo);
   });
 }
 
@@ -180,7 +311,14 @@ if (typeof CONEXION !== "undefined" && typeof CONEXION.zonasProductos === "funct
     .then((mapa) => {
       if (mapa && typeof mapa === "object" && Object.keys(mapa).length > 0) {
         MAPA_ZONAS_PRODUCTO.valor = mapa;
-        pintarResumen();
+pintarResumen();
+
+// Cupón que llega del QR o de un enlace (?cupon=CODIGO): se valida al cargar
+const cuponGuardado = leerCuponGuardado();
+if (cuponGuardado && entradaCupon) {
+  entradaCupon.value = cuponGuardado;
+  aplicarCupon(cuponGuardado);
+}
         pintarNotaEnvio();
       }
     })
@@ -415,11 +553,19 @@ if (formularioPagoR) {
         })),
         metodo,
         numeroPedido: pedido,
+        cupon: cuponActivo ? cuponActivo.codigo : undefined,
         envio: { nombre, apellidos, email, telefono, direccion, cp, poblacion, provincia, pais },
       });
       if (botonEnviar) botonEnviar.disabled = false;
       if (firmaApi && !firmaApi.parametrosB64) {
         avisoPagoR.textContent = `${firmaApi.error || "No hemos podido preparar el pago seguro."} Inténtalo de nuevo en un momento o escríbenos a info@omshaddai.com.`;
+        return;
+      }
+      // El servidor firma SIEMPRE el importe con el cupón recalculado: si no
+      // llegó a aplicarlo, no seguimos (evita cobrar más de lo enseñado)
+      if (firmaApi && firmaApi.parametrosB64 && cuponActivo && !(firmaApi.resumen && firmaApi.resumen.cupon)) {
+        avisoPagoR.textContent =
+          "El cupón no ha podido aplicarse al pago seguro en este momento. Quita el cupón (borra el código y pulsa Aplicar) e inténtalo de nuevo, o escríbenos a info@omshaddai.com.";
         return;
       }
     }
