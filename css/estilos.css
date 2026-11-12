@@ -2318,6 +2318,28 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: rgba(217, 212, 197, 0.65);
 }
 
+/* Cupón de descuento en el checkout */
+.cupon-zona {
+  display: flex;
+  gap: 0.7rem;
+  align-items: stretch;
+}
+
+.cupon-zona input {
+  flex: 1;
+  min-width: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cupon-zona .boton {
+  white-space: nowrap;
+}
+
+.carrito-linea[data-linea-descuento] span:last-child {
+  color: var(--oro);
+}
+
 @media (max-width: 700px) {
   .pago-datos {
     grid-template-columns: 1fr;

@@ -263,6 +263,20 @@ const CONEXION = (() => {
           return { ok: false, error: "No hemos podido completar tu suscripción." };
         }
       }
+      if (ruta === "/api/pagos/cupon") {
+        // Validación de cupón: Edge Function oms-cupon-validar. La tabla de
+        // códigos no es accesible desde la web (RLS): solo el servidor decide.
+        try {
+          const { data, error } = await conTiempo(
+            cliente.functions.invoke("oms-cupon-validar", { body: cuerpo })
+          );
+          if (!error && data && (data.ok || data.error)) return data;
+        } catch {
+          // función aún sin desplegar: sin Worker detrás, no hay más quien
+          // responda y la web lo trata como «no se pudo comprobar»
+        }
+        return null;
+      }
       if (ruta === "/api/pagos/firma") {
         // Cadena de pago (ver js/pago.js):
         //  1) Edge Function pagos-firma → 2) Worker → 3) null (firma en cliente)

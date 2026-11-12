@@ -1018,6 +1018,16 @@ if (carruselUniverso) {
   iniciarTemporizador();
 }
 
+// Cupón desde QR o enlace (?cupon=CODIGO): se guarda y el checkout (pago.html)
+// lo valida en servidor y aplica el descuento. Mayúsculas, sin espacios.
+(() => {
+  try {
+    const cuponUrl = new URLSearchParams(location.search).get("cupon");
+    const codigo = String(cuponUrl || "").trim().toUpperCase().replace(/\s+/g, "").slice(0, 40);
+    if (codigo) localStorage.setItem("shaddai-cupon", codigo);
+  } catch {}
+})();
+
 // Música del Umbral: botón flotante en todas las páginas. Sin autoplay
 // (los navegadores lo bloquean con sonido): si la preferencia guardada es
 // «on», la música arranca sola en el primer gesto del visitante.

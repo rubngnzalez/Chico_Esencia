@@ -1062,3 +1062,27 @@ body {
   padding-top: 0.5rem;
   font-size: 0.78rem;
 }
+
+/* ---------- Códigos de descuento (cupones) ---------- */
+.codigo-cupon {
+  font-family: "Consolas", monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: #16261b;
+}
+.cupon-qr {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  align-items: center;
+}
+.cupon-qr img {
+  width: 256px;
+  height: 256px;
+  image-rendering: pixelated;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+}
