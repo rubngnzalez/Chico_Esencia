@@ -500,7 +500,14 @@ function abrirFormularioCupon(cupon, alGuardar) {
         : (await sb().from('oms_cupones').update(envio).eq('id', cupon.id)).error;
       if (error) {
         const duplicado = String(error.message || '').toLowerCase().includes('duplicate');
-        throw new Error(duplicado ? 'Ese código ya existe: elige otro.' : mensajeError(error));
+        const sinTabla = String(error.message || '').toLowerCase().includes('could not find the table');
+        throw new Error(
+          duplicado
+            ? 'Ese código ya existe: elige otro.'
+            : sinTabla
+              ? 'La tabla de cupones todavía no existe: ejecuta primero el SQL «actualizaciones/2026-11-12-cupones-descuento.sql» en Supabase (SQL Editor).'
+              : mensajeError(error)
+        );
       }
       toast(esNuevo ? 'Cupón creado. Ya puedes generar su QR con el botón «QR».' : 'Cupón actualizado.');
       cerrar();
