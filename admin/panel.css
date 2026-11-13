@@ -1078,8 +1078,8 @@ body {
   align-items: center;
 }
 .cupon-qr img {
-  width: 256px;
-  height: 256px;
+  width: 260px;
+  height: auto;
   image-rendering: pixelated;
   border: 1px solid #ddd;
   border-radius: 8px;

@@ -239,35 +239,142 @@ function urlCupon(codigo) {
   return `${DOMINIO_WEB}/?cupon=${encodeURIComponent(String(codigo || ''))}`;
 }
 
-function imagenQr(texto) {
-  if (typeof window.qrcode !== 'function') return null;
-  try {
-    const qr = window.qrcode(0, 'M');
-    qr.addData(texto);
-    qr.make();
-    return qr.createDataURL(8, 4);
-  } catch {
-    return null;
+// QR de marca estilo SHADDAI: módulos de corazón verdes, finders redondeados,
+// logo ש en el centro y rótulo «¡ACTIVAR!» con el código. Nivel de corrección
+// H (30 %): permite el logo y el estilo sin perder escaneabilidad.
+function dibujarQrMarca(cupon, alTerminar) {
+  const url = urlCupon(cupon.codigo);
+  if (typeof window.qrcode !== 'function') {
+    alTerminar(null);
+    return;
   }
+  const qr = window.qrcode(0, 'H');
+  qr.addData(url);
+  qr.make();
+  const n = qr.getModuleCount();
+  const escala = 14;
+  const margen = 4;
+  const ladoQr = (n + margen * 2) * escala;
+  const ancho = ladoQr + 120;
+  const alto = ladoQr + 330;
+  const VERDE = '#157145';
+  const OSCURO = '#16261b';
+
+  const lienzo = document.createElement('canvas');
+  lienzo.width = ancho;
+  lienzo.height = alto;
+  const ctx = lienzo.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, ancho, alto);
+
+  // Marco decorativo redondeado
+  ctx.strokeStyle = VERDE;
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(18, 18, ancho - 36, alto - 36, 14);
+  else ctx.rect(18, 18, ancho - 36, alto - 36);
+  ctx.stroke();
+
+  const origenX = Math.floor((ancho - ladoQr) / 2);
+  const origenY = 30 + Math.floor((ladoQr + 40 - ladoQr) / 2) + 40;
+
+  // Módulos de corazón
+  const corazon = (x, y, s) => {
+    ctx.beginPath();
+    ctx.moveTo(x + s / 2, y + s * 0.30);
+    ctx.bezierCurveTo(x + s / 2, y + s * 0.18, x + s * 0.35, y + s * 0.03, x + s * 0.20, y + s * 0.03);
+    ctx.bezierCurveTo(x + s * 0.02, y + s * 0.03, x, y + s * 0.25, x, y + s * 0.38);
+    ctx.bezierCurveTo(x, y + s * 0.62, x + s * 0.22, y + s * 0.80, x + s / 2, y + s * 0.97);
+    ctx.bezierCurveTo(x + s * 0.78, y + s * 0.80, x + s, y + s * 0.62, x + s, y + s * 0.38);
+    ctx.bezierCurveTo(x + s, y + s * 0.25, x + s * 0.98, y + s * 0.03, x + s * 0.80, y + s * 0.03);
+    ctx.bezierCurveTo(x + s * 0.65, y + s * 0.03, x + s / 2, y + s * 0.18, x + s / 2, y + s * 0.30);
+    ctx.fill();
+  };
+
+  ctx.fillStyle = VERDE;
+  const celda = escala * 1.12;
+  const desfase = (escala - celda) / 2;
+  const esFinder = (fila, col) =>
+    (fila < 7 && col < 7) || (fila < 7 && col >= n - 7) || (fila >= n - 7 && col < 7);
+
+  for (let fila = 0; fila < n; fila++) {
+    for (let col = 0; col < n; col++) {
+      if (!qr.isDark(fila, col) || esFinder(fila, col)) continue;
+      corazon(
+        origenX + margen * escala + col * escala + desfase,
+        origenY + margen * escala + fila * escala + desfase,
+        celda
+      );
+    }
+  }
+
+  // Finders como cuadrados redondeados (marcas de esquina del diseño)
+  const dibujarFinder = (fila0, col0) => {
+    const x0 = origenX + margen * escala + col0 * escala;
+    const y0 = origenY + margen * escala + fila0 * escala;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x0, y0, escala * 7, escala * 7, escala * 1.6);
+    else ctx.rect(x0, y0, escala * 7, escala * 7);
+    ctx.lineWidth = escala;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x0 + escala * 3.5, y0 + escala * 3.5, escala * 1.35, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  dibujarFinder(0, 0);
+  dibujarFinder(0, n - 7);
+  dibujarFinder(n - 7, 0);
+
+  // Hueco blanco central para el logo
+  const centroX = origenX + ladoQr / 2;
+  const centroY = origenY + ladoQr / 2;
+  const radioLogo = escala * 2.6;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(centroX, centroY, radioLogo, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rótulos bajo el QR
+  ctx.textAlign = 'center';
+  ctx.fillStyle = OSCURO;
+  ctx.font = '600 64px Jost, "Segoe UI", sans-serif';
+  ctx.fillText('¡ACTIVAR!', ancho / 2, alto - 96);
+  ctx.fillStyle = VERDE;
+  ctx.font = '600 42px Jost, "Segoe UI", sans-serif';
+  ctx.fillText(String(cupon.codigo || ''), ancho / 2, alto - 46);
+
+  // Logo ש en el centro: imagen de la web; sin ella, un ש dorado dibujado
+  const terminar = () => alTerminar(lienzo.toDataURL('image/png'));
+  const logo = new Image();
+  logo.onload = () => {
+    const lado = radioLogo * 1.7;
+    ctx.drawImage(logo, centroX - lado / 2, centroY - lado / 2, lado, lado);
+    terminar();
+  };
+  logo.onerror = () => {
+    ctx.fillStyle = '#c9a45f';
+    ctx.font = `700 ${Math.round(radioLogo * 1.1)}px serif`;
+    ctx.fillText('ש', centroX, centroY + radioLogo * 0.4);
+    terminar();
+  };
+  logo.src = '../img/shin-logo.webp';
 }
 
 function abrirQr(cupon) {
   const url = urlCupon(cupon.codigo);
-  const imagen = imagenQr(url);
   const { cerrar, cuerpo } = abrirModal(`QR del cupón «${cupon.codigo}»`, `
     <div class="cupon-qr">
-      ${imagen
-        ? `<img src="${imagen}" alt="QR del cupón ${escapar(cupon.codigo)}" width="256" height="256">`
-        : '<p class="texto-suave">No se pudo generar la imagen del QR (sin conexión al CDN o navegador antiguo). Comparte el enlace de abajo.</p>'}
+      <p class="cargando">Generando el QR de marca…</p>
       <p><strong>${escapar(cupon.codigo)}</strong> — ${textoDescuentoCupon(cupon)}</p>
       <p class="texto-suave" style="word-break:break-all;">${escapar(url)}</p>
       <p class="texto-suave">Al escanearlo, la web guarda el cupón y lo aplica solo en el checkout.</p>
       <div class="modal-acciones">
-        ${imagen ? `<a class="boton boton-primario" download="cupon-${escapar(cupon.codigo)}.png" href="${imagen}">Descargar PNG</a>` : ''}
+        <a class="boton boton-primario" download="activar-cupon-${escapar(cupon.codigo)}.png" href="#" style="display:none;">Descargar PNG</a>
         <button type="button" class="boton boton-fantasma" data-copiar>Copiar enlace</button>
         <button type="button" class="boton boton-fantasma" data-cancelar>Cerrar</button>
       </div>
-    </div>`, '22rem');
+    </div>`, '24rem');
 
   cuerpo.querySelector('[data-cancelar]').addEventListener('click', cerrar);
   cuerpo.querySelector('[data-copiar]').addEventListener('click', async () => {
@@ -277,6 +384,28 @@ function abrirQr(cupon) {
     } catch {
       toast('No se pudo copiar: selecciona el enlace a mano.', 'error');
     }
+  });
+
+  dibujarQrMarca(cupon, (imagen) => {
+    const zona = cuerpo.querySelector('.cupon-qr');
+    const cargando = zona.querySelector('.cargando');
+    if (cargando) cargando.remove();
+    if (!imagen) {
+      const nota = document.createElement('p');
+      nota.className = 'texto-suave';
+      nota.textContent = 'No se pudo generar la imagen (sin conexión al CDN o navegador antiguo). Comparte el enlace de abajo.';
+      zona.prepend(nota);
+      return;
+    }
+    const img = document.createElement('img');
+    img.src = imagen;
+    img.alt = `QR del cupón ${cupon.codigo}`;
+    img.width = 256;
+    img.height = 320;
+    zona.prepend(img);
+    const enlace = cuerpo.querySelector('[download]');
+    enlace.href = imagen;
+    enlace.style.display = '';
   });
 }
 
