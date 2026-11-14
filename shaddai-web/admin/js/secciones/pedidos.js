@@ -4,6 +4,10 @@
 // Numeración por lotes: al verificarse el pago (estado «pagado») el trigger
 // de la base de datos asigna el número definitivo SHAD01-00001 (columna
 // numero_publico); «numero» queda como referencia de pago de Redsys.
+// Sincronía de stock: el mismo trigger descuenta el stock de los productos
+// al quedar el pedido «pagado» y lo devuelve si se cancela un pedido ya
+// pagado; el detalle muestra cada movimiento («Stock sincronizado») y la
+// sección Productos refleja el stock resultante.
 // Al pasar a «enviado» se pide enlace/plazo de seguimiento y al pasar a
 // «entregado» se confirman los correos post-venta (trigger oms_seguimientos).
 import { sb, asegurar, mensajeError } from '../bd.js';
@@ -101,6 +105,19 @@ export default async function (contenedor, contexto) {
     }
   }
 
+  // Movimientos de stock de este pedido (salidas al pagarse, entradas al
+  // cancelarse): los escribe el trigger de la base de datos. Si la migración
+  // de stock no está aplicada todavía, la sección sale vacía sin romper nada.
+  async function movimientosStockDe(pedido) {
+    try {
+      return (await asegurar(
+        sb().from('oms_stock_movimientos').select('*').eq('pedido', pedido.id).order('creado_en')
+      )) || [];
+    } catch {
+      return [];
+    }
+  }
+
   function nombreCliente(pedido) {
     const cliente = pedido.cliente || {};
     return [cliente.nombre, cliente.apellidos].filter(Boolean).join(' ') || cliente.email || '—';
@@ -135,12 +152,21 @@ export default async function (contenedor, contexto) {
       </table>`;
   }
 
-  // Guarda el estado (y las columnas de seguimiento que lleguen) y avisa
+  // Guarda el estado (y las columnas de seguimiento que lleguen) y avisa.
+  // El stock se sincroniza solo en la base de datos (trigger oms_stock_de_pedido):
+  // aquí solo lo comunicamos para que se sepa que Productos ya lo refleja.
   async function guardarEstado(pedido, estado, camposExtra = {}) {
+    const estadoPrevio = pedido.estado;
     const error = (await sb().from('oms_pedidos').update({ estado, ...camposExtra }).eq('id', pedido.id)).error;
     if (error) throw new Error(mensajeError(error));
     Object.assign(pedido, { estado, ...camposExtra });
-    toast(`Pedido ${numeroDe(pedido)}: estado «${estado}».`);
+    const notaStock =
+      estado === 'pagado' && estadoPrevio !== 'pagado'
+        ? ' Stock descontado automáticamente.'
+        : estado === 'cancelado' && ['pagado', 'enviado', 'entregado'].includes(estadoPrevio)
+          ? ' Stock devuelto automáticamente.'
+          : '';
+    toast(`Pedido ${numeroDe(pedido)}: estado «${estado}».${notaStock}`);
   }
 
   // Estado «enviado»: pide enlace de seguimiento y plazo antes de guardar
@@ -217,10 +243,10 @@ export default async function (contenedor, contexto) {
     if (!boton) return;
     const pedido = pedidos.find((p) => p.id === boton.closest('tr').dataset.id);
     if (!pedido) return;
-    const [lineas, correos, seguimientos] = await Promise.all([
-      lineasDe(pedido), correosDe(pedido), seguimientosDe(pedido),
+    const [lineas, correos, seguimientos, movimientos] = await Promise.all([
+      lineasDe(pedido), correosDe(pedido), seguimientosDe(pedido), movimientosStockDe(pedido),
     ]);
-    abrirDetalle(pedido, lineas, correos, seguimientos, esAdmin);
+    abrirDetalle(pedido, lineas, correos, seguimientos, esAdmin, movimientos);
   });
 
   contenedor.querySelector('#filtro-estado').addEventListener('change', (evento) => {
@@ -231,7 +257,7 @@ export default async function (contenedor, contexto) {
   await cargar();
 }
 
-function abrirDetalle(pedido, lineas, correos = [], seguimientos = [], esAdmin = false) {
+function abrirDetalle(pedido, lineas, correos = [], seguimientos = [], esAdmin = false, movimientosStock = []) {
   const cliente = pedido.cliente || {};
   const direccion = [cliente.direccion, cliente.cp, cliente.poblacion, cliente.provincia,
     cliente.pais && cliente.pais !== 'España' ? cliente.pais : null].filter(Boolean).join(', ');
@@ -266,6 +292,22 @@ function abrirDetalle(pedido, lineas, correos = [], seguimientos = [], esAdmin =
       <p class="totales-pedido">
         Subtotal: ${euro(pedido.subtotal)} · Envío: ${euro(pedido.envio)} · <strong>Total: ${euro(pedido.total)}</strong>
       </p>
+      ${movimientosStock.length ? `
+      <h3 class="detalle-subtitulo">Stock sincronizado</h3>
+      <table class="tabla tabla-compacta">
+        <thead><tr><th>Movimiento</th><th>Artículo</th><th>Unidades</th><th>Stock resultante</th><th>Fecha</th></tr></thead>
+        <tbody>
+          ${movimientosStock.map((m) => `
+          <tr>
+            <td><span class="badge ${m.tipo === 'salida' ? 'badge-rojo' : 'badge-verde'}">${m.tipo === 'salida' ? '− Salida' : '+ Devolución'}</span></td>
+            <td>${escapar(m.nombre)}${m.codigo ? ` <span class="texto-suave">(${escapar(m.codigo)})</span>` : ''}</td>
+            <td>${m.cantidad}</td>
+            <td>${m.stock_resultante ?? '—'}</td>
+            <td class="texto-suave">${fechaHora(m.creado_en)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <p class="texto-suave">El stock se descuenta al confirmarse el pago y se devuelve si el pedido se cancela; la sección Productos siempre muestra el resultado.</p>` : ''}
       <div class="modal-acciones">
         <button class="boton boton-primario" data-etiqueta type="button">Imprimir etiqueta de envío</button>
       </div>

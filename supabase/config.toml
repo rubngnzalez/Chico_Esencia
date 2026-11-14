@@ -10,8 +10,13 @@ entrypoint = "functions/oms-gestion-usuarios/index.ts"
 [functions.oms-pagos-firma]
 entrypoint = "functions/oms-pagos-firma/index.ts"
 
+[functions.oms-cupon-validar]
+entrypoint = "functions/oms-cupon-validar/index.ts"
+
 [functions.oms-redsys-notificacion]
 entrypoint = "functions/oms-redsys-notificacion/index.ts"
+# La llama Redsys con POST urlencoded sin JWT de Supabase: nunca verificar
+verify_jwt = false
 
 [functions.oms-enviar-campana]
 entrypoint = "functions/oms-enviar-campana/index.ts"

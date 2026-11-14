@@ -179,6 +179,27 @@ Si un pedido se cancela, sus correos pendientes se cancelan solos.
 
 ---
 
+## STOCK AUTOMÁTICO · Sincronía con los pedidos
+
+El stock de cada producto se descuenta solo, sin tocar nada a mano:
+
+- Cuando Redsys confirma el pago (el pedido queda **pagado**), el trigger de la
+  base de datos resta las unidades vendidas de cada producto (sin bajar de 0).
+- Si un pedido pagado se **cancela** (desde Pedidos o por el banco), el stock
+  se devuelve solo. Los pedidos pendientes no tocan stock.
+- Cada descuento/devolución queda registrado y se ve en **Pedidos → Detalle →
+  «Stock sincronizado»**; la sección **Productos** muestra siempre el stock
+  resultante (con la etiqueta «Agotado» al llegar a 0).
+
+### Instalación (una vez)
+
+En el SQL Editor del proyecto, copia y ejecuta TODO el contenido de
+`supabase/actualizaciones/2026-11-13-stock-pedidos.sql` (idempotente).
+Comprobación rápida: crea un pedido de prueba, márcalo **pagado** en Pedidos y
+verás el descuento en Productos y el movimiento en el detalle del pedido.
+
+---
+
 ## Copias de seguridad
 
 - **Table Editor** permite exportar cada tabla a **CSV** (botón de la tabla).
