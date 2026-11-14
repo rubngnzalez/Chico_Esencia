@@ -2,6 +2,8 @@
 // «recursos», interruptor de activo y borrado. (Datos: tablas productos/categorias.)
 // Cada producto marca sus zonas de envío disponibles (Ajustes → Envío define
 // los costes y los países de cada zona).
+// El stock lo descuenta la base de datos al confirmarse el pago de un pedido
+// (y lo devuelve si el pedido se cancela); aquí se consulta y corrige a mano.
 import { sb, asegurar, subirImagen, mensajeError } from '../bd.js';
 import {
   escapar, euro, toast, confirmar, abrirModal, urlImagen, slugificar, etiquetaVacia,
@@ -85,7 +87,7 @@ export default async function (contenedor, contexto) {
             <td><strong>${escapar(p.nombre)}</strong>${p.codigo ? `<span class="texto-suave"> · ${escapar(p.codigo)}</span>` : ''}<br><span class="texto-suave">${escapar(p.slug)}</span></td>
             <td>${escapar(nombreCategoria(p.categoria))}</td>
             <td>${Number(p.precio_oferta) > 0 ? `<s class="texto-suave">${euro(p.precio)}</s> <strong>${euro(p.precio_oferta)}</strong>` : euro(p.precio)}</td>
-            <td>${Number(p.stock) || 0}</td>
+            <td>${Number(p.stock) > 0 ? Number(p.stock) : '<span class="badge badge-rojo">Agotado</span>'}</td>
             <td class="texto-suave">${escapar(etiquetaZonasProducto(p))}</td>
             <td>${p.destacado ? '<span class="estrella-activa">★</span>' : '<span class="texto-suave">—</span>'}</td>
             <td><label class="interruptor" title="${p.activo !== false ? 'Desactivar' : 'Activar'}"><input type="checkbox" data-accion="activo" ${p.activo !== false ? 'checked' : ''}><span class="interruptor-pista"></span></label></td>
