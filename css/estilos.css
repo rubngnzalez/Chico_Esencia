@@ -2659,3 +2659,50 @@ body[data-pagina="usos"] .tarjeta .icono {
   flex-shrink: 0;
 }
 .campo-check:hover { color: #16261b; }
+
+/* ---------- El origen de un nombre ---------- */
+.origen-nombre {
+  background: var(--verde-2);
+  border: 1px solid rgba(201, 164, 95, 0.28);
+  padding: clamp(2.6rem, 6vw, 4.6rem);
+  text-align: center;
+}
+.origen-sello {
+  display: block;
+  width: clamp(84px, 12vw, 120px);
+  height: auto;
+  margin: 0 auto 1.4rem;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.35));
+}
+.origen-nombre p {
+  max-width: 46rem;
+  margin: 1.3rem auto 0;
+  font-size: 1.06rem;
+  line-height: 1.9;
+  color: rgba(217, 212, 197, 0.9);
+}
+.origen-nombre .titulo {
+  margin-top: 0.9rem;
+}
+.origen-nombre .oro {
+  font-size: 1.06em;
+  letter-spacing: 0.12em;
+}
+.origen-divisor {
+  color: var(--oro);
+  font-size: 1.2rem;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+  margin-top: 2.1rem !important;
+}
+.origen-cierre {
+  font-family: var(--serif);
+  font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+  line-height: 1.7;
+  color: var(--crema);
+  margin-top: 1.4rem !important;
+}
+.origen-cierre strong {
+  color: var(--oro);
+  font-weight: 600;
+}
