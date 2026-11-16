@@ -2759,3 +2759,12 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: var(--oro);
   font-weight: 600;
 }
+
+/* ---------- Portada La Alquimia (texto en columna) ---------- */
+.texto-portada p {
+  font-size: 1.15rem;
+  line-height: 1.85;
+}
+.texto-portada .etiqueta {
+  margin-bottom: 0.6rem;
+}
