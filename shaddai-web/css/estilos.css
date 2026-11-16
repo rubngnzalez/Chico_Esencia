@@ -525,6 +525,43 @@ body[data-pagina="usos"] .tarjeta .icono {
   background: rgba(11, 18, 13, 0.9);
 }
 
+/* Variante con texto superpuesto sobre el vídeo */
+.video-escena.video-con-texto {
+  position: relative;
+}
+
+.video-escena.video-con-texto video {
+  object-fit: cover;
+}
+
+.video-escena .video-texto {
+  position: absolute;
+  inset: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: center;
+  padding: clamp(1.2rem, 4vw, 2.6rem);
+  background: linear-gradient(180deg, rgba(11, 18, 13, 0) 26%, rgba(11, 18, 13, 0.82) 100%);
+  pointer-events: none;
+}
+
+.video-escena .video-texto p {
+  color: var(--crema);
+  max-width: 46rem;
+  margin: 0.3rem 0;
+  font-size: clamp(0.92rem, 1.6vw, 1.06rem);
+  line-height: 1.65;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65);
+}
+
+.video-escena .video-texto .video-lema {
+  font-family: var(--serif);
+  font-size: clamp(1.05rem, 2vw, 1.28rem);
+  margin-top: 0.7rem;
+}
+
 /* ---------- Cita ---------- */
 .cita {
   background: var(--verde-3);
@@ -2661,46 +2698,62 @@ body[data-pagina="usos"] .tarjeta .icono {
 .campo-check:hover { color: #16261b; }
 
 /* ---------- El origen de un nombre ---------- */
-.origen-nombre {
-  background: var(--verde-2);
-  border: 1px solid rgba(201, 164, 95, 0.28);
-  padding: clamp(2.6rem, 6vw, 4.6rem);
+.origen-hero .contenedor {
+  max-width: 62rem;
   text-align: center;
 }
 .origen-sello {
   display: block;
-  width: clamp(84px, 12vw, 120px);
+  width: clamp(96px, 14vw, 140px);
   height: auto;
-  margin: 0 auto 1.4rem;
-  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.35));
+  margin: 0 auto 1.6rem;
+  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.45));
 }
-.origen-nombre p {
-  max-width: 46rem;
-  margin: 1.3rem auto 0;
+.origen-marca {
+  font-family: var(--serif);
+  font-size: clamp(3.2rem, 10vw, 6.4rem);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  line-height: 1.05;
+  color: var(--crema);
+  margin: 0.6rem 0 0;
+  text-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
+}
+.origen-cuerpo {
+  max-width: 48rem;
+  margin: 2.2rem auto 0;
+  padding: clamp(1.6rem, 4vw, 2.8rem);
+  background: rgba(11, 18, 13, 0.62);
+  border: 1px solid rgba(201, 164, 95, 0.32);
+  backdrop-filter: blur(2px);
+}
+.origen-cuerpo p {
+  margin: 1.2rem auto 0;
   font-size: 1.06rem;
   line-height: 1.9;
-  color: rgba(217, 212, 197, 0.9);
+  color: rgba(217, 212, 197, 0.94);
 }
-.origen-nombre .titulo {
-  margin-top: 0.9rem;
+.origen-cuerpo p:first-of-type {
+  margin-top: 0;
 }
-.origen-nombre .oro {
-  font-size: 1.06em;
-  letter-spacing: 0.12em;
+.origen-cuerpo .oro {
+  font-size: 1.05em;
+  letter-spacing: 0.1em;
 }
 .origen-divisor {
   color: var(--oro);
   font-size: 1.2rem;
   letter-spacing: 0.6em;
   text-indent: 0.6em;
-  margin-top: 2.1rem !important;
+  margin-top: 2rem !important;
 }
 .origen-cierre {
   font-family: var(--serif);
-  font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+  font-size: clamp(1.3rem, 2.6vw, 1.55rem);
   line-height: 1.7;
   color: var(--crema);
-  margin-top: 1.4rem !important;
+  margin-top: 1.3rem !important;
 }
 .origen-cierre strong {
   color: var(--oro);
