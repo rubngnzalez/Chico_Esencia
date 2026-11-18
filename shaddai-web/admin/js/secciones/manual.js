@@ -211,7 +211,34 @@ const SECCIONES_MANUAL = [
       cualquier persona puede cambiar su propia contraseña.</p>`,
   },
   {
-    id: 'datos', titulo: '13 · Dónde viven los datos y copias de seguridad',
+    id: 'distribuidores', titulo: '13 · Distribuidores (alianza B2B)',
+    contenido: `
+      <p>La sección <strong>Distribuidores</strong> alimenta la página pública
+      <code>omshaddai.com/distribuidores.html</code> y gestiona el acceso privado de tus distribuidores. Tiene tres
+      pestañas:</p>
+      <h3>Packs</h3>
+      <p>Cada pack de la propuesta de alianza (Pack «Umbral», Pack «Ceremonia»…) con todos sus <strong>costes y
+      valores</strong>: contenido, inversión de la tienda (un importe fijo o un rango con nota, p. ej.
+      «descuento aplicado»), PVP, beneficio con su nota («aprox. 50 % de margen») y el argumento de venta.
+      Al guardar, la web pública se actualiza al instante; el interruptor «Web» oculta un pack sin borrarlo.
+      «Orden» decide qué pack se pinta primero y «Recomendado» añade el sello dorado.</p>
+      <h3>Solicitudes</h3>
+      <p>Aquí llegan las peticiones del formulario «Solicitar alianza» de la web, con espacio, contacto, email,
+      teléfono y mensaje. Puedes <strong>Ver</strong> el mensaje completo, <strong>Crear acceso</strong> (abre el
+      formulario de cuenta ya rellenado; al crearla la solicitud queda marcada «Con cuenta»), <strong>Descartar</strong>
+      o volver a ponerla «A pendiente». Solo la administración elimina solicitudes.</p>
+      <h3>Cuentas de acceso</h3>
+      <p>Cada distribuidor entra en el área privada de <code>distribuidores.html</code> con un
+      <strong>usuario y contraseña reales</strong> (Supabase Auth), que se crean aquí — igual que los usuarios del
+      panel: la contraseña se genera y se muestra <em>una sola vez</em>, para entregarla tú mismo. La ficha guarda
+      empresa, contacto, ciudad, notas y un <strong>descuento (%)</strong> que la web aplica sobre la inversión de
+      los packs para pintar «sus condiciones» en el área privada. Desde ahí también pueden pedir stock: su
+      solicitud llega a la Bandeja de entrada. Con «Contraseña» generas una nueva; el interruptor «Activo» corta
+      el acceso sin borrar la cuenta; «Eliminar» la da de baja para siempre. Las cuentas de distribuidor NO pueden
+      entrar en este panel de gestión: solo en el área privada de la web.</p>`,
+  },
+  {
+    id: 'datos', titulo: '14 · Dónde viven los datos y copias de seguridad',
     contenido: `
       <p>Todo vive en tu proyecto de Supabase (tablas del esquema <code>public</code> + bucket <code>recursos</code>
       + Authentication).</p>

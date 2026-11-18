@@ -107,11 +107,15 @@ Cuando quieras el paso a producción de verdad:
    npx supabase secrets set RESEND_API_KEY=re_xxxxxxxxxxxx
    ```
    (API key de <https://resend.com>; dominio verificado recomendado).
-5. Despliega las tres funciones:
+5. Despliega las funciones (todas las de `supabase/functions/` que uses;
+   las de pago/correo son opcionales, la de usuarios y distribuidores no:
+   sin ellas el panel no puede crear cuentas nuevas):
    ```bash
    npx supabase functions deploy pagos-firma
    npx supabase functions deploy redsys-notificacion
    npx supabase functions deploy enviar-campana
+   npx supabase functions deploy oms-gestion-usuarios
+   npx supabase functions deploy oms-gestion-distribuidores
    ```
 6. En **Ajustes → Pago (Redsys)** del panel, pon en «URL de notificación»
    la URL de la función webhook:
@@ -197,6 +201,29 @@ En el SQL Editor del proyecto, copia y ejecuta TODO el contenido de
 `supabase/actualizaciones/2026-11-13-stock-pedidos.sql` (idempotente).
 Comprobación rápida: crea un pedido de prueba, márcalo **pagado** en Pedidos y
 verás el descuento en Productos y el movimiento en el detalle del pedido.
+
+---
+
+## Distribuidores · alianza B2B con precios gestionables (2026-11-17)
+
+- La página pública **`distribuidores.html`** pinta los packs de la alianza
+  (Pack «Umbral», Pack «Ceremonia»…) con los costes y valores que se editan
+  en el panel: **Panel → Distribuidores → Packs**. Si la web no alcanza la
+  base de datos, muestra los packs fijos del documento de la marca.
+- El formulario **«Solicitar alianza»** guarda cada petición en
+  `oms_distribuidores_solicitudes`; desde el panel se revisan y con
+  «Crear acceso» se les abre **usuario y contraseña** reales (Supabase Auth),
+  que entran en el área privada de la propia página y ven sus condiciones con
+  su descuento aplicado.
+- Las cuentas de distribuidor NO tienen acceso al panel de gestión: solo al
+  área privada de `distribuidores.html`.
+
+### Instalación (una vez)
+
+1. En el SQL Editor, ejecuta TODO
+   `supabase/actualizaciones/2026-11-17-distribuidores.sql` (idempotente).
+2. Despliega la función de altas (para crear cuentas desde el panel):
+   `npx supabase functions deploy oms-gestion-distribuidores`
 
 ---
 

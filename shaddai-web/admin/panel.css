@@ -1086,3 +1086,28 @@ body {
   padding: 8px;
   background: #fff;
 }
+
+/* ---------- Distribuidores: contador en la pestaña y contraseña nueva ---------- */
+.pestana .contador {
+  font-style: normal;
+  font-size: 0.68rem;
+  background: var(--oro);
+  color: var(--verde);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  font-weight: 600;
+  margin-left: 0.3rem;
+  vertical-align: 1px;
+}
+
+.contrasena-visible code {
+  display: inline-block;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  background: rgba(201, 164, 95, 0.12);
+  border: 1px solid rgba(201, 164, 95, 0.35);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  color: var(--crema);
+  user-select: all;
+}

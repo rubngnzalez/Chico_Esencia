@@ -575,6 +575,9 @@ comment on view public.oms_ajustes_publicos is 'Solo lo público de los ajustes 
 -- ─── 10 · ROW LEVEL SECURITY ───────────────────────────────────────────────
 -- Igual que el proyecto dedicado, pero con las funciones oms_es_admin() y
 -- oms_es_editor_o_mas(), que solo miran la tabla oms_usuarios.
+-- Desde 2026-11-17 existen además usuarios autenticados ajenos al panel (los
+-- distribuidores): las lecturas «de personal» usan oms_es_personal() para no
+-- darles pedidos, bandeja, borradores ni stock.
 
 alter table public.oms_usuarios        enable row level security;
 alter table public.oms_categorias      enable row level security;
@@ -610,7 +613,7 @@ create policy "oms escritura gestion" on public.oms_categorias
 -- ---- productos ----
 drop policy if exists "oms lectura gestion" on public.oms_productos;
 create policy "oms lectura gestion" on public.oms_productos
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 drop policy if exists "oms escritura gestion" on public.oms_productos;
 create policy "oms escritura gestion" on public.oms_productos
   for all to authenticated using (public.oms_es_editor_o_mas()) with check (public.oms_es_editor_o_mas());
@@ -618,7 +621,7 @@ create policy "oms escritura gestion" on public.oms_productos
 -- ---- ofertas ----
 drop policy if exists "oms lectura gestion" on public.oms_ofertas;
 create policy "oms lectura gestion" on public.oms_ofertas
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 drop policy if exists "oms escritura gestion" on public.oms_ofertas;
 create policy "oms escritura gestion" on public.oms_ofertas
   for all to authenticated using (public.oms_es_editor_o_mas()) with check (public.oms_es_editor_o_mas());
@@ -629,7 +632,7 @@ create policy "oms lectura aprobados publico" on public.oms_testimonios
   for select to anon using (aprobado);
 drop policy if exists "oms lectura gestion" on public.oms_testimonios;
 create policy "oms lectura gestion" on public.oms_testimonios
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 drop policy if exists "oms escritura gestion" on public.oms_testimonios;
 create policy "oms escritura gestion" on public.oms_testimonios
   for all to authenticated using (public.oms_es_editor_o_mas()) with check (public.oms_es_editor_o_mas());
@@ -641,7 +644,7 @@ create policy "oms lectura publicados publico" on public.oms_articulos
   using (estado = 'publicado' or (estado = 'programado' and fecha_publicacion is not null and fecha_publicacion <= now()));
 drop policy if exists "oms lectura gestion" on public.oms_articulos;
 create policy "oms lectura gestion" on public.oms_articulos
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 drop policy if exists "oms escritura gestion" on public.oms_articulos;
 create policy "oms escritura gestion" on public.oms_articulos
   for all to authenticated using (public.oms_es_editor_o_mas()) with check (public.oms_es_editor_o_mas());
@@ -652,10 +655,10 @@ create policy "oms alta formulario contacto" on public.oms_mensajes
   for insert to anon, authenticated with check (coalesce(web, '') = '');
 drop policy if exists "oms lectura equipo" on public.oms_mensajes;
 create policy "oms lectura equipo" on public.oms_mensajes
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 drop policy if exists "oms gestion bandeja" on public.oms_mensajes;
 create policy "oms gestion bandeja" on public.oms_mensajes
-  for update to authenticated using (true) with check (true);
+  for update to authenticated using (public.oms_es_personal()) with check (public.oms_es_personal());
 drop policy if exists "oms borrado solo admin" on public.oms_mensajes;
 create policy "oms borrado solo admin" on public.oms_mensajes
   for delete to authenticated using (public.oms_es_admin());
@@ -693,7 +696,7 @@ create policy "oms borrado solo admin" on public.oms_outbox
 -- ---- pedidos ----
 drop policy if exists "oms lectura autenticados" on public.oms_pedidos;
 create policy "oms lectura autenticados" on public.oms_pedidos
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 drop policy if exists "oms estado solo admin" on public.oms_pedidos;
 create policy "oms estado solo admin" on public.oms_pedidos
   for update to authenticated using (public.oms_es_admin()) with check (public.oms_es_admin());
@@ -702,7 +705,7 @@ create policy "oms estado solo admin" on public.oms_pedidos
 -- ---- líneas de pedido ----
 drop policy if exists "oms lectura autenticados" on public.oms_pedidos_lineas;
 create policy "oms lectura autenticados" on public.oms_pedidos_lineas
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 drop policy if exists "oms modificacion solo admin" on public.oms_pedidos_lineas;
 create policy "oms modificacion solo admin" on public.oms_pedidos_lineas
   for all to authenticated using (public.oms_es_admin()) with check (public.oms_es_admin());
@@ -710,12 +713,12 @@ create policy "oms modificacion solo admin" on public.oms_pedidos_lineas
 -- ---- movimientos de stock (solo lectura; los escribe el trigger) ----
 drop policy if exists "oms lectura gestion" on public.oms_stock_movimientos;
 create policy "oms lectura gestion" on public.oms_stock_movimientos
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 
 -- ---- numeración por lotes ----
 drop policy if exists "oms lectura autenticados" on public.oms_numeracion;
 create policy "oms lectura autenticados" on public.oms_numeracion
-  for select to authenticated using (true);
+  for select to authenticated using (public.oms_es_personal());
 drop policy if exists "oms escritura solo admin" on public.oms_numeracion;
 create policy "oms escritura solo admin" on public.oms_numeracion
   for all to authenticated using (public.oms_es_admin()) with check (public.oms_es_admin());
@@ -760,3 +763,181 @@ drop policy if exists "oms recursos borrado gestion" on storage.objects;
 create policy "oms recursos borrado gestion" on storage.objects
   for delete to authenticated
   using (bucket_id = 'recursos' and public.oms_es_editor_o_mas());
+
+-- ─── 12 · DISTRIBUIDORES: alianza B2B con precios gestionables ─────────────
+-- Detalles y comentarios completos: supabase/actualizaciones/2026-11-17-distribuidores.sql
+--   · oms_distribuidores_packs       → packs de la web pública (distribuidores.html)
+--   · oms_distribuidores             → cuentas del área privada (usuario + contraseña)
+--   · oms_distribuidores_solicitudes → solicitudes de alianza del formulario
+
+create table if not exists public.oms_distribuidores_packs (
+  id uuid primary key default gen_random_uuid(),
+  clave text not null unique,
+  nombre text not null,
+  etiqueta text default '',
+  ideal_para text default '',
+  contenido text default '',
+  inversion_min numeric(10, 2),
+  inversion_max numeric(10, 2),
+  inversion_nota text default '',
+  pvp numeric(10, 2),
+  beneficio numeric(10, 2),
+  beneficio_nota text default '',
+  argumento text default '',
+  destacado boolean not null default false,
+  activo boolean not null default true,
+  orden integer not null default 0,
+  creado_en timestamptz not null default now(),
+  actualizado_en timestamptz not null default now(),
+  constraint oms_distribuidores_packs_rango check (
+    inversion_min is null or inversion_max is null or inversion_min <= inversion_max
+  )
+);
+
+create index if not exists oms_distribuidores_packs_activo_idx on public.oms_distribuidores_packs (activo);
+create index if not exists oms_distribuidores_packs_orden_idx on public.oms_distribuidores_packs (orden);
+
+drop trigger if exists oms_distribuidores_packs_actualizado on public.oms_distribuidores_packs;
+create trigger oms_distribuidores_packs_actualizado
+  before update on public.oms_distribuidores_packs
+  for each row execute function public.oms_set_actualizado_en();
+
+insert into public.oms_distribuidores_packs
+  (clave, nombre, etiqueta, ideal_para, contenido, inversion_min, inversion_max,
+   inversion_nota, pvp, beneficio, beneficio_nota, argumento, destacado, activo, orden)
+values
+  ('umbral',
+   'Pack «Umbral»',
+   'Riesgo cero / Entrada rápida',
+   'Ideal para tiendas de ropa pequeñas, estudios de yoga boutique o concept stores que nunca han vendido perfumería.',
+   '3 Perfumes (50 ml) + 5 Bálsamos (12 g) + 1 Tester de cada uno de regalo',
+   145, 150, '', 290, 140, 'aprox. 50 % de margen',
+   '«Es una inversión mínima. Con que vendas un perfume y un par de bálsamos, ya has recuperado tu coste. El resto es beneficio puro para tu espacio.»',
+   false, true, 1),
+  ('ceremonia',
+   'Pack «Ceremonia»',
+   'El estándar recomendado',
+   'Ideal para centros de terapias holísticas, spas o concept stores con mayor rotación.',
+   '6 Perfumes (50 ml) + 10 Bálsamos (12 g) + Testers + Material PLV (Expositor)',
+   275, 275, 'descuento aplicado', 580, 305, '',
+   '«Este pack incluye material de exposición para que el producto hable por sí solo y respire la filosofía de la marca en tu estantería.»',
+   true, true, 2)
+on conflict (clave) do nothing;
+
+create table if not exists public.oms_distribuidores (
+  id uuid primary key references auth.users (id) on delete cascade,
+  empresa text not null default '',
+  contacto text default '',
+  email text not null,
+  telefono text default '',
+  ciudad text default '',
+  descuento numeric(5, 2) not null default 0 check (descuento between 0 and 100),
+  notas text default '',
+  activo boolean not null default true,
+  creado_en timestamptz not null default now(),
+  ultimo_acceso timestamptz
+);
+
+create or replace function public.oms_es_distribuidor_activo()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.oms_distribuidores
+     where id = auth.uid() and activo
+  );
+$$;
+
+-- ¿Quién es personal del panel (cualquier rol activo de oms_usuarios)?
+-- Existen usuarios autenticados ajenos al equipo (los distribuidores): las
+-- policies de lectura «de personal» usan este helper para no heredarles el
+-- acceso del equipo.
+create or replace function public.oms_es_personal()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.oms_usuarios
+     where id = auth.uid() and activo
+  );
+$$;
+
+create or replace function public.oms_tocar_acceso_distribuidor()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.oms_distribuidores set ultimo_acceso = now() where id = auth.uid();
+$$;
+
+create table if not exists public.oms_distribuidores_solicitudes (
+  id uuid primary key default gen_random_uuid(),
+  empresa text default '',
+  contacto text default '',
+  email text default '',
+  telefono text default '',
+  mensaje text default '',
+  web text not null default '',
+  estado text not null default 'pendiente' check (estado in ('pendiente', 'gestionada', 'descartada')),
+  creado_en timestamptz not null default now()
+);
+
+create index if not exists oms_distribuidores_solicitudes_estado_idx on public.oms_distribuidores_solicitudes (estado);
+create index if not exists oms_distribuidores_solicitudes_creado_idx on public.oms_distribuidores_solicitudes (creado_en desc);
+
+alter table public.oms_distribuidores_packs       enable row level security;
+alter table public.oms_distribuidores             enable row level security;
+alter table public.oms_distribuidores_solicitudes enable row level security;
+
+-- ---- packs ----
+drop policy if exists "oms lectura publica" on public.oms_distribuidores_packs;
+create policy "oms lectura publica" on public.oms_distribuidores_packs
+  for select to anon using (activo);
+drop policy if exists "oms lectura gestion" on public.oms_distribuidores_packs;
+create policy "oms lectura gestion" on public.oms_distribuidores_packs
+  for select to authenticated
+  using (public.oms_es_editor_o_mas() or (public.oms_es_distribuidor_activo() and activo));
+drop policy if exists "oms escritura gestion" on public.oms_distribuidores_packs;
+create policy "oms escritura gestion" on public.oms_distribuidores_packs
+  for all to authenticated
+  using (public.oms_es_editor_o_mas()) with check (public.oms_es_editor_o_mas());
+
+-- ---- cuentas de distribuidor ----
+drop policy if exists "oms ficha propia" on public.oms_distribuidores;
+create policy "oms ficha propia" on public.oms_distribuidores
+  for select to authenticated using (id = auth.uid() and activo);
+drop policy if exists "oms lectura gestion" on public.oms_distribuidores;
+create policy "oms lectura gestion" on public.oms_distribuidores
+  for select to authenticated using (public.oms_es_editor_o_mas());
+drop policy if exists "oms admin gestiona distribuidores" on public.oms_distribuidores;
+create policy "oms admin gestiona distribuidores" on public.oms_distribuidores
+  for all to authenticated using (public.oms_es_admin()) with check (public.oms_es_admin());
+
+-- ---- solicitudes ----
+drop policy if exists "oms alta solicitud" on public.oms_distribuidores_solicitudes;
+create policy "oms alta solicitud" on public.oms_distribuidores_solicitudes
+  for insert to anon, authenticated with check (coalesce(web, '') = '');
+drop policy if exists "oms lectura gestion" on public.oms_distribuidores_solicitudes;
+create policy "oms lectura gestion" on public.oms_distribuidores_solicitudes
+  for select to authenticated using (public.oms_es_editor_o_mas());
+drop policy if exists "oms escritura gestion" on public.oms_distribuidores_solicitudes;
+create policy "oms escritura gestion" on public.oms_distribuidores_solicitudes
+  for update to authenticated
+  using (public.oms_es_editor_o_mas()) with check (public.oms_es_editor_o_mas());
+drop policy if exists "oms borrado solo admin" on public.oms_distribuidores_solicitudes;
+create policy "oms borrado solo admin" on public.oms_distribuidores_solicitudes
+  for delete to authenticated using (public.oms_es_admin());
+
+grant select on public.oms_distribuidores_packs to anon, authenticated;
+grant insert on public.oms_distribuidores_solicitudes to anon, authenticated;
+grant all on public.oms_distribuidores_packs to service_role;
+grant all on public.oms_distribuidores to service_role;
+grant all on public.oms_distribuidores_solicitudes to service_role;
+grant execute on function public.oms_tocar_acceso_distribuidor() to authenticated;

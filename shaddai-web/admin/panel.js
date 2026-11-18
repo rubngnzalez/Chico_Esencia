@@ -25,13 +25,14 @@ const SOLO_GESTION = ['admin', 'editor'];
 
 // Cache-busting de las secciones: SUBE esta versión al cambiar cualquier
 // fichero de js/secciones/ para que el navegador no sirva el módulo viejo.
-const VERSION_SECCIONES = '2026-11-12a';
+const VERSION_SECCIONES = '2026-11-17a';
 
 const SECCIONES = {
   panel: { titulo: 'Panel', mod: './js/secciones/panel.js', roles: TODOS },
   productos: { titulo: 'Productos', mod: './js/secciones/productos.js', roles: TODOS },
   categorias: { titulo: 'Categorías', mod: './js/secciones/categorias.js', roles: SOLO_GESTION },
   ofertas: { titulo: 'Ofertas', mod: './js/secciones/ofertas.js', roles: SOLO_GESTION },
+  distribuidores: { titulo: 'Distribuidores', mod: './js/secciones/distribuidores.js', roles: SOLO_GESTION },
   testimonios: { titulo: 'Testimonios', mod: './js/secciones/testimonios.js', roles: SOLO_GESTION },
   blog: { titulo: 'Blog · El Umbral', mod: './js/secciones/blog.js', roles: TODOS },
   email: { titulo: 'Email marketing', mod: './js/secciones/email.js', roles: SOLO_GESTION },
