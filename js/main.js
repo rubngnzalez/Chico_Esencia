@@ -69,6 +69,33 @@ if (botonMenu && navegacion) {
   });
 }
 
+// Desplegable "Acceso" de la cabecera: clientes y distribuidores
+const menusAcceso = document.querySelectorAll(".acceso-menu");
+menusAcceso.forEach((menu) => {
+  const botonAcceso = menu.querySelector(".acceso-boton");
+  if (!botonAcceso) return;
+  botonAcceso.addEventListener("click", () => {
+    const abierto = menu.classList.toggle("abierto");
+    botonAcceso.setAttribute("aria-expanded", abierto ? "true" : "false");
+    menusAcceso.forEach((otro) => {
+      if (otro !== menu) otro.classList.remove("abierto");
+    });
+  });
+});
+document.addEventListener("click", (evento) => {
+  document.querySelectorAll(".acceso-menu.abierto").forEach((menu) => {
+    if (!menu.contains(evento.target)) menu.classList.remove("abierto");
+  });
+});
+document.addEventListener("keydown", (evento) => {
+  if (evento.key === "Escape") {
+    document.querySelectorAll(".acceso-menu.abierto").forEach((menu) => {
+      menu.classList.remove("abierto");
+      const boton = menu.querySelector(".acceso-boton");
+      if (boton) boton.setAttribute("aria-expanded", "false");
+    });
+  }
+});
 // Enlace activo según la página
 const pagina = document.body.dataset.pagina;
 document.querySelectorAll(".navegacion a").forEach((enlace) => {
