@@ -3,17 +3,29 @@
 // área privada (usuario + contraseña, vía Edge Function oms-gestion-distribuidores).
 // Packs y solicitudes: administración y edición. Cuentas: escritura solo admin.
 import { sb, asegurar, invocarFuncion, mensajeError } from '../bd.js';
-import { escapar, euro, fechaHora, toast, abrirModal, confirmar, etiquetaVacia, badgeEstado } from '../api.js';
+import { escapar, fechaHora, toast, abrirModal, confirmar, etiquetaVacia, badgeEstado } from '../api.js';
 
 const ETIQUETA_SOLICITUD = { pendiente: 'Pendiente', gestionada: 'Con cuenta', descartada: 'Descartada' };
+
+// Formato de moneda idéntico al de la web pública (enteros sin decimales),
+// para que la columna de la tabla prevea exactamente lo que se pinta allí.
+function euroWeb(valor) {
+  return (Number(valor) || 0).toLocaleString('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: Number.isInteger(Number(valor)) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+}
 
 export default async function (contenedor, contexto) {
   const soyAdmin = contexto.usuario.rol === 'admin';
 
   contenedor.innerHTML = `
     <div class="barra-herramientas">
-      <p class="texto-suave">Los packs se pintan solos en la web (distribuidores.html). Las solicitudes llegan del formulario
-      de la web; «Crear acceso» les abre usuario y contraseña para el área privada de distribuidores.</p>
+      <p class="texto-suave">Las solicitudes llegan del formulario de la web; «Crear acceso» crea el usuario y le envía sus credenciales
+      por email. La página pública solo muestra la presentación y el formulario: el contenido de los packs y las condiciones
+      se ven en distribuidor.html con su usuario y contraseña.</p>
       <div class="acciones-barra">
         <button class="boton boton-primario boton-pequeno" data-accion="nuevo-pack" type="button">+ Nuevo pack</button>
       </div>
@@ -44,8 +56,8 @@ export default async function (contenedor, contexto) {
     const min = pack.inversion_min == null ? null : Number(pack.inversion_min);
     const max = pack.inversion_max == null ? null : Number(pack.inversion_max);
     if (min == null && max == null) return '—';
-    if (min != null && max != null && min !== max) return `${euro(min)} – ${euro(max)}`;
-    return `~${euro(min != null ? min : max)}`;
+    if (min != null && max != null && min !== max) return `${euroWeb(min)} – ${euroWeb(max)}`;
+    return `~${euroWeb(min != null ? min : max)}`;
   }
 
   function mostrarContrasena(email, contrasena) {
@@ -100,8 +112,8 @@ export default async function (contenedor, contexto) {
                 <br><span class="texto-suave">${escapar(p.etiqueta || p.clave)}</span>
               </td>
               <td>${escapar(textoInversion(p))}${p.inversion_nota ? `<br><span class="texto-suave">${escapar(p.inversion_nota)}</span>` : ''}</td>
-              <td>${p.pvp == null ? '—' : escapar(euro(p.pvp))}</td>
-              <td>${p.beneficio == null ? (p.beneficio_nota ? escapar(p.beneficio_nota) : '—') : escapar(`~${euro(p.beneficio)}`)}</td>
+              <td>${p.pvp == null ? '—' : escapar(euroWeb(p.pvp))}</td>
+              <td>${p.beneficio == null ? (p.beneficio_nota ? escapar(p.beneficio_nota) : '—') : escapar(`~${euroWeb(p.beneficio)}`)}</td>
               <td><label class="interruptor"><input type="checkbox" data-accion="activo-pack" ${p.activo !== false ? 'checked' : ''}><span class="interruptor-pista"></span></label></td>
               <td class="alineado-derecha">
                 <button class="boton boton-fantasma boton-pequeno" data-accion="editar-pack" type="button">Editar</button>
@@ -192,6 +204,9 @@ export default async function (contenedor, contexto) {
         activo: formulario.elements.activo.checked,
       };
       try {
+        if (datos.inversion_min != null && datos.inversion_max != null && datos.inversion_min > datos.inversion_max) {
+          throw new Error('La inversión mínima no puede ser mayor que la máxima.');
+        }
         if (nuevo) {
           datos.clave = String(formulario.elements.clave.value || '').trim().toLowerCase();
           const { error } = await sb().from('oms_distribuidores_packs').insert(datos);
@@ -247,7 +262,7 @@ export default async function (contenedor, contexto) {
               <td>${badgeEstado(s.estado, ETIQUETA_SOLICITUD[s.estado] || s.estado)}</td>
               <td class="alineado-derecha">
                 <button class="boton boton-fantasma boton-pequeno" data-accion="ver-solicitud" type="button">Ver</button>
-                <button class="boton boton-primario boton-pequeno" data-accion="crear-acceso" type="button">Crear acceso</button>
+                ${soyAdmin ? '<button class="boton boton-primario boton-pequeno" data-accion="crear-acceso" type="button">Crear acceso</button>' : ''}
                 ${s.estado === 'pendiente'
                   ? '<button class="boton boton-fantasma boton-pequeno" data-accion="descartar" type="button">Descartar</button>'
                   : '<button class="boton boton-fantasma boton-pequeno" data-accion="reabrir" type="button">A pendiente</button>'}
@@ -374,6 +389,11 @@ export default async function (contenedor, contexto) {
           cerrar();
           if (alCrear) await alCrear(resultado.email);
           await cargarCuentas();
+          if (resultado.enviado) {
+            toast('Cuenta creada: credenciales enviadas por email a ' + resultado.email + '.');
+          } else {
+            toast('Cuenta creada; no se pudo enviar el email: entrega la contraseña manualmente.', 'error');
+          }
           mostrarContrasena(resultado.email, resultado.contrasena);
         } else {
           const { error } = await sb().from('oms_distribuidores').update({
@@ -488,7 +508,9 @@ export default async function (contenedor, contexto) {
         if (objetivo) {
           try {
             await cambiarEstadoSolicitud(objetivo.id, 'gestionada');
-          } catch {}
+          } catch {
+            toast('Cuenta creada, pero no se pudo marcar la solicitud como gestionada.', 'error');
+          }
         }
       });
       return;
@@ -538,7 +560,11 @@ export default async function (contenedor, contexto) {
       boton.disabled = true;
       try {
         const resultado = await invocarFuncion('oms-gestion-distribuidores', { accion: 'resetear', id: cuenta.id });
-        mostrarContrasena(cuenta.email, resultado.contrasena);
+        if (resultado.enviado) {
+          toast('Contraseña nueva enviada por email a ' + cuenta.email + '.');
+        } else {
+          mostrarContrasena(cuenta.email, resultado.contrasena);
+        }
       } catch (error) {
         toast(error.message, 'error');
       } finally {

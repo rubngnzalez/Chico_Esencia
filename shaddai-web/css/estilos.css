@@ -2442,20 +2442,19 @@ body[data-pagina="usos"] .tarjeta .icono {
   object-position: center;
 }
 
-/* Dúo Ritual: encuadre desplazado hacia el frasco y el bálsamo de la derecha */
+/* Esencia (cenital), Bálsamo y Dúo: producto centrado en el marco horizontal */
+.compra-figura img[src*="esencia-meditacion"],
+.compra-figura img[src*="perfume-solido"],
 .compra-figura img[src*="duo-esencial"],
 .compra-figura.vertical img[src*="duo-esencial"] {
-  object-position: 68% 62%;
-}
-
-/* Esencia 50 ml en marco horizontal: centrada para no cortar el tapón */
-.compra-figura img[src*="esencia-50"] {
   object-position: center 50%;
 }
 
 @media (max-width: 900px) {
-  .compra-figura img[src*="esencia-50"] {
-    object-position: center 45%;
+  .compra-figura img[src*="esencia-meditacion"],
+  .compra-figura img[src*="perfume-solido"],
+  .compra-figura img[src*="duo-esencial"] {
+    object-position: center 42%;
   }
 }
 /* ---------- M�sica ambiente del Umbral ---------- */

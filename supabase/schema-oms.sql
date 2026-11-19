@@ -766,7 +766,7 @@ create policy "oms recursos borrado gestion" on storage.objects
 
 -- ─── 12 · DISTRIBUIDORES: alianza B2B con precios gestionables ─────────────
 -- Detalles y comentarios completos: supabase/actualizaciones/2026-11-17-distribuidores.sql
---   · oms_distribuidores_packs       → packs de la web pública (distribuidores.html)
+--   · oms_distribuidores_packs       → packs de la alianza (solo área privada; sin lectura anon)
 --   · oms_distribuidores             → cuentas del área privada (usuario + contraseña)
 --   · oms_distribuidores_solicitudes → solicitudes de alianza del formulario
 
@@ -876,6 +876,73 @@ set search_path = public
 as $$
   update public.oms_distribuidores set ultimo_acceso = now() where id = auth.uid();
 $$;
+-- Envía el email de credenciales de un distribuidor (alta o contraseña nueva
+-- desde el panel). Devuelve true SOLO si el correo salió con Resend (clave
+-- «resend_api_key» en vault + pg_net); devuelve false si quedó en oms_outbox
+-- (descargable como .eml desde Panel → Correo → Bandeja de salida).
+create or replace function public.oms_notificar_credenciales_distribuidor(
+  p_distribuidor uuid,
+  p_contrasena text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  fila record; smtp_json jsonb := '{}'::jsonb; desde text; clave_resend text;
+  esquema_http text; estado_outbox text; asunto text; html text; eml text;
+begin
+  if p_contrasena is null or btrim(p_contrasena) = '' then return false; end if;
+  select * into fila from public.oms_distribuidores where id = p_distribuidor;
+  if not found then return false; end if;
+  select coalesce(smtp, '{}'::jsonb) into smtp_json from public.oms_ajustes where id = 'general';
+  desde := coalesce(nullif(smtp_json ->> 'desde', ''), 'SHADDAI · Esencia de Umbral <sin-configurar@omshaddai.com>');
+  begin
+    select decrypted_secret into clave_resend from vault.decrypted_secrets where name = 'resend_api_key' limit 1;
+  exception when others then clave_resend := null;
+  end;
+  esquema_http := case when to_regproc('net.http_post') is not null then 'net'
+    when to_regproc('extensions.http_post') is not null then 'extensions' else null end;
+  asunto := 'Tu acceso de distribuidor · SHADDAI Esencia de Umbral';
+  html := concat(
+    '<div style="font-family:Verdana,Arial,sans-serif;color:#2b2b2b;max-width:560px;margin:0 auto;">',
+    '<p style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#c9a45f;">SHADDAI · Esencia de Umbral</p>',
+    '<h1 style="font-size:20px;font-weight:normal;">Tu acceso de distribuidor está listo</h1>',
+    '<p>Hola ', coalesce(nullif(fila.contacto, ''), fila.empresa), ':</p>',
+    '<p>Tu alianza con SHADDAI ya está activada. Estas son tus credenciales para entrar en el <strong>área de distribuidores</strong> y ver tus condiciones personalizadas:</p>',
+    '<table style="width:100%;border-collapse:collapse;margin:18px 0;">',
+    '<tr><td style="padding:8px;border-top:1px solid #e5dcc4;"><strong>Usuario</strong></td><td style="padding:8px;border-top:1px solid #e5dcc4;">', fila.email, '</td></tr>',
+    '<tr><td style="padding:8px;border-top:1px solid #e5dcc4;"><strong>Contraseña</strong></td><td style="padding:8px;border-top:1px solid #e5dcc4;"><code style="font-size:15px;">', p_contrasena, '</code></td></tr>',
+    '</table>',
+    '<p style="text-align:center;margin:24px 0;">',
+    '<a href="https://omshaddai.com/distribuidor.html" style="display:inline-block;background:#16261b;color:#f3eee2;font-size:14px;padding:12px 22px;text-decoration:none;border-radius:4px;">Entrar al área de distribuidores</a></p>',
+    '<p>Te recomendamos cambiar la contraseña desde tu área privada en el primer acceso.</p>',
+    '<p style="color:#7a7a6f;font-size:12px;">Si no solicitaste este acceso, ignora este correo y escríbenos a info@omshaddai.com.</p>',
+    '</div>');
+  estado_outbox := 'pendiente';
+  begin
+    if clave_resend is not null and esquema_http is not null then
+      execute format('select %I.http_post(url := $1, headers := $2, body := $3)', esquema_http)
+        using 'https://api.resend.com/emails',
+              jsonb_build_object('Authorization', 'Bearer ' || clave_resend, 'Content-Type', 'application/json'),
+              jsonb_build_object('from', desde, 'to', jsonb_build_array(fila.email), 'subject', asunto, 'html', html);
+      estado_outbox := 'enviado';
+    end if;
+  exception when others then estado_outbox := 'pendiente';
+  end;
+  eml := concat('From: ', desde, E'\r\n', 'To: ', fila.email, E'\r\n', 'Subject: ', asunto, E'\r\n',
+    'MIME-Version: 1.0', E'\r\n', 'Content-Type: text/html; charset=UTF-8', E'\r\n',
+    'Content-Transfer-Encoding: 8bit', E'\r\n',
+    'Date: ', to_char(now() at time zone 'UTC', 'Dy, DD Mon YYYY HH24:MI:SS "GMT"'), E'\r\n',
+    'X-SHADDAI-Estado: ', estado_outbox, E'\r\n', E'\r\n', html, E'\r\n');
+  begin
+    insert into public.oms_outbox (para, asunto, html, eml, estado) values (fila.email, asunto, html, eml, estado_outbox);
+  exception when others then return false;
+  end;
+  return estado_outbox = 'enviado';
+end;
+$$;
 
 create table if not exists public.oms_distribuidores_solicitudes (
   id uuid primary key default gen_random_uuid(),
@@ -896,10 +963,9 @@ alter table public.oms_distribuidores_packs       enable row level security;
 alter table public.oms_distribuidores             enable row level security;
 alter table public.oms_distribuidores_solicitudes enable row level security;
 
--- ---- packs ----
+-- ---- packs (sin lectura anon: la web pública ya no muestra packs) ----
 drop policy if exists "oms lectura publica" on public.oms_distribuidores_packs;
-create policy "oms lectura publica" on public.oms_distribuidores_packs
-  for select to anon using (activo);
+-- SIN lectura anon: la tabla guarda inversión, PVP y beneficio; la web pública ya no muestra packs.
 drop policy if exists "oms lectura gestion" on public.oms_distribuidores_packs;
 create policy "oms lectura gestion" on public.oms_distribuidores_packs
   for select to authenticated
@@ -935,7 +1001,8 @@ drop policy if exists "oms borrado solo admin" on public.oms_distribuidores_soli
 create policy "oms borrado solo admin" on public.oms_distribuidores_solicitudes
   for delete to authenticated using (public.oms_es_admin());
 
-grant select on public.oms_distribuidores_packs to anon, authenticated;
+revoke select on public.oms_distribuidores_packs from anon;
+grant select on public.oms_distribuidores_packs to authenticated;
 grant insert on public.oms_distribuidores_solicitudes to anon, authenticated;
 grant all on public.oms_distribuidores_packs to service_role;
 grant all on public.oms_distribuidores to service_role;

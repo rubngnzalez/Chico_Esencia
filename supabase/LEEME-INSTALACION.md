@@ -206,17 +206,21 @@ verás el descuento en Productos y el movimiento en el detalle del pedido.
 
 ## Distribuidores · alianza B2B con precios gestionables (2026-11-17)
 
-- La página pública **`distribuidores.html`** pinta los packs de la alianza
-  (Pack «Umbral», Pack «Ceremonia»…) con los costes y valores que se editan
-  en el panel: **Panel → Distribuidores → Packs**. Si la web no alcanza la
-  base de datos, muestra los packs fijos del documento de la marca.
-- El formulario **«Solicitar alianza»** guarda cada petición en
+- La página pública **`distribuidores.html`** solo presenta la marca y recoge
+  solicitudes con el formulario **«Solicitar alianza»** (van a
   `oms_distribuidores_solicitudes`; desde el panel se revisan y con
-  «Crear acceso» se les abre **usuario y contraseña** reales (Supabase Auth),
-  que entran en el área privada de la propia página y ven sus condiciones con
-  su descuento aplicado.
-- Las cuentas de distribuidor NO tienen acceso al panel de gestión: solo al
-  área privada de `distribuidores.html`.
+  «Crear acceso» se les abre **usuario y contraseña** reales de Supabase Auth).
+- Los **precios de los packs nunca son públicos**: inversión, PVP y beneficio
+  no tienen lectura anon en la base de datos; solo los ve el distribuidor con
+  sesión iniciada, con su descuento aplicado.
+- Al crear la cuenta (o generar una contraseña nueva) el sistema **envía las
+  credenciales por email** al distribuidor: con Resend si hay clave
+  (`resend_api_key`) en vault; si no, el correo queda descargable en
+  **Panel → Correo → Bandeja de salida**.
+- El acceso privado vive en la página discreta **`distribuidor.html`** (sin
+  enlace en el menú ni en el pie: se entra por URL directa, la que incluye el
+  email de credenciales). Las cuentas de distribuidor NO tienen acceso al
+  panel de gestión.
 
 ### Instalación (una vez)
 

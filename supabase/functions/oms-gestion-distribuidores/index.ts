@@ -4,8 +4,10 @@
 // re-verificado aquí contra oms_usuarios con el cliente service_role).
 // Acciones:
 //   crear    { email, empresa, contacto?, telefono?, ciudad?, descuento?, contrasena? }
-//            → alta en auth.users + ficha en oms_distribuidores, devuelve contraseña
-//   resetear { id }  → nueva contraseña temporal del distribuidor
+//            → alta en auth.users + ficha en oms_distribuidores, envía las
+//              credenciales por email (oms_notificar_credenciales_distribuidor)
+//              y las devuelve
+//   resetear { id }  → nueva contraseña temporal, enviada por email al distribuidor
 //   eliminar { id }  → baja definitiva (auth.users; la ficha cae en cascada)
 // Las contraseñas NUNCA se pueden consultar: solo se generan o sustituyen.
 // A diferencia de oms-gestion-usuarios, NO se crea fila en oms_usuarios: un
@@ -112,14 +114,29 @@ Deno.serve(async (request: Request) => {
       telefono,
       ciudad,
       descuento,
-      notas,
     });
     if (errorFicha) {
-      // La cuenta no puede quedarse a medias: se deshace el alta de auth
-      await db.auth.admin.deleteUser(alta.data.user!.id);
+      // La cuenta no puede quedarse a medias: se deshace el alta de auth y
+      // se informa si el propio rollback falló (usuario huérfano en Auth).
+      const deshacer = await db.auth.admin.deleteUser(alta.data.user!.id);
+      if (deshacer.error) {
+        return new Response(
+          JSON.stringify({
+            error: `La ficha falló (${errorFicha.message}) y no se pudo deshacer el alta: elimina el usuario en Supabase → Authentication y vuelve a intentarlo.`,
+          }),
+          { status: 400, headers: cabeceras(request) }
+        );
+      }
       return new Response(JSON.stringify({ error: `No se pudo guardar la ficha: ${errorFicha.message}` }), { status: 400, headers: cabeceras(request) });
     }
-    return new Response(JSON.stringify({ ok: true, email, contrasena }), { headers: cabeceras(request) });
+    let enviado = false;
+    try {
+      const r = await db.rpc('oms_notificar_credenciales_distribuidor', { p_distribuidor: alta.data.user!.id, p_contrasena: contrasena });
+      enviado = r.error ? false : r.data === true;
+    } catch (_) {
+      enviado = false;
+    }
+    return new Response(JSON.stringify({ ok: true, email, contrasena, enviado }), { headers: cabeceras(request) });
   }
 
   // ─── RESETEAR (contraseña temporal nueva para el distribuidor) ──────────
@@ -134,7 +151,14 @@ Deno.serve(async (request: Request) => {
     if (cambio.error) {
       return new Response(JSON.stringify({ error: `No se pudo cambiar: ${cambio.error.message}` }), { status: 400, headers: cabeceras(request) });
     }
-    return new Response(JSON.stringify({ ok: true, contrasena }), { headers: cabeceras(request) });
+    let enviado = false;
+    try {
+      const r = await db.rpc('oms_notificar_credenciales_distribuidor', { p_distribuidor: objetivo.id, p_contrasena: contrasena });
+      enviado = r.error ? false : r.data === true;
+    } catch (_) {
+      enviado = false;
+    }
+    return new Response(JSON.stringify({ ok: true, contrasena, enviado }), { headers: cabeceras(request) });
   }
 
   // ─── ELIMINAR (baja definitiva del distribuidor) ────────────────────────
@@ -143,10 +167,9 @@ Deno.serve(async (request: Request) => {
     if (!id) {
       return new Response(JSON.stringify({ error: 'Falta el distribuidor a eliminar.' }), { status: 400, headers: cabeceras(request) });
     }
-    const { data: objetivo } = await db.from('oms_distribuidores').select('id, email, empresa').eq('id', id).maybeSingle();
-    if (!objetivo) {
-      return new Response(JSON.stringify({ error: 'Distribuidor no encontrado.' }), { status: 404, headers: cabeceras(request) });
-    }
+    // La ficha es informativa: si no existe (p. ej. alta a medias de un
+    // rollback fallido), igualmente se elimina el usuario de Auth para
+    // limpiar el huérfano.
     const baja = await db.auth.admin.deleteUser(id);
     if (baja.error) {
       return new Response(JSON.stringify({ error: `No se pudo eliminar: ${baja.error.message}` }), { status: 400, headers: cabeceras(request) });
