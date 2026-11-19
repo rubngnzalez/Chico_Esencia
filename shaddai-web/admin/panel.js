@@ -25,7 +25,7 @@ const SOLO_GESTION = ['admin', 'editor'];
 
 // Cache-busting de las secciones: SUBE esta versión al cambiar cualquier
 // fichero de js/secciones/ para que el navegador no sirva el módulo viejo.
-const VERSION_SECCIONES = '2026-11-12a';
+const VERSION_SECCIONES = '2026-11-19a';
 
 const SECCIONES = {
   panel: { titulo: 'Panel', mod: './js/secciones/panel.js', roles: TODOS },
@@ -37,6 +37,8 @@ const SECCIONES = {
   email: { titulo: 'Email marketing', mod: './js/secciones/email.js', roles: SOLO_GESTION },
   bandeja: { titulo: 'Bandeja de entrada', mod: './js/secciones/bandeja.js', roles: TODOS },
   pedidos: { titulo: 'Pedidos', mod: './js/secciones/pedidos.js', roles: TODOS },
+  distribuidores: { titulo: 'Distribuidores', mod: './js/secciones/distribuidores.js', roles: SOLO_GESTION },
+  estadisticas: { titulo: 'Estadísticas', mod: './js/secciones/estadisticas.js', roles: TODOS },
   etiquetas: { titulo: 'Etiquetas de envío', mod: './js/secciones/etiquetas.js', roles: TODOS },
   ajustes: { titulo: 'Ajustes', mod: './js/secciones/ajustes.js', roles: ['admin'] },
   usuarios: { titulo: 'Usuarios', mod: './js/secciones/usuarios.js', roles: ['admin'] },
@@ -88,6 +90,22 @@ async function refrescarContador() {
     contadorBandeja.textContent = total > 99 ? '99+' : String(total);
   } catch {
     contadorBandeja.hidden = true;
+  }
+  // Distribuidores: solicitudes en curso (sin verificar / sin formulario / por aceptar)
+  try {
+    const emDistrib = document.getElementById('contador-distribuidores');
+    if (emDistrib) {
+      const { count: pendientes } = await sb()
+        .from('oms_distrib_solicitudes')
+        .select('id', { count: 'exact', head: true })
+        .in('estado', ['pendiente_verificacion', 'verificada', 'completada']);
+      const totalDistrib = Number(pendientes) || 0;
+      emDistrib.hidden = totalDistrib === 0;
+      emDistrib.textContent = totalDistrib > 99 ? '99+' : String(totalDistrib);
+    }
+  } catch {
+    const emDistrib = document.getElementById('contador-distribuidores');
+    if (emDistrib) emDistrib.hidden = true;
   }
 }
 
