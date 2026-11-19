@@ -155,7 +155,42 @@
       ${Array.isArray(distribuidor.zonas_territorio) && distribuidor.zonas_territorio.length
         ? ` · Territorios: ${escapar(distribuidor.zonas_territorio.join(', '))}`
         : ''}
-      <br><span style="font-size:.88rem;">El descuento se aplica siempre en el cálculo final del pedido, verificado en el servidor.</span>`;
+      <br><span style="font-size:.88rem;">El descuento se aplica siempre en el cálculo final del pedido, verificado en el servidor.</span>
+      <br><button type="button" class="boton boton-fantasma" id="zona-mostrar-pass" style="margin-top:.6rem;color:inherit;border-color:rgba(201,164,95,.4);">Cambiar contraseña</button>
+      <form id="zona-form-cambiar" class="formulario" autocomplete="off" hidden>
+        <div class="campo">
+          <label for="zc-nueva">Nueva contraseña</label>
+          <input type="password" id="zc-nueva" minlength="8" placeholder="Mínimo 8 caracteres" required>
+        </div>
+        <div class="campo">
+          <label for="zc-nueva2">Repite la nueva contraseña</label>
+          <input type="password" id="zc-nueva2" minlength="8" placeholder="La misma contraseña" required>
+        </div>
+        <p class="aviso-formulario" id="zc-aviso-cambio" aria-live="polite"></p>
+        <button type="submit" class="boton boton-lleno">Guardar contraseña</button>
+      </form>`;
+    $('zona-mostrar-pass').addEventListener('click', () => {
+      const formulario = $('zona-form-cambiar');
+      formulario.hidden = !formulario.hidden;
+    });
+    $('zona-form-cambiar').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const avisoCambio = $('zc-aviso-cambio');
+      avisoCambio.textContent = '';
+      if ($('zc-nueva').value !== $('zc-nueva2').value) {
+        avisoCambio.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+      const { error } = await sb.auth.updateUser({ password: $('zc-nueva').value });
+      if (error) {
+        avisoCambio.textContent = error.message || 'No se pudo cambiar la contraseña.';
+        return;
+      }
+      avisoCambio.textContent = 'Contraseña actualizada.';
+      $('zc-nueva').value = '';
+      $('zc-nueva2').value = '';
+      toastVisual('Contraseña cambiada.');
+    });
     cargarTienda();
     cargarMaterial();
     cargarPedidos();

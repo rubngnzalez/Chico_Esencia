@@ -30,8 +30,17 @@ const CADUCIDAD_TOKEN_MS = 24 * 60 * 60 * 1000;
 
 const DEFECTO_ACEPTACION = {
   asunto: 'Bienvenido al programa de distribuidores — SHADDAI',
-  html: '<p>Hola, {{persona_contacto}}:</p><p>Nos alegra confirmarte que <strong>{{empresa}}</strong> ha sido aceptada en el programa de distribuidores de SHADDAI · Esencia de Umbral.</p><p>Define la contraseña de tu zona privada (tienda de distribuidor, material comercial y tus pedidos) desde este enlace:</p><p style="text-align:center;margin:24px 0;"><a href="{{enlace}}" style="display:inline-block;background:#16261b;color:#f3eee2;font-family:Verdana,Arial,sans-serif;font-size:14px;padding:12px 22px;text-decoration:none;border-radius:4px;">Activar mi acceso</a></p><p>Tu descuento de distribuidor aplicado: <strong>{{descuento}}%</strong>.</p><p>Bienvenido al Umbral.<br>SHADDAI · Esencia de Umbral</p>',
+  html: '<p>Hola, {{persona_contacto}}:</p><p>Nos alegra confirmarte que <strong>{{empresa}}</strong> ha sido aceptada en el programa de distribuidores de SHADDAI · Esencia de Umbral.</p><p>Tus datos de acceso a la zona privada (tienda de distribuidor, material comercial y tus pedidos):</p><ul><li><strong>Correo:</strong> {{email}}</li><li><strong>Contraseña temporal:</strong> <code>{{contrasena}}</code></li></ul><p>Entra desde este botón y, por seguridad, cambia la contraseña desde tu zona cuando quieras:</p><p style="text-align:center;margin:24px 0;"><a href="{{enlace}}" style="display:inline-block;background:#16261b;color:#f3eee2;font-family:Verdana,Arial,sans-serif;font-size:14px;padding:12px 22px;text-decoration:none;border-radius:4px;">Entrar en mi zona</a></p><p>Tu descuento de distribuidor aplicado: <strong>{{descuento}}%</strong>.</p><p>Bienvenido al Umbral.<br>SHADDAI · Esencia de Umbral</p>',
 };
+
+// Contraseña temporal legible (sin caracteres confusos: sin I, L, O, 0, 1)
+function contrasenaTemporal(): string {
+  const alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(10);
+  crypto.getRandomValues(bytes);
+  const base = Array.from(bytes).map((b) => alfabeto[b % alfabeto.length]).join('');
+  return `SHAD-${base.slice(0, 5)}-${base.slice(5)}`;
+}
 
 const DEFECTO_RECHAZO = {
   asunto: 'Sobre tu solicitud de distribución — SHADDAI',
@@ -234,6 +243,21 @@ Deno.serve(async (request: Request) => {
       return errorJson(`No se pudo crear la cuenta de la zona VIP: ${mensaje}`, 500, request);
     }
 
+    // Contraseña temporal: con la autoconfirmación activa, el enlace de
+    // invitación NO crea sesión, así que entregamos una contraseña por correo
+    // y el distribuidor la cambia desde su zona.
+    let contrasenaTemporalTexto = '';
+    if (userId) {
+      try {
+        contrasenaTemporalTexto = contrasenaTemporal();
+        const cambio = await admin.auth.admin.updateUserById(userId, { password: contrasenaTemporalTexto });
+        if (cambio.error) throw new Error(cambio.error.message);
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : String(error);
+        return errorJson(`La cuenta se creó, pero no se pudo fijar su contraseña temporal: ${mensaje}`, 500, request);
+      }
+    }
+
     let distribuidorId: string;
     if (duplicado) {
       const { data: actualizado, error: errorUpd } = await db
@@ -289,7 +313,9 @@ Deno.serve(async (request: Request) => {
     const correo = plantillaDe(ajustes.distribucion, 'aceptacion', {
       persona_contacto: escaparHtml(persona),
       empresa: escaparHtml(empresa),
-      enlace: enlaceActivacion,
+      email: escaparHtml(solicitud.email),
+      contrasena: escaparHtml(contrasenaTemporalTexto || '(ver correo anterior)'),
+      enlace: 'https://omshaddai.com/zona-distribuidor.html',
       descuento: String(descuento),
     }, DEFECTO_ACEPTACION);
     const envio = await enviarCorreo(
@@ -418,29 +444,45 @@ Deno.serve(async (request: Request) => {
   }
 
   // ─── REENVIAR INVITACIÓN DE LA ZONA VIP ─────────────────────────────────
+  // Genera una contraseña temporal nueva y la envía por correo de marca
+  // (el acceso ya no depende de enlaces de sesión: funciona con la
+  // autoconfirmación activa del proyecto).
   if (accion === 'reenviar-invite') {
     const distribuidorId = String(cuerpo.distribuidorId || '');
     const { data: encontrados, error: errorDist } = await db
       .from('oms_distribuidores')
-      .select('id, email, empresa, persona_contacto, descuento_pct')
+      .select('id, email, empresa, persona_contacto, descuento_pct, user_id')
       .eq('id', distribuidorId)
       .limit(1);
     if (errorDist) return errorJson('No se pudo leer el distribuidor.', 500, request);
     const distribuidor = (encontrados || [])[0] as
-      | { id: string; email: string; empresa: string; persona_contacto: string; descuento_pct: number }
+      | { id: string; email: string; empresa: string; persona_contacto: string; descuento_pct: number; user_id: string | null }
       | undefined;
     if (!distribuidor) return errorJson('Distribuidor no encontrado.', 404);
 
-    const { data: enlace, error: errorEnlace } = await admin.auth.admin.generateLink({
-      type: 'invite',
-      email: distribuidor.email,
-      options: { redirectTo: 'https://omshaddai.com/zona-distribuidor.html?invite=1' },
-    });
-    if (errorEnlace || !enlace?.properties?.action_link) {
-      return errorJson(`No se pudo generar el enlace: ${errorEnlace?.message || 'error desconocido'}`, 500, request);
-    }
-    const userId = enlace.user?.id;
-    if (userId) {
+    let userId = distribuidor.user_id;
+    try {
+      if (!userId) {
+        // Cuenta nunca creada (aceptar anterior a este flujo): se crea ahora
+        const { data: enlace, error: errorEnlace } = await admin.auth.admin.generateLink({
+          type: 'invite',
+          email: distribuidor.email,
+          options: { redirectTo: 'https://omshaddai.com/zona-distribuidor.html?invite=1' },
+        });
+        if (errorEnlace || !enlace?.user?.id) {
+          return errorJson(`No se pudo crear la cuenta: ${errorEnlace?.message || 'error desconocido'}`, 500, request);
+        }
+        userId = enlace.user.id;
+        await db.from('oms_distribuidores').update({ user_id: userId }).eq('id', distribuidor.id);
+      }
+
+      // Contraseña temporal nueva (la anterior deja de servir)
+      const temporal = contrasenaTemporal();
+      const cambio = await admin.auth.admin.updateUserById(userId, { password: temporal });
+      if (cambio.error) {
+        return errorJson(`No se pudo fijar la contraseña temporal: ${cambio.error.message}`, 500, request);
+      }
+
       // El perfil se crea en «aceptar»; aquí solo se asegura el estado inactivo
       // sin pisar perfiles del panel (admin/editor activos).
       const { data: perfilExistente } = await db
@@ -459,32 +501,37 @@ Deno.serve(async (request: Request) => {
       } else if (!['admin', 'editor'].includes(perfil.rol)) {
         await db.from('oms_usuarios').update({ activo: false }).eq('id', userId);
       }
-    }
 
-    const correo = plantillaDe(ajustes.distribucion, 'aceptacion', {
-      persona_contacto: escaparHtml(distribuidor.persona_contacto || ''),
-      empresa: escaparHtml(distribuidor.empresa || ''),
-      enlace: enlazarActivacion(String(enlace.properties.action_link)),
-      descuento: String(Number(distribuidor.descuento_pct) || 0),
-    }, DEFECTO_ACEPTACION);
-    const envio = await enviarCorreo(
-      db,
-      claveResend,
-      ajustes.desde,
-      distribuidor.email,
-      correo.asunto,
-      sobreMarca(correo.html, ajustes.logotipo),
-      ajustes.responderA
-    );
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        mensaje: envio.enviado
-          ? 'Enlace de activación enviado.'
-          : 'Sin envío real configurado: el correo está en la Bandeja de salida (.eml).',
-      }),
-      { headers: cabeceras(request) }
-    );
+      const correo = plantillaDe(ajustes.distribucion, 'aceptacion', {
+        persona_contacto: escaparHtml(distribuidor.persona_contacto || ''),
+        empresa: escaparHtml(distribuidor.empresa || ''),
+        email: escaparHtml(distribuidor.email),
+        contrasena: escaparHtml(temporal),
+        enlace: 'https://omshaddai.com/zona-distribuidor.html',
+        descuento: String(Number(distribuidor.descuento_pct) || 0),
+      }, DEFECTO_ACEPTACION);
+      const envio = await enviarCorreo(
+        db,
+        claveResend,
+        ajustes.desde,
+        distribuidor.email,
+        correo.asunto,
+        sobreMarca(correo.html, ajustes.logotipo),
+        ajustes.responderA
+      );
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          mensaje: envio.enviado
+            ? 'Correo de acceso enviado (con contraseña temporal nueva).'
+            : 'Sin envío real configurado: el correo está en la Bandeja de salida (.eml).',
+        }),
+        { headers: cabeceras(request) }
+      );
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : String(error);
+      return errorJson(`No se pudo preparar el acceso: ${mensaje}`, 500, request);
+    }
   }
 
   // ─── NOTIFICAR PROFORMA PAGADA ──────────────────────────────────────────
