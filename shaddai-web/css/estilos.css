@@ -217,7 +217,10 @@ p + p {
   text-transform: uppercase;
 }
 
-$11.5rem;
+.navegacion ul {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
 }
 
 .navegacion a {
