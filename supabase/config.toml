@@ -48,3 +48,6 @@ entrypoint = "functions/oms-distrib-pagos-firma/index.ts"
 
 [functions.oms-distrib-pedido]
 entrypoint = "functions/oms-distrib-pedido/index.ts"
+
+[functions.oms-cliente-acceso]
+entrypoint = "functions/oms-cliente-acceso/index.ts"
