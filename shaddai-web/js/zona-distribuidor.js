@@ -53,6 +53,12 @@
     const usuario = sesion?.session?.user;
     if (!usuario) {
       mostrarVista('zona-acceso');
+      // Enlace antiguo (antes del sistema de contraseña temporal): sin sesión
+      // la invitación ya no vale; se guía al distribuidor para recuperar acceso.
+      if (new URLSearchParams(window.location.search).get('invite') === '1') {
+        avisoZona('El enlace de este correo ya no es válido (era de antes del nuevo sistema de acceso). Usa el botón «Enviar enlace de acceso» para definir tu contraseña, o pide a SHADDAI un correo de acceso nuevo.');
+        $('zl-aviso').textContent = 'Enlace antiguo detectado: usa «Enviar enlace de acceso» para definir tu contraseña.';
+      }
       return;
     }
     // Perfil de distribuidor (RLS: solo la propia fila)
