@@ -2768,3 +2768,90 @@ body[data-pagina="usos"] .tarjeta .icono {
 .texto-portada .etiqueta {
   margin-bottom: 0.6rem;
 }
+
+/* ---------- Desplegable Acceso (clientes y distribuidores) ---------- */
+.navegacion .acceso-menu {
+  position: relative;
+}
+.navegacion .acceso-boton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.82rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  border-bottom: 1px solid transparent;
+  transition: color 0.3s ease, border-color 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.navegacion .acceso-boton:hover,
+.navegacion .acceso-menu.abierto .acceso-boton {
+  color: var(--oro-claro);
+  border-color: var(--oro);
+}
+.navegacion .acceso-boton .flecha {
+  font-size: 0.7em;
+  transition: transform 0.25s ease;
+}
+.navegacion .acceso-menu.abierto .acceso-boton .flecha {
+  transform: rotate(180deg);
+}
+.navegacion .acceso-submenu {
+  list-style: none;
+  display: none;
+  min-width: 15.5rem;
+  padding: 0.5rem;
+  background: rgba(15, 24, 17, 0.97);
+  border: 1px solid rgba(201, 164, 95, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+}
+.navegacion .acceso-menu.abierto .acceso-submenu {
+  display: block;
+}
+.navegacion .acceso-submenu a {
+  display: block;
+  padding: 0.6rem 0.8rem;
+  border-bottom: none;
+  border-radius: 6px;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  color: var(--texto);
+}
+.navegacion .acceso-submenu a:hover {
+  background: rgba(201, 164, 95, 0.14);
+  color: var(--oro-claro);
+  border-bottom: none;
+}
+@media (min-width: 901px) {
+  .navegacion .acceso-menu:hover .acceso-submenu {
+    display: block;
+  }
+  .navegacion .acceso-submenu {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 70;
+  }
+}
+@media (max-width: 900px) {
+  .navegacion .acceso-boton {
+    font-size: 1.05rem;
+    padding: 0.65rem 1.2rem;
+    border-bottom: none;
+  }
+  .navegacion .acceso-menu.abierto .acceso-submenu {
+    margin: 0.3rem auto 0;
+    max-width: 20rem;
+  }
+  .navegacion .acceso-submenu a {
+    font-size: 0.95rem;
+  }
+}
