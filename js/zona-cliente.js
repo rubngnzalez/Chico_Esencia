@@ -1,7 +1,10 @@
 // Zona de clientes (zona-cliente.html).
-// Acceso sin contraseña: el cliente escribe el correo con el que compró y
-// recibe un enlace de marca («oms-cliente-acceso») que le da sesión aquí.
-// La RLS solo le enseña los pedidos comprados con ese email.
+// Acceso en dos pasos, sin contraseña (el proyecto tiene autoconfirmación
+// activa: los enlaces mágicos no crean sesión, pero los CÓDIGOS OTP sí):
+//   1 · El cliente escribe el correo con el que compró → recibe un código.
+//   2 · Escribe el código de 6 dígitos → sesión → ve SUS pedidos (RLS por email).
+// Limpieza del correo de acceso: el usuario puede personalizar la plantilla
+// "Magic Link" de Supabase (Dashboard → Authentication → Emails) con el logo.
 (() => {
   if (typeof window.SUPABASE_CONFIGURADO !== 'function' || !window.SUPABASE_CONFIGURADO()) {
     document.getElementById('zona-subtitulo').textContent = 'Zona sin configurar: falta js/config-supabase.js.';
@@ -14,10 +17,13 @@
     String(texto ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const euro = (valor) => (Number(valor) || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 
-  function mostrarVista(id) {
-    ['zona-acceso', 'zona-app'].forEach((zona) => {
-      $(zona).hidden = zona !== id;
-    });
+  let emailAcceso = '';
+  let pasoActual = 'correo';
+
+  function mostrarPaso(paso) {
+    pasoActual = paso;
+    $('zc-paso-correo').hidden = paso !== 'correo';
+    $('zc-paso-codigo').hidden = paso !== 'codigo';
   }
 
   function toastVisual(mensaje) {
@@ -33,35 +39,55 @@
     setTimeout(() => nota.remove(), 4000);
   }
 
-  // ─── PETICIÓN DE ACCESO ───────────────────────────────────────────────────
+  // ─── PASO 1 · pedir el código ─────────────────────────────────────────────
   $('zona-form-login').addEventListener('submit', async (evento) => {
     evento.preventDefault();
     $('zl-aviso').textContent = '';
-    const control = new AbortController();
-    const reloj = setTimeout(() => control.abort(), 20000);
-    let respuesta;
-    try {
-      respuesta = await fetch(`${window.SUPABASE_URL.replace(/\/$/, '')}/functions/v1/oms-cliente-acceso`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: $('zl-email').value.trim(), web: $('zl-web').value }),
-        signal: control.signal,
-      });
-    } catch {
-      $('zl-aviso').textContent = 'No hemos podido conectar. Inténtalo de nuevo.';
+    emailAcceso = $('zl-email').value.trim();
+    $('zl-boton').disabled = true;
+    $('zl-boton').textContent = 'Enviando código…';
+    const { error } = await sb.auth.signInWithOtp({
+      email: emailAcceso,
+      options: { shouldCreateUser: true },
+    });
+    $('zl-boton').disabled = false;
+    $('zl-boton').textContent = 'Enviar código de acceso';
+    if (error) {
+      $('zl-aviso').textContent = error.message || 'No se pudo enviar el código. Inténtalo de nuevo.';
       return;
-    } finally {
-      clearTimeout(reloj);
     }
-    const contenido = await respuesta.json().catch(() => ({}));
-    if (respuesta.ok && contenido.ok) {
-      $('zl-aviso').textContent = '';
-      $('zl-aviso').style.color = '';
-      $('zl-aviso').textContent = contenido.mensaje || 'Revisa tu correo: te hemos enviado el enlace de acceso.';
-      $('zl-email').value = '';
-    } else {
-      $('zl-aviso').textContent = contenido.error || 'No se pudo enviar el acceso. Inténtalo de nuevo.';
+    $('zc-correo-recordado').textContent = emailAcceso;
+    mostrarPaso('codigo');
+    $('zc-codigo').focus();
+  });
+
+  // ─── PASO 2 · verificar el código ─────────────────────────────────────────
+  $('zona-form-codigo').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    $('zc-aviso-codigo').textContent = '';
+    const codigo = $('zc-codigo').value.trim().replace(/\s+/g, '');
+    if (codigo.length < 6) {
+      $('zc-aviso-codigo').textContent = 'El código tiene 6 dígitos.';
+      return;
     }
+    $('zc-boton-codigo').disabled = true;
+    // El token llega según la plantilla configurada: probamos ambos tipos.
+    let error = null;
+    for (const tipo of ['email', 'magiclink']) {
+      const intento = await sb.auth.verifyOTP({ email: emailAcceso, token: codigo, type: tipo });
+      error = intento.error;
+      if (!error) break;
+    }
+    $('zc-boton-codigo').disabled = false;
+    if (error) {
+      $('zc-aviso-codigo').textContent = 'Código incorrecto o caducado. Vuelve a pedirlo si es necesario.';
+      return;
+    }
+    toastVisual('Acceso concedido. Bienvenido de nuevo.');
+  });
+
+  $('zc-volver').addEventListener('click', () => {
+    mostrarPaso('correo');
   });
 
   $('zona-salir').addEventListener('click', async () => {
@@ -79,10 +105,11 @@
     const { data: sesion } = await sb.auth.getSession();
     const usuario = sesion?.session?.user;
     if (!usuario) {
-      mostrarVista('zona-acceso');
+      mostrarPaso('correo');
       return;
     }
-    mostrarVista('zona-app');
+    $('zona-acceso').hidden = true;
+    $('zona-app').hidden = false;
     $('zona-salir').style.display = '';
     $('zona-bienvenida').innerHTML = `
       <strong>${escapar(usuario.email || '')}</strong> — estos son los pedidos registrados con este correo.

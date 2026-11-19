@@ -53,24 +53,45 @@
 
         <!-- ACCESO -->
         <div id="zona-acceso" class="zona-acceso">
-          <form id="zona-form-login" class="formulario" autocomplete="off">
-            <div class="campo">
-              <label for="zl-email">Correo con el que hiciste tu pedido</label>
-              <input type="email" id="zl-email" placeholder="tu@correo.com" required>
-            </div>
-            <div class="campo-trampa" aria-hidden="true">
-              <label for="zl-web">No rellenes este campo</label>
-              <input type="text" id="zl-web" name="web" tabindex="-1" autocomplete="off">
-            </div>
-            <div class="centrar">
-              <button type="submit" class="boton boton-lleno">Enviar enlace de acceso</button>
-            </div>
-            <p class="aviso-formulario centrar" id="zl-aviso" aria-live="polite"></p>
-            <p style="text-align:center;font-size:.85rem;margin-top:.8rem;color:#7d7466;">
-              Te enviaremos un enlace para entrar sin contraseña. ¿Eres distribuidor?
-              <a href="zona-distribuidor.html">Acceso distribuidores</a>.
-            </p>
-          </form>
+          <!-- Paso 1 · correo -->
+          <div id="zc-paso-correo">
+            <form id="zona-form-login" class="formulario" autocomplete="off">
+              <div class="campo">
+                <label for="zl-email">Correo con el que hiciste tu pedido</label>
+                <input type="email" id="zl-email" placeholder="tu@correo.com" required>
+              </div>
+              <div class="campo-trampa" aria-hidden="true">
+                <label for="zl-web">No rellenes este campo</label>
+                <input type="text" id="zl-web" name="web" tabindex="-1" autocomplete="off">
+              </div>
+              <div class="centrar">
+                <button type="submit" class="boton boton-lleno" id="zl-boton">Enviar código de acceso</button>
+              </div>
+              <p class="aviso-formulario centrar" id="zl-aviso" aria-live="polite"></p>
+              <p style="text-align:center;font-size:.85rem;margin-top:.8rem;color:#7d7466;">
+                Te enviaremos un código de 6 dígitos para entrar sin contraseña. ¿Eres distribuidor?
+                <a href="zona-distribuidor.html">Acceso distribuidores</a>.
+              </p>
+            </form>
+          </div>
+
+          <!-- Paso 2 · código -->
+          <div id="zc-paso-codigo" hidden>
+            <div class="aviso-zona">Hemos enviado un código de 6 dígitos al correo <strong id="zc-correo-recordado"></strong>. Escríbelo aquí para entrar. Revisa también la carpeta de spam.</div>
+            <form id="zona-form-codigo" class="formulario" autocomplete="one-time-code">
+              <div class="campo">
+                <label for="zc-codigo">Código de acceso</label>
+                <input type="text" id="zc-codigo" inputmode="numeric" maxlength="6" placeholder="000000" required>
+              </div>
+              <div class="centrar">
+                <button type="submit" class="boton boton-lleno" id="zc-boton-codigo">Entrar</button>
+              </div>
+              <p class="aviso-formulario centrar" id="zc-aviso-codigo" aria-live="polite"></p>
+              <p style="text-align:center;margin-top:.8rem;">
+                <button type="button" class="boton boton-fantasma" id="zc-volver" style="color:inherit;border-color:rgba(201,164,95,.4);">Cambiar de correo</button>
+              </p>
+            </form>
+          </div>
         </div>
 
         <!-- APLICACIÓN -->
@@ -92,6 +113,6 @@
   <script src="js/config-api.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/config-supabase.js"></script>
-  <script src="js/zona-cliente.js?v=1"></script>
+  <script src="js/zona-cliente.js?v=2"></script>
 </body>
 </html>
