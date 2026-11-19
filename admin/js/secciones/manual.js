@@ -159,7 +159,39 @@ const SECCIONES_MANUAL = [
       solos.</p>`,
   },
   {
-    id: 'redsys', titulo: '10 · Pago (Redsys): test y producción',
+    id: 'distribuidores', titulo: '10 · Distribuidores y zona VIP',
+    contenido: `
+      <p>El programa <strong>«Hazte distribuidor»</strong> capta interesados en la web
+      (<code>distribuidores.html</code>), los verifica por email y concentra aquí la revisión y la aceptación.
+      Todo vive en la sección <em>Distribuidores</em>.</p>
+      <ul>
+        <li><strong>Solicitudes</strong>: estados reales — «Email sin verificar», «Verificado · formulario pendiente»,
+        «Pendiente de aceptación», «Aceptado», «Rechazado», «Descartado». El botón <em>Ver</em> muestra el
+        cuestionario completo, la traza legal (aceptaciones, versión de textos, IP) y las notas internas.</li>
+        <li><strong>Aceptar</strong>: fija el % de descuento y los territorios; el sistema crea la cuenta de la
+        zona VIP y envía el correo de marca con el enlace para definir la contraseña (vigente una sola vez).</li>
+        <li><strong>Banco de emails</strong>: interesados que nunca verificaron su correo, con
+        <em>reenviar enlace</em> (↻) y <em>eliminar</em> (🗑).</li>
+        <li><strong>Aceptados</strong>: edita descuento y territorios (✎), autoriza las <strong>carpetas de
+        material</strong> que ve cada uno (▤), <strong>deshabilita el acceso puntualmente</strong> (⏸ — no podrán
+        entrar ni pedir) y reenvía el correo de activación (✉).</li>
+        <li><strong>Recursos</strong>: sube logos, pósters, fichas PDF, hojas de intención y ventas reales
+        (PDF/PNG/JPG/WebP/ZIP, máx. 20 MB) a carpetas (zonas) en minúsculas. El bucket es PRIVADO: solo lo
+        descargan los distribuidores con esa carpeta autorizada.</li>
+        <li><strong>Proformas</strong>: los pedidos por transferencia de la zona VIP llegan a <em>Pedidos</em>
+        con método «Transferencia». Cuando llegue el dinero, marca el estado «Pagado» (el stock se descuenta
+        solo) y pulsa el aviso de correo para que el distribuidor sepa que está en preparación.</li>
+        <li><strong>Ajustes → Distribución</strong>: emails de destino de los avisos, IBAN y texto de
+        transferencia, logotipo de los correos, textos legales del formulario (con versión) y las plantillas
+        de todos los correos del programa. Los correos SIEMPRE llevan la cabecera con el logo de la marca.</li>
+      </ul>
+      <p><strong>Zona VIP</strong> (<code>zona-distribuidor.html</code>): tienda privada con el precio de
+      distribuidor ya descontado, pago con Redsys o proforma por transferencia, material comercial y sus
+      pedidos. El importe se recalcula siempre en el servidor: si cambias el % de descuento, el siguiente
+      pedido ya sale con el nuevo.</p>`,
+  },
+  {
+    id: 'redsys', titulo: '11 · Pago (Redsys): test y producción',
     contenido: `
       <p>En <em>Ajustes → Pago (Redsys)</em> se guardan el <strong>FUC</strong>, el <strong>terminal</strong>, la
       moneda (978 = euros), el <strong>entorno</strong> y la <strong>clave secreta</strong> de firma.</p>
@@ -176,7 +208,7 @@ const SECCIONES_MANUAL = [
       </ul>`,
   },
   {
-    id: 'ajustes', titulo: '11 · Resto de ajustes',
+    id: 'ajustes', titulo: '12 · Resto de ajustes',
     contenido: `
       <ul>
         <li><strong>Contacto</strong>: los emails de destino (uno por línea) reciben los avisos internos; también
@@ -196,7 +228,7 @@ const SECCIONES_MANUAL = [
       </ul>`,
   },
   {
-    id: 'usuarios', titulo: '12 · Usuarios',
+    id: 'usuarios', titulo: '13 · Usuarios',
     contenido: `
       <p>Solo la administración ve esta sección. Puedes <strong>dar de alta cuentas nuevas</strong> desde el propio
       panel («+ Nuevo usuario»: genera una contraseña segura que se muestra una sola vez) o desde el dashboard de
@@ -211,7 +243,7 @@ const SECCIONES_MANUAL = [
       cualquier persona puede cambiar su propia contraseña.</p>`,
   },
   {
-    id: 'datos', titulo: '13 · Dónde viven los datos y copias de seguridad',
+    id: 'datos', titulo: '14 · Dónde viven los datos y copias de seguridad',
     contenido: `
       <p>Todo vive en tu proyecto de Supabase (tablas del esquema <code>public</code> + bucket <code>recursos</code>
       + Authentication).</p>

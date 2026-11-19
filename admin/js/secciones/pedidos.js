@@ -10,7 +10,7 @@
 // sección Productos refleja el stock resultante.
 // Al pasar a «enviado» se pide enlace/plazo de seguimiento y al pasar a
 // «entregado» se confirman los correos post-venta (trigger oms_seguimientos).
-import { sb, asegurar, mensajeError } from '../bd.js';
+import { sb, asegurar, mensajeError, invocarFuncion } from '../bd.js';
 import { escapar, euro, fechaHora, toast, abrirModal, confirmar, badgeEstado, etiquetaVacia, descargarEml } from '../api.js';
 import { imprimirEtiqueta, remitenteActual } from './etiquetas.js';
 
@@ -167,6 +167,20 @@ export default async function (contenedor, contexto) {
           ? ' Stock devuelto automáticamente.'
           : '';
     toast(`Pedido ${numeroDe(pedido)}: estado «${estado}».${notaStock}`);
+
+    // Proforma de distribuidor pagada: correo «Transferencia recibida» (opcional;
+    // si la función no responde, el estado ya quedó guardado y se puede reintentar).
+    if (
+      estado === 'pagado' && estadoPrevio !== 'pagado' &&
+      pedido.canal === 'distribuidor' && pedido.metodo === 'transferencia'
+    ) {
+      try {
+        const respuesta = await invocarFuncion('oms-distrib-gestion', { accion: 'notificar-proforma', pedidoId: pedido.id });
+        toast(respuesta?.mensaje || 'Correo de transferencia recibida gestionado.');
+      } catch (errorNotificacion) {
+        toast(`El pedido está pagado, pero no se pudo enviar el correo al distribuidor: ${errorNotificacion.message}`, 'error');
+      }
+    }
   }
 
   // Estado «enviado»: pide enlace de seguimiento y plazo antes de guardar

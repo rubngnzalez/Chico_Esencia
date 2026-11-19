@@ -1,0 +1,582 @@
+// Zona VIP de distribuidores (zona-distribuidor.html).
+// Todo requiere sesión de Supabase Auth de un distribuidor con
+// acceso_habilitado = true; la RLS solo expone SU perfil, SUS pedidos y los
+// recursos de las carpetas autorizadas. El importe de cada pedido SIEMPRE lo
+// recalcula el servidor (oms-distrib-pagos-firma / oms-distrib-pedido) con el
+// % de descuento del distribuidor: lo que se muestra aquí es orientativo.
+(() => {
+  if (typeof window.SUPABASE_CONFIGURADO !== 'function' || !window.SUPABASE_CONFIGURADO()) {
+    document.getElementById('zona-subtitulo').textContent = 'Zona sin configurar: falta js/config-supabase.js.';
+    return;
+  }
+  const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+  const $ = (id) => document.getElementById(id);
+  const CLAVE_CARRITO = 'carrito-distrib';
+  const escapar = (texto) =>
+    String(texto ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const euro = (valor) => (Number(valor) || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+
+  let distribuidor = null; // { id, empresa, email, descuento_pct, … }
+  let catalogo = [];
+  let carrito = leerCarrito();
+
+  function leerCarrito() {
+    try {
+      const datos = JSON.parse(localStorage.getItem(CLAVE_CARRITO) || '{}');
+      return datos && typeof datos === 'object' ? datos : {};
+    } catch {
+      return {};
+    }
+  }
+  function guardarCarrito() {
+    localStorage.setItem(CLAVE_CARRITO, JSON.stringify(carrito));
+  }
+  function precioDistribuidor(p) {
+    return Math.round(Number(p.precioEfectivo || p.precio || 0) * (1 - Number(distribuidor.descuento_pct || 0) / 100) * 100) / 100;
+  }
+
+  function avisoZona(mensaje) {
+    $('zona-subtitulo').textContent = mensaje;
+  }
+
+  function mostrarVista(id) {
+    ['zona-acceso', 'zona-password', 'zona-app'].forEach((zona) => {
+      $(zona).hidden = zona !== id;
+    });
+  }
+
+  // ─── SESIÓN ───────────────────────────────────────────────────────────────
+
+  async function determinarEstado() {
+    const { data: sesion } = await sb.auth.getSession();
+    const usuario = sesion?.session?.user;
+    if (!usuario) {
+      mostrarVista('zona-acceso');
+      return;
+    }
+    // Perfil de distribuidor (RLS: solo la propia fila)
+    const { data: filas, error } = await sb
+      .from('oms_distribuidores')
+      .select('id, empresa, email, persona_contacto, descuento_pct, acceso_habilitado, zonas_territorio')
+      .eq('user_id', usuario.id)
+      .maybeSingle();
+    if (error || !filas) {
+      mostrarVista('zona-acceso');
+      avisoZona('Esta cuenta no pertenece a ningún distribuidor autorizado.');
+      await sb.auth.signOut();
+      return;
+    }
+    distribuidor = filas;
+    if (distribuidor.acceso_habilitado !== true) {
+      mostrarVista('zona-acceso');
+      avisoZona('Tu acceso está deshabilitado temporalmente. Contacta con SHADDAI para reactivarlo.');
+      await sb.auth.signOut();
+      return;
+    }
+
+    const invitacion = new URLSearchParams(window.location.search).get('invite');
+    if (invitacion === '1') {
+      mostrarVista('zona-password');
+      return;
+    }
+    abrirApp();
+  }
+
+  $('zona-form-login').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    $('zl-aviso').textContent = '';
+    const { error } = await sb.auth.signInWithPassword({
+      email: $('zl-email').value.trim(),
+      password: $('zl-pass').value,
+    });
+    if (error) {
+      $('zl-aviso').textContent = 'Correo o contraseña incorrectos.';
+      return;
+    }
+    determinarEstado();
+  });
+
+  $('zona-recuperar').addEventListener('click', async () => {
+    const email = $('zl-email').value.trim();
+    if (!email) {
+      $('zl-aviso').textContent = 'Escribe tu correo arriba y pulsa «Enviar enlace de acceso».';
+      return;
+    }
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://omshaddai.com/zona-distribuidor.html?invite=1',
+    });
+    $('zl-aviso').textContent = error
+      ? 'No se pudo enviar el enlace. Inténtalo de nuevo.'
+      : 'Si el correo pertenece a un distribuidor, te llegará un enlace para definir tu contraseña en unos minutos.';
+  });
+
+  $('zona-form-password').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    $('zp-aviso').textContent = '';
+    if ($('zp-pass').value !== $('zp-pass2').value) {
+      $('zp-aviso').textContent = 'Las contraseñas no coinciden.';
+      return;
+    }
+    const { error } = await sb.auth.updateUser({ password: $('zp-pass').value });
+    if (error) {
+      $('zp-aviso').textContent = error.message || 'No se pudo guardar la contraseña.';
+      return;
+    }
+    toastVisual('Contraseña guardada. Bienvenido al Umbral.');
+    abrirApp();
+  });
+
+  function toastVisual(mensaje) {
+    const nota = document.createElement('div');
+    nota.className = 'aviso-zona';
+    nota.style.position = 'fixed';
+    nota.style.bottom = '1.2rem';
+    nota.style.right = '1.2rem';
+    nota.style.zIndex = '60';
+    nota.style.background = '#f3eee2';
+    nota.textContent = mensaje;
+    document.body.appendChild(nota);
+    setTimeout(() => nota.remove(), 4000);
+  }
+
+  $('zona-salir').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    location.reload();
+  });
+
+  // ─── APLICACIÓN ───────────────────────────────────────────────────────────
+
+  function abrirApp() {
+    mostrarVista('zona-app');
+    $('zona-salir').style.display = '';
+    $('zona-bienvenida').innerHTML = `
+      <strong>${escapar(distribuidor.empresa || distribuidor.email)}</strong> — descuento aplicado: <strong>${escapar(Number(distribuidor.descuento_pct) || 0)}%</strong>
+      ${Array.isArray(distribuidor.zonas_territorio) && distribuidor.zonas_territorio.length
+        ? ` · Territorios: ${escapar(distribuidor.zonas_territorio.join(', '))}`
+        : ''}
+      <br><span style="font-size:.88rem;">El descuento se aplica siempre en el cálculo final del pedido, verificado en el servidor.</span>`;
+    cargarTienda();
+    cargarMaterial();
+    cargarPedidos();
+  }
+
+  document.querySelectorAll('.zona-pista button').forEach((boton) => {
+    boton.addEventListener('click', () => {
+      document.querySelectorAll('.zona-pista button').forEach((b) => b.classList.toggle('activo', b === boton));
+      document.querySelectorAll('.zona-vista').forEach((v) => v.classList.toggle('activa', v.id === `zona-vista-${boton.dataset.vista}`));
+    });
+  });
+
+  // ─── TIENDA ───────────────────────────────────────────────────────────────
+
+  async function cargarTienda() {
+    const vista = $('zona-vista-tienda');
+    try {
+      const { data, error } = await sb
+        .from('oms_productos_publicos')
+        .select('*')
+        .order('destacado', { ascending: false })
+        .order('nombre', { ascending: true });
+      if (error) throw error;
+      catalogo = (data || []).map((p) => ({
+        id: p.id,
+        codigo: String(p.codigo || p.slug || p.id),
+        nombre: String(p.nombre || ''),
+        descripcion: String(p.descripcion || ''),
+        precio: Number(p.precio) || 0,
+        precioEfectivo: Number(p.precio_efectivo) || 0,
+        imagenes: Array.isArray(p.imagenes) ? p.imagenes : [],
+        agotado: Boolean(p.agotado),
+        stock: Number(p.stock) || 0,
+      }));
+      pintarTienda();
+      pintarCarrito();
+    } catch {
+      vista.innerHTML = '<p class="aviso-formulario">No se pudo cargar el catálogo. Recarga la página en unos minutos.</p>';
+    }
+  }
+
+  function pintarTienda() {
+    const vista = $('zona-vista-tienda');
+    vista.innerHTML = `
+      <p class="aviso-formulario">Precios de distribuidor con tu <strong>${escapar(Number(distribuidor.descuento_pct) || 0)}%</strong> de descuento sobre el precio oficial.</p>
+      <div class="prod-rejilla">
+        ${catalogo
+          .map((p) => {
+            const precio = precioDistribuidor(p);
+            const enCarrito = Number(carrito[p.codigo]) || 0;
+            return `<article class="prod-tarjeta">
+              ${p.imagenes[0] ? `<img src="${escapar(p.imagenes[0])}" alt="${escapar(p.nombre)}" loading="lazy">` : ''}
+              <strong>${escapar(p.nombre)}</strong>
+              <p style="font-size:.88rem;flex:1;">${escapar(p.descripcion.slice(0, 110))}${p.descripcion.length > 110 ? '…' : ''}</p>
+              <div><span class="pvp">${euro(p.precioEfectivo)}</span> <span class="precio-dist">${euro(precio)}</span></div>
+              ${p.agotado || p.stock <= 0
+                ? '<p class="aviso-formulario">Sin stock ahora mismo</p>'
+                : `<div style="display:flex;gap:.6rem;align-items:center;">
+                    <input type="number" min="1" max="999" value="${Math.max(1, enCarrito)}" data-cantidad="${escapar(p.codigo)}" aria-label="Cantidad">
+                    <button type="button" class="boton boton-lleno" data-anadir="${escapar(p.codigo)}">${enCarrito ? 'Actualizar' : 'Añadir'}</button>
+                  </div>`}
+            </article>`;
+          })
+          .join('')}
+      </div>
+      <div id="zona-carrito" style="margin-top:2.4rem;"></div>`;
+
+    vista.querySelectorAll('[data-anadir]').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        const codigo = boton.dataset.anadir;
+        const entrada = vista.querySelector(`input[data-cantidad="${CSS.escape(codigo)}"]`);
+        const cantidad = Math.max(1, Math.min(999, Number.parseInt(entrada.value, 10) || 1));
+        carrito[codigo] = cantidad;
+        guardarCarrito();
+        pintarCarrito();
+        toastVisual('Carrito actualizado.');
+      });
+    });
+  }
+
+  function pintarCarrito() {
+    const zona = $('zona-carrito');
+    const lineas = Object.entries(carrito)
+      .map(([codigo, cantidad]) => {
+        const producto = catalogo.find((p) => p.codigo === codigo);
+        return producto ? { producto, cantidad } : null;
+      })
+      .filter(Boolean);
+    if (!lineas.length) {
+      zona.innerHTML = '<p class="aviso-formulario">Tu carrito está vacío.</p>';
+      return;
+    }
+    const subtotal = lineas.reduce((s, l) => s + precioDistribuidor(l.producto) * l.cantidad, 0);
+    zona.innerHTML = `
+      <h2 class="titulo" style="font-size:1.6rem;">Tu pedido</h2>
+      <div class="carrito-linea cabecera" style="font-weight:600;"></div>
+      ${lineas
+        .map(
+          (l) => `<div class="carrito-linea">
+            <span class="nombre">${escapar(l.producto.nombre)}</span>
+            <span>${l.cantidad} × ${euro(precioDistribuidor(l.producto))}</span>
+            <strong>${euro(precioDistribuidor(l.producto) * l.cantidad)}</strong>
+            <button type="button" class="boton boton-fantasma" data-quitar="${escapar(l.producto.codigo)}" aria-label="Quitar">✕</button>
+          </div>`
+        )
+        .join('')}
+      <p style="text-align:right;font-size:1.1rem;margin:1rem 0;">Subtotal con descuento (${escapar(Number(distribuidor.descuento_pct) || 0)}%): <strong>${euro(subtotal)}</strong><br>
+      <span style="font-size:.85rem;color:#7d7466;">Los gastos de envío se calculan al confirmar, según destino.</span></p>
+
+      <form id="zona-checkout" class="formulario" autocomplete="off">
+        <div class="campo">
+          <label for="zc-nombre">Nombre *</label>
+          <input type="text" id="zc-nombre" required placeholder="Nombre de quien recibe">
+        </div>
+        <div class="campo">
+          <label for="zc-apellidos">Apellidos</label>
+          <input type="text" id="zc-apellidos" placeholder="Apellidos">
+        </div>
+        <div class="campo">
+          <label for="zc-email">Email *</label>
+          <input type="email" id="zc-email" required value="${escapar(distribuidor.email || '')}">
+        </div>
+        <div class="campo">
+          <label for="zc-telefono">Teléfono</label>
+          <input type="tel" id="zc-telefono" placeholder="600 000 000">
+        </div>
+        <div class="campo">
+          <label for="zc-direccion">Dirección *</label>
+          <input type="text" id="zc-direccion" required placeholder="Calle, número, piso">
+        </div>
+        <div class="campo">
+          <label for="zc-cp">Código postal *</label>
+          <input type="text" id="zc-cp" required>
+        </div>
+        <div class="campo">
+          <label for="zc-poblacion">Población *</label>
+          <input type="text" id="zc-poblacion" required>
+        </div>
+        <div class="campo">
+          <label for="zc-provincia">Provincia *</label>
+          <input type="text" id="zc-provincia" required>
+        </div>
+        <div class="campo">
+          <label for="zc-pais">País *</label>
+          <select id="zc-pais">
+            <option value="España" selected>España</option>
+            <option value="Portugal">Portugal</option>
+            <option value="Francia">Francia</option>
+            <option value="Alemania">Alemania</option>
+            <option value="Italia">Italia</option>
+            <option value="Reino Unido">Reino Unido</option>
+            <option value="Países Bajos">Países Bajos</option>
+            <option value="Bélgica">Bélgica</option>
+            <option value="México">México</option>
+            <option value="Argentina">Argentina</option>
+            <option value="Colombia">Colombia</option>
+            <option value="Chile">Chile</option>
+            <option value="Estados Unidos">Estados Unidos</option>
+            <option value="Otro país">Otro país</option>
+          </select>
+        </div>
+        <div class="centrar" style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+          <button type="button" class="boton boton-lleno" id="zona-pagar">Pagar con tarjeta / Bizum</button>
+          <button type="button" class="boton" id="zona-proforma">Pedido por transferencia</button>
+        </div>
+        <p class="aviso-formulario centrar" id="zc-aviso" aria-live="polite"></p>
+      </form>`;
+
+    zona.querySelectorAll('[data-quitar]').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        delete carrito[boton.dataset.quitar];
+        guardarCarrito();
+        pintarTienda();
+        pintarCarrito();
+      });
+    });
+
+    $('zona-pagar').addEventListener('click', () => pagarRedsys());
+    $('zona-proforma').addEventListener('click', () => crearProforma());
+  }
+
+  function datosPedido() {
+    const v = (id) => $(id).value.trim();
+    return {
+      articulos: Object.entries(carrito).map(([codigo, cantidad]) => ({ codigo, cantidad })),
+      envio: {
+        nombre: v('zc-nombre'),
+        apellidos: v('zc-apellidos'),
+        email: v('zc-email'),
+        telefono: v('zc-telefono'),
+        direccion: v('zc-direccion'),
+        cp: v('zc-cp'),
+        poblacion: v('zc-poblacion'),
+        provincia: v('zc-provincia'),
+        pais: $('zc-pais').value,
+      },
+    };
+  }
+
+  async function conSesion(funcion, cuerpo) {
+    const { data: sesion } = await sb.auth.getSession();
+    const token = sesion?.session?.access_token;
+    if (!token) {
+      avisoZona('Tu sesión ha caducado. Vuelve a entrar.');
+      mostrarVista('zona-acceso');
+      return { ok: false, contenido: {} };
+    }
+    const control = new AbortController();
+    const reloj = setTimeout(() => control.abort(), 30000);
+    try {
+      const respuesta = await fetch(`${window.SUPABASE_URL.replace(/\/$/, '')}/functions/v1/${funcion}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(cuerpo),
+        signal: control.signal,
+      });
+      const contenido = await respuesta.json().catch(() => ({}));
+      return { ok: respuesta.ok && !contenido.error, contenido };
+    } catch {
+      return { ok: false, contenido: { error: 'No hemos podido conectar. Inténtalo de nuevo.' } };
+    } finally {
+      clearTimeout(reloj);
+    }
+  }
+
+  async function pagarRedsys() {
+    const aviso = $('zc-aviso');
+    aviso.textContent = '';
+    const cuerpo = datosPedido();
+    if (!cuerpo.articulos.length) {
+      aviso.textContent = 'Tu carrito está vacío.';
+      return;
+    }
+    const boton = $('zona-pagar');
+    boton.disabled = true;
+    boton.textContent = 'Preparando el pago…';
+    const { ok, contenido } = await conSesion('oms-distrib-pagos-firma', cuerpo);
+    boton.disabled = false;
+    boton.textContent = 'Pagar con tarjeta / Bizum';
+    if (!ok) {
+      aviso.textContent = contenido.error || 'No se pudo preparar el pago.';
+      return;
+    }
+    // Guarda el detalle para la página de confirmación y abre el TPV
+    try {
+      localStorage.setItem(
+        'shaddai-pedido-pendiente',
+        JSON.stringify({
+          pedido: contenido.numeroPedido,
+          total: contenido.resumen.total,
+          metodo: 'tarjeta',
+          nombre: [cuerpo.envio.nombre, cuerpo.envio.apellidos].filter(Boolean).join(' '),
+          email: cuerpo.envio.email,
+          telefono: cuerpo.envio.telefono,
+          direccion: [cuerpo.envio.direccion, cuerpo.envio.cp, cuerpo.envio.poblacion, cuerpo.envio.provincia].filter(Boolean).join(', '),
+          fecha: new Date().toISOString(),
+          articulos: contenido.resumen.articulos.map((l) => ({ nombre: l.nombre, cantidad: l.cantidad, precio: l.precioUnitario })),
+        })
+      );
+      carrito = {};
+      guardarCarrito();
+    } catch {}
+    const formulario = document.createElement('form');
+    formulario.method = 'POST';
+    formulario.action = contenido.url;
+    [
+      ['Ds_MerchantParameters', contenido.parametrosB64],
+      ['Ds_Signature', contenido.firma],
+      ['Ds_SignatureVersion', contenido.version],
+    ].forEach(([campo, valor]) => {
+      const entrada = document.createElement('input');
+      entrada.type = 'hidden';
+      entrada.name = campo;
+      entrada.value = valor;
+      formulario.append(entrada);
+    });
+    document.body.append(formulario);
+    formulario.submit();
+  }
+
+  async function crearProforma() {
+    const aviso = $('zc-aviso');
+    aviso.textContent = '';
+    const cuerpo = datosPedido();
+    if (!cuerpo.articulos.length) {
+      aviso.textContent = 'Tu carrito está vacío.';
+      return;
+    }
+    const boton = $('zona-proforma');
+    boton.disabled = true;
+    boton.textContent = 'Registrando…';
+    const { ok, contenido } = await conSesion('oms-distrib-pedido', cuerpo);
+    boton.disabled = false;
+    boton.textContent = 'Pedido por transferencia';
+    if (!ok) {
+      aviso.textContent = contenido.error || 'No se pudo registrar el pedido.';
+      return;
+    }
+    carrito = {};
+    guardarCarrito();
+    pintarTienda();
+    pintarCarrito();
+    aviso.textContent = '';
+    const transferencia = contenido.transferencia || {};
+    $('zona-carrito').innerHTML = `
+      <div class="aviso-zona">
+        <strong>Pedido ${escapar(contenido.numeroPedido)} registrado</strong> — total con tu descuento: <strong>${euro(contenido.resumen?.total || 0)}</strong><br>
+        ${transferencia.iban ? `Haz la transferencia a: <strong>${escapar(transferencia.iban)}</strong><br>` : ''}
+        ${transferencia.info ? `${escapar(transferencia.info)}<br>` : ''}
+        Indica siempre el número de pedido en el concepto. Te hemos enviado el detalle por correo y el pedido se prepara al confirmarse el pago.
+      </div>`;
+    cargarPedidos();
+  }
+
+  // ─── MATERIAL COMERCIAL ───────────────────────────────────────────────────
+
+  async function cargarMaterial() {
+    const vista = $('zona-vista-material');
+    try {
+      const [recursos, accesos] = await Promise.all([
+        sb.from('oms_distrib_recursos').select('*').eq('visible', true).order('zona').order('creado_en', { ascending: false }),
+        sb.from('oms_distrib_recursos_accesos').select('zona'),
+      ]);
+      const lista = recursos.data || [];
+      if (!lista.length) {
+        vista.innerHTML = '<p class="aviso-formulario">Todavía no tienes material autorizado. Contacta con SHADDAI.</p>';
+        return;
+      }
+      const tipoEtiquetas = {
+        logo: 'Logotipo', poster: 'Póster', ficha_producto: 'Ficha de producto',
+        intencion_ventas: 'Intención de ventas', ventas_reales: 'Ventas reales', otro: 'Documento',
+      };
+      let zonaActual = null;
+      vista.innerHTML = lista
+        .map((r) => {
+          const cabecera = r.zona !== zonaActual ? `<p class="carpeta-cabecera">📁 ${escapar(r.zona)}</p>` : '';
+          zonaActual = r.zona;
+          return `${cabecera}<div class="recurso-linea">
+            <span class="titulo"><strong>${escapar(r.titulo)}</strong><br><span style="font-size:.85rem;color:#7d7466;">${escapar(tipoEtiquetas[r.tipo] || r.tipo)}${r.descripcion ? ` · ${escapar(r.descripcion)}` : ''}</span></span>
+            <button type="button" class="boton boton-lleno" data-bajar="${escapar(r.archivo)}">Descargar</button>
+          </div>`;
+        })
+        .join('');
+
+      vista.querySelectorAll('[data-bajar]').forEach((boton) => {
+        boton.addEventListener('click', async () => {
+          boton.disabled = true;
+          try {
+            const { data, error } = await sb.storage.from('oms-distrib').createSignedUrl(boton.dataset.bajar, 600);
+            if (error || !data?.signedUrl) throw new Error('No se pudo preparar la descarga.');
+            window.open(data.signedUrl, '_blank', 'noopener');
+          } catch (error) {
+            toastVisual(error.message || 'Error al descargar.');
+          }
+          boton.disabled = false;
+        });
+      });
+
+      void accesos; // la RLS ya filtra por carpetas autorizadas
+    } catch {
+      vista.innerHTML = '<p class="aviso-formulario">No se pudo cargar el material comercial.</p>';
+    }
+  }
+
+  // ─── MIS PEDIDOS ──────────────────────────────────────────────────────────
+
+  const ETIQUETAS_ESTADO = {
+    pendiente: 'Pendiente', pagado: 'Pagado', enviado: 'En camino',
+    entregado: 'Entregado', cancelado: 'Cancelado',
+  };
+
+  async function cargarPedidos() {
+    const vista = $('zona-vista-pedidos');
+    try {
+      const { data: pedidos, error } = await sb
+        .from('oms_pedidos')
+        .select('id, numero, numero_publico, subtotal, envio, total, descuento_pct, metodo, estado, creado_en')
+        .order('creado_en', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      const lista = pedidos || [];
+      if (!lista.length) {
+        vista.innerHTML = '<p class="aviso-formulario">Todavía no tienes pedidos.</p>';
+        return;
+      }
+      const { data: lineas } = await sb
+        .from('oms_pedidos_lineas')
+        .select('pedido, nombre, cantidad, precio_unitario')
+        .in('pedido', lista.map((p) => p.id))
+        .limit(1000);
+      const porPedido = {};
+      (lineas || []).forEach((l) => {
+        (porPedido[l.pedido] = porPedido[l.pedido] || []).push(l);
+      });
+
+      vista.innerHTML = lista
+        .map((p) => {
+          const misLineas = (porPedido[p.id] || [])
+            .map((l) => `<li>${escapar(l.cantidad)} × ${escapar(l.nombre)} — ${euro(l.precio_unitario)}</li>`)
+            .join('');
+          return `<article style="border:1px solid rgba(201,164,95,.35);padding:1rem 1.2rem;margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:baseline;">
+              <strong>${escapar(p.numero_publico || p.numero)}</strong>
+              <span class="estado-badge">${escapar(ETIQUETAS_ESTADO[p.estado] || p.estado)}</span>
+            </div>
+            <p style="font-size:.85rem;color:#7d7466;">${new Date(p.creado_en).toLocaleString('es-ES')} · ${p.metodo === 'transferencia' ? 'Transferencia' : 'Tarjeta'} · descuento ${escapar(Number(p.descuento_pct) || 0)}%</p>
+            <ul style="padding-left:1.2rem;">${misLineas}</ul>
+            <p style="text-align:right;"><strong>Total: ${euro(p.total)}</strong> (envío ${euro(p.envio)})</p>
+          </article>`;
+        })
+        .join('');
+    } catch {
+      vista.innerHTML = '<p class="aviso-formulario">No se pudieron cargar tus pedidos.</p>';
+    }
+  }
+
+  // ─── Arranque (detecta sesión del enlace de invitación) ───────────────────
+  sb.auth.onAuthStateChange((evento) => {
+    if (evento === 'SIGNED_IN' || evento === 'TOKEN_REFRESHED' || evento === 'PASSWORD_RECOVERY') {
+      determinarEstado();
+    }
+  });
+  determinarEstado();
+})();

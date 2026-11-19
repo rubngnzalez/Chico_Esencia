@@ -79,6 +79,7 @@ const PESTANAS = [
   { clave: 'numeracion', texto: 'Pedidos' },
   { clave: 'emails_automaticos', texto: 'Emails automáticos' },
   { clave: 'notificaciones', texto: 'Notificaciones' },
+  { clave: 'distribucion', texto: 'Distribución' },
   { clave: 'sistema', texto: 'Sistema (oculto)' },
 ];
 
@@ -156,6 +157,7 @@ export default async function (contenedor) {
     else if (pestanaActual === 'redsys') pintarRedsys(zona, datos);
     else if (pestanaActual === 'envio') pintarEnvio(zona, datos);
     else if (pestanaActual === 'emails_automaticos') pintarEmails(zona, datos);
+    else if (pestanaActual === 'distribucion') pintarDistribucion(zona, datos);
     else if (pestanaActual === 'sistema') pintarSistema(zona, datos);
     else pintarNotificaciones(zona, datos);
   };
@@ -608,6 +610,107 @@ function pintarNotificaciones(zona, datos) {
         nuevoPedido: campos.nuevoPedido.checked,
         nuevoContacto: campos.nuevoContacto.checked,
         nuevoMensaje: campos.nuevoMensaje.checked,
+      });
+    } catch (error) {
+      toast(error.message, 'error');
+    }
+  });
+}
+
+// ─── Distribución (programa de distribuidores) ─────────────────────────────
+
+const PLANTILLAS_DISTRIBUCION = [
+  ['verificacion', 'Verificación del correo (paso 1)', 'Variables: {{persona_contacto}} · {{enlace}} (dura 24 h) · {{empresa}}'],
+  ['solicitudRecibida', 'Confirmación al interesado (solicitud completa)', 'Variables: {{persona_contacto}} · {{empresa}}'],
+  ['avisoInterno', 'Aviso interno de nueva solicitud', 'Variables: {{empresa}} · {{persona_contacto}} · {{email}} · {{telefono}}'],
+  ['aceptacion', 'Aceptación + activación de la zona VIP', 'Variables: {{persona_contacto}} · {{empresa}} · {{enlace}} (invitación de Supabase) · {{descuento}}'],
+  ['rechazo', 'Rechazo de la solicitud (opcional)', 'Variables: {{persona_contacto}}'],
+  ['proformaCreada', 'Proforma creada (transferencia)', 'Variables: {{persona_contacto}} · {{numero_pedido}} · {{articulos}} · {{descuento}} · {{total}} · {{transferencia}}'],
+  ['proformaPagada', 'Transferencia recibida (pedido en preparación)', 'Variables: {{persona_contacto}} · {{numero_pedido}}'],
+];
+
+function pintarDistribucion(zona, datos) {
+  const plantillasGuardadas = datos.plantillas || {};
+  const textos = datos.textos || {};
+
+  const campoPlantilla = ([clave, titulo, variables]) => {
+    const p = plantillasGuardadas[clave] || {};
+    return `
+      <fieldset class="plantilla-email">
+        <legend>${titulo}</legend>
+        <p class="texto-suave" style="margin-bottom:.6rem;">${variables}</p>
+        <label>Asunto</label>
+        <input name="plantilla.${clave}.asunto" value="${escapar(p.asunto || '')}" maxlength="300">
+        <label>Contenido (HTML, sin cabecera ni pie: el sobre de marca con el logo se añade solo)</label>
+        <textarea name="plantilla.${clave}.html" rows="7" class="campo-mono">${escapar(p.html || '')}</textarea>
+      </fieldset>`;
+  };
+
+  zona.innerHTML = `
+    <form class="formulario ajustes-formulario">
+      <div class="ayuda-seccion">
+        <p><strong>Programa de distribuidores.</strong> Estos ajustes rigen la captación «Hazte distribuidor»
+        (distribuidores.html), la zona VIP y las proformas por transferencia. Los correos se envían con
+        <strong>cabecera de marca y logotipo</strong>; aquí defines el destino de los avisos, los datos de
+        transferencia, el logotipo y los textos de cada correo.</p>
+      </div>
+      <label>Emails de destino de los avisos de distribución (uno por línea; si lo dejas vacío se usan los de Contacto)</label>
+      <textarea name="emailsDestino" rows="3" placeholder="pedidos@omshaddai.com">${escapar((datos.emailsDestino || []).join('\n'))}</textarea>
+      <div class="formulario-grid">
+        <div>
+          <label>IBAN / cuenta para las proformas</label>
+          <input name="iban" value="${escapar(datos.iban || '')}" placeholder="ES00 0000 0000 0000 0000 0000">
+        </div>
+        <div>
+          <label>Logotipo para las cabeceras de correo (URL)</label>
+          <input name="logotipo" value="${escapar(datos.logotipo || 'https://omshaddai.com/img/shin-logo.png')}">
+        </div>
+      </div>
+      <label>Información que acompaña a los datos de transferencia</label>
+      <textarea name="transferenciaInfo" rows="2" placeholder="Indica el número de pedido en el concepto…">${escapar(datos.transferenciaInfo || '')}</textarea>
+      <label>Texto legal del formulario (HTML público)</label>
+      <textarea name="textos.legal" rows="5" class="campo-mono">${escapar(textos.legal || '')}</textarea>
+      <label>Texto de protección de datos (HTML público)</label>
+      <textarea name="textos.privacidad" rows="5" class="campo-mono">${escapar(textos.privacidad || '')}</textarea>
+      <div class="formulario-grid">
+        <div>
+          <label>Versión de los textos legales (se registra con cada solicitud)</label>
+          <input name="textosVersion" type="number" min="1" value="${escapar(Number(datos.textosVersion) || 1)}">
+        </div>
+      </div>
+      ${PLANTILLAS_DISTRIBUCION.map(campoPlantilla).join('')}
+      <div class="barra-herramientas sin-borde">
+        <button type="button" class="boton boton-fantasma" data-vista-previa>Vista previa de una plantilla</button>
+      </div>
+      <div class="modal-acciones"><button type="submit" class="boton boton-primario">Guardar distribución</button></div>
+    </form>`;
+
+  const formulario = zona.querySelector('form');
+  zona.querySelector('[data-vista-previa]').addEventListener('click', () => {
+    abrirVistaPrevia('Plantilla de distribución', formulario.elements['plantilla.aceptacion.html'].value || '<p>(sin contenido)</p>');
+  });
+  formulario.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    const campos = formulario.elements;
+    const plantillas = {};
+    PLANTILLAS_DISTRIBUCION.forEach(([clave]) => {
+      plantillas[clave] = {
+        asunto: campos[`plantilla.${clave}.asunto`].value.trim(),
+        html: campos[`plantilla.${clave}.html`].value,
+      };
+    });
+    try {
+      await guardarSeccion('distribucion', {
+        emailsDestino: campos.emailsDestino.value.split(/[\n,;]+/).map((e) => e.trim()).filter(Boolean),
+        iban: campos.iban.value.trim(),
+        logotipo: campos.logotipo.value.trim(),
+        transferenciaInfo: campos.transferenciaInfo.value.trim(),
+        textos: {
+          legal: campos['textos.legal'].value,
+          privacidad: campos['textos.privacidad'].value,
+        },
+        textosVersion: Number.parseInt(campos.textosVersion.value, 10) || 1,
+        plantillas,
       });
     } catch (error) {
       toast(error.message, 'error');

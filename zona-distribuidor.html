@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#16261b">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Zona Distribuidores — SHADDAI · Esencia de Umbral</title>
+  <meta name="description" content="Zona privada para distribuidores autorizados de SHADDAI · Esencia de Umbral.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.ico">
+  <link rel="stylesheet" href="css/estilos.css?v=13">
+  <style>
+    /* Estilos propios de la zona VIP (no afectan al resto de la web) */
+    .zona-marco { max-width: 62rem; margin: 0 auto; }
+    .zona-acceso { max-width: 30rem; margin: 3rem auto; }
+    .zona-pista { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.8rem; }
+    .zona-pista button { background:none; border:1px solid rgba(201,164,95,.4); color:inherit; padding:.5rem 1.1rem; cursor:pointer; font-family:inherit; letter-spacing:.08em; }
+    .zona-pista button.activo { background: var(--oro, #c9a45f); color: var(--verde, #16261b); border-color: var(--oro, #c9a45f); }
+    .zona-vista { display:none; }
+    .zona-vista.activa { display:block; }
+    .prod-rejilla { display:grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap:1.4rem; }
+    .prod-tarjeta { border:1px solid rgba(201,164,95,.35); padding:1.1rem; display:flex; flex-direction:column; gap:.6rem; }
+    .prod-tarjeta img { width:100%; height:auto; }
+    .prod-tarjeta .pvp { text-decoration: line-through; opacity:.6; font-size:.9rem; }
+    .prod-tarjeta .precio-dist { font-family:'Cormorant Garamond',serif; font-size:1.5rem; color: var(--oro, #c9a45f); }
+    .prod-tarjeta input { max-width:5rem; }
+    .carrito-linea { display:flex; align-items:center; gap:.8rem; border-bottom:1px solid rgba(201,164,95,.25); padding:.6rem 0; flex-wrap:wrap; }
+    .carrito-linea .nombre { flex:1 1 12rem; }
+    .zona-tabla { width:100%; border-collapse:collapse; }
+    .zona-tabla th, .zona-tabla td { text-align:left; padding:.55rem .5rem; border-bottom:1px solid rgba(201,164,95,.25); font-size:.95rem; }
+    .carpeta-cabecera { font-family:'Cormorant Garamond',serif; font-size:1.3rem; color: var(--oro, #c9a45f); margin:1.6rem 0 .6rem; }
+    .recurso-linea { display:flex; align-items:center; gap:.8rem; padding:.5rem 0; border-bottom:1px solid rgba(201,164,95,.2); flex-wrap:wrap; }
+    .recurso-linea .titulo { flex:1 1 14rem; }
+    .aviso-zona { background: rgba(201,164,95,.1); border:1px solid rgba(201,164,95,.4); padding:.9rem 1.1rem; margin-bottom:1.4rem; }
+    .estado-badge { display:inline-block; border:1px solid rgba(201,164,95,.5); padding:.1rem .5rem; font-size:.8rem; }
+    @media (max-width: 640px) { .prod-rejilla { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body data-pagina="zona-distribuidor">
+
+  <div class="fondo-magico" aria-hidden="true"></div>
+
+  <header class="cabecera">
+    <div class="barra">
+      <a href="index.html" class="marca">
+        <span class="shin"><img src="img/shin-logo.webp" alt="" width="512" height="512"></span>
+        <span class="nombre">SHADDAI<small>Zona Distribuidores</small></span>
+      </a>
+      <div class="acciones-cabecera">
+        <button class="menu-boton" id="zona-salir" style="display:none;" aria-label="Cerrar sesión">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="cabecera-pagina">
+      <div class="contenedor">
+        <span class="etiqueta">Área privada</span>
+        <h1>Zona <span class="oro">distribuidores</span></h1>
+        <p class="entradilla" id="zona-subtitulo">Acceso exclusivo para distribuidores autorizados por SHADDAI.</p>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor zona-marco">
+
+        <!-- ACCESO -->
+        <div id="zona-acceso" class="zona-acceso">
+          <form id="zona-form-login" class="formulario" autocomplete="off">
+            <div class="campo">
+              <label for="zl-email">Correo electrónico</label>
+              <input type="email" id="zl-email" placeholder="tu@negocio.com" required>
+            </div>
+            <div class="campo">
+              <label for="zl-pass">Contraseña</label>
+              <input type="password" id="zl-pass" placeholder="Tu contraseña" required>
+            </div>
+            <div class="centrar">
+              <button type="submit" class="boton boton-lleno">Entrar</button>
+            </div>
+            <p class="aviso-formulario centrar" id="zl-aviso" aria-live="polite"></p>
+            <p style="text-align:center;font-size:.9rem;margin-top:1rem;">
+              ¿Sin contraseña o la olvidaste?
+              <button type="button" class="boton boton-fantasma" id="zona-recuperar" style="color:inherit;border-color:rgba(201,164,95,.4);">Enviar enlace de acceso</button>
+            </p>
+            <p style="text-align:center;font-size:.85rem;margin-top:.8rem;color:#7d7466;">
+              ¿Quieres ser distribuidor? Solicítalo en <a href="distribuidores.html">Hazte distribuidor</a>.
+            </p>
+          </form>
+        </div>
+
+        <!-- DEFINIR CONTRASEÑA (tras la invitación) -->
+        <div id="zona-password" class="zona-acceso" hidden>
+          <div class="aviso-zona">Bienvenido al programa de distribuidores. Define tu contraseña para acceder a tu zona privada (mínimo 8 caracteres).</div>
+          <form id="zona-form-password" class="formulario" autocomplete="off">
+            <div class="campo">
+              <label for="zp-pass">Nueva contraseña</label>
+              <input type="password" id="zp-pass" minlength="8" placeholder="Mínimo 8 caracteres" required>
+            </div>
+            <div class="campo">
+              <label for="zp-pass2">Repite la contraseña</label>
+              <input type="password" id="zp-pass2" minlength="8" placeholder="La misma contraseña" required>
+            </div>
+            <div class="centrar">
+              <button type="submit" class="boton boton-lleno">Guardar y entrar</button>
+            </div>
+            <p class="aviso-formulario centrar" id="zp-aviso" aria-live="polite"></p>
+          </form>
+        </div>
+
+        <!-- APLICACIÓN -->
+        <div id="zona-app" hidden>
+          <div class="aviso-zona" id="zona-bienvenida"></div>
+          <div class="zona-pista" role="tablist">
+            <button type="button" data-vista="tienda" class="activo">Tienda de distribuidor</button>
+            <button type="button" data-vista="material">Material comercial</button>
+            <button type="button" data-vista="pedidos">Mis pedidos</button>
+          </div>
+
+          <div class="zona-vista activa" id="zona-vista-tienda"><p class="aviso-formulario">Cargando catálogo…</p></div>
+          <div class="zona-vista" id="zona-vista-material"><p class="aviso-formulario">Cargando material…</p></div>
+          <div class="zona-vista" id="zona-vista-pedidos"><p class="aviso-formulario">Cargando pedidos…</p></div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="base">© 2026 SHADDAI · Esencia de Umbral · Zona privada para distribuidores autorizados</div>
+    </div>
+  </footer>
+
+  <script src="js/config-api.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/config-supabase.js"></script>
+  <script src="js/zona-distribuidor.js?v=1"></script>
+</body>
+</html>

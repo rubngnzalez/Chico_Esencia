@@ -1086,3 +1086,115 @@ body {
   padding: 8px;
   background: #fff;
 }
+
+/* ---------- Distribuidores y estadísticas (2026-11-19) ---------- */
+.celda-acciones {
+  white-space: nowrap;
+  text-align: right;
+}
+.celda-acciones .boton {
+  margin-left: 0.25rem;
+}
+.fila-grupo th {
+  text-align: left;
+  padding: 0.7rem 0.6rem 0.3rem;
+  color: var(--oro);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(201, 164, 95, 0.25);
+}
+.modal-cuerpo-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.modal-cuerpo-formulario label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--oro);
+  margin-top: 0.7rem;
+}
+.modal-cuerpo-formulario input[type="checkbox"] {
+  width: auto;
+}
+.modal-cuerpo-formulario .formulario-opciones label {
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--texto);
+  font-size: 0.88rem;
+  margin-top: 0.4rem;
+}
+.dist-carpetas {
+  align-items: flex-start;
+}
+.dist-carpetas .interruptor {
+  font-size: 0.88rem;
+  margin-top: 0.35rem;
+}
+.zona-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.4rem;
+}
+.tarjeta-kpi {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(201, 164, 95, 0.25);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+.tarjeta-kpi .kpi-etiqueta {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--oro);
+}
+.tarjeta-kpi .kpi-valor {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  color: var(--crema);
+  margin-top: 0.3rem;
+}
+.tarjeta-kpi .kpi-nota {
+  font-size: 0.75rem;
+  color: var(--texto-suave, rgba(217, 212, 197, 0.55));
+}
+.contenedor-grafica {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(201, 164, 95, 0.25);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+}
+.contenedor-grafica h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  color: var(--oro-claro);
+  margin-bottom: 0.7rem;
+}
+.contenedor-grafica .lienzo {
+  position: relative;
+  height: 260px;
+}
+.filtros-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: flex-end;
+  margin-bottom: 1.3rem;
+}
+.filtros-stats label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--oro);
+}
+.filtros-stats input,
+.filtros-stats select {
+  min-width: 9rem;
+}
