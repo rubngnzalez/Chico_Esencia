@@ -89,6 +89,16 @@ function sanearZonas(valor: unknown): string[] {
     .slice(0, 12);
 }
 
+// Defensa del enlace de activación: si Supabase devolviera un redirect_to
+// fuera de la zona VIP (p. ej. el Site URL por no estar en la lista blanca),
+// se reescribe siempre al de la zona VIP en producción.
+function enlazarActivacion(actionLink: string): string {
+  const destino = encodeURIComponent('https://omshaddai.com/zona-distribuidor.html?invite=1');
+  if (/redirect_to=[^&]*omshaddai\.com/.test(actionLink)) return actionLink;
+  if (!/redirect_to=/.test(actionLink)) return actionLink;
+  return actionLink.replace(/redirect_to=[^&]*/, `redirect_to=${destino}`);
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cabeceras(request) });
   if (request.method !== 'POST') return errorJson('Método no permitido.', 405, request);
@@ -196,7 +206,7 @@ Deno.serve(async (request: Request) => {
         if (errorEnlace || !enlace?.properties?.action_link) {
           return errorJson(`No se pudo generar el enlace de activación: ${errorEnlace?.message || 'error desconocido'}`, 500, request);
         }
-        enlaceActivacion = String(enlace.properties.action_link);
+        enlaceActivacion = enlazarActivacion(String(enlace.properties.action_link));
         // Su perfil queda INACTIVO: no es personal del panel (el proyecto no
         // tiene trigger sobre auth.users; el perfil se crea explícitamente).
         await db
@@ -212,7 +222,7 @@ Deno.serve(async (request: Request) => {
           return errorJson(`No se pudo crear la cuenta de la zona VIP: ${errorEnlace?.message || 'error desconocido'}`, 500, request);
         }
         userId = enlace.user?.id || null;
-        enlaceActivacion = String(enlace.properties.action_link);
+        enlaceActivacion = enlazarActivacion(String(enlace.properties.action_link));
         if (userId) {
           await db
             .from('oms_usuarios')
@@ -454,7 +464,7 @@ Deno.serve(async (request: Request) => {
     const correo = plantillaDe(ajustes.distribucion, 'aceptacion', {
       persona_contacto: escaparHtml(distribuidor.persona_contacto || ''),
       empresa: escaparHtml(distribuidor.empresa || ''),
-      enlace: String(enlace.properties.action_link),
+      enlace: enlazarActivacion(String(enlace.properties.action_link)),
       descuento: String(Number(distribuidor.descuento_pct) || 0),
     }, DEFECTO_ACEPTACION);
     const envio = await enviarCorreo(
