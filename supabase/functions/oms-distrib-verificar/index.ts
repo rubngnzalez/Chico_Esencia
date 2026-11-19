@@ -50,14 +50,14 @@ Deno.serve(async (request: Request) => {
 
   const { data: encontradas, error } = await db
     .from('oms_distrib_solicitudes')
-    .select('id, email, estado, token_expira')
+    .select('id, email, estado, token_expira, persona_contacto, telefono')
     .eq('token_hash', tokenHash)
     .order('creado_en', { ascending: false })
     .limit(1);
   if (error) return errorJson('No se pudo comprobar el enlace.', 500, request);
 
   const solicitud = (encontradas || [])[0] as
-    | { id: string; email: string; estado: string; token_expira: string | null }
+    | { id: string; email: string; estado: string; token_expira: string | null; persona_contacto: string; telefono: string }
     | undefined;
 
   if (!solicitud) {
@@ -82,7 +82,14 @@ Deno.serve(async (request: Request) => {
   }
 
   return new Response(
-    JSON.stringify({ ok: true, email: emailEnmascarado(solicitud.email) }),
+    JSON.stringify({
+      ok: true,
+      email: emailEnmascarado(solicitud.email),
+      // Datos ya recogidos en el paso 1: el formulario llega rellenado con
+      // lo que el interesado indicó al principio (respetar y mantener).
+      personaContacto: String(solicitud.persona_contacto || ''),
+      telefono: String(solicitud.telefono || ''),
+    }),
     { headers: cabeceras(request) }
   );
 });

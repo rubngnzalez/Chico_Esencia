@@ -14,9 +14,95 @@
 
   const $ = (id) => document.getElementById(id);
   const pasos = ['dist-paso-1', 'dist-paso-espera', 'dist-paso-2', 'dist-paso-gracias'];
+  const CLAVE_BORRADOR = 'dist-solicitud-borrador';
 
   let captcha = null; // { datos, firma } vigente
   let tokenVerificado = '';
+
+  // ─── Borrador del formulario (la información escrita nunca se pierde) ────
+  function leerBorrador() {
+    try {
+      const datos = JSON.parse(localStorage.getItem(CLAVE_BORRADOR) || 'null');
+      return datos && typeof datos === 'object' ? datos : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function guardarBorrador() {
+    try {
+      localStorage.setItem(CLAVE_BORRADOR, JSON.stringify({ token: tokenVerificado || '', datos: camposFormulario() }));
+    } catch {}
+  }
+
+  function borrarTokenBorrador() {
+    // El token dejó de servir, pero lo escrito se conserva para el reintento
+    try {
+      const borrador = leerBorrador();
+      if (borrador) {
+        borrador.token = '';
+        localStorage.setItem(CLAVE_BORRADOR, JSON.stringify(borrador));
+      }
+    } catch {}
+  }
+
+  function camposFormulario() {
+    const v = (id) => $(id).value.trim();
+    const marcados = (id) => Array.from($(id).querySelectorAll('input:checked')).map((c) => c.value);
+    return {
+      empresa: v('d2-empresa'),
+      razonSocial: v('d2-razon'),
+      cif: v('d2-cif'),
+      personaContacto: v('d2-persona'),
+      telefono: v('d2-telefono'),
+      web: v('d2-web'),
+      calle: v('d2-calle'),
+      cp: v('d2-cp'),
+      poblacion: v('d2-poblacion'),
+      provincia: v('d2-provincia'),
+      pais: $('d2-pais').value,
+      territorio: v('d2-territorio'),
+      comentarios: v('d2-comentarios'),
+      tipoEstablecimiento: $('d2-tipo').value,
+      actividad: $('d2-actividad').value,
+      experiencia: $('d2-experiencia').value,
+      comoNosConociste: $('d2-conociste').value,
+      motivaciones: marcados('d2-motivaciones'),
+      canales: marcados('d2-canales'),
+      legal: $('d2-legal').checked,
+      privacidad: $('d2-privacidad').checked,
+    };
+  }
+
+  function restaurarCampos(datos) {
+    if (!datos || typeof datos !== 'object') return;
+    const textos = {
+      'd2-empresa': 'empresa', 'd2-razon': 'razonSocial', 'd2-cif': 'cif',
+      'd2-persona': 'personaContacto', 'd2-telefono': 'telefono', 'd2-web': 'web',
+      'd2-calle': 'calle', 'd2-cp': 'cp', 'd2-poblacion': 'poblacion',
+      'd2-provincia': 'provincia', 'd2-territorio': 'territorio', 'd2-comentarios': 'comentarios',
+    };
+    // Solo rellena campos vacíos: lo escrito por el interesado manda siempre
+    Object.entries(textos).forEach(([id, clave]) => {
+      const valor = String(datos[clave] || '').trim();
+      if (valor && !$(id).value.trim()) $(id).value = valor;
+    });
+    const selects = { 'd2-pais': 'pais', 'd2-tipo': 'tipoEstablecimiento', 'd2-actividad': 'actividad', 'd2-experiencia': 'experiencia', 'd2-conociste': 'comoNosConociste' };
+    Object.entries(selects).forEach(([id, clave]) => {
+      const valor = String(datos[clave] || '').trim();
+      if (valor) $(id).value = valor;
+    });
+    [['d2-motivaciones', 'motivaciones'], ['d2-canales', 'canales']].forEach(([id, clave]) => {
+      const guardadas = Array.isArray(datos[clave]) ? datos[clave] : [];
+      if (guardadas.length) {
+        $(id).querySelectorAll('input[type="checkbox"]').forEach((c) => {
+          c.checked = guardadas.includes(c.value) || c.checked;
+        });
+      }
+    });
+    if (datos.legal === true) $('d2-legal').checked = true;
+    if (datos.privacidad === true) $('d2-privacidad').checked = true;
+  }
 
   const mostrar = (id) => {
     pasos.forEach((paso) => $(paso).classList.toggle('activo', paso === id));
@@ -122,6 +208,16 @@
     if (ok) {
       tokenVerificado = token;
       zonaEmail.textContent = `Correo confirmado: ${contenido.email}. Completa la solicitud a continuación (tarda unos minutos).`;
+      // Datos ya recogidos en el paso 1: llegan rellenados desde el servidor
+      const borrador = leerBorrador();
+      if (String(contenido.personaContacto || '').trim() && !$('d2-persona').value.trim()) {
+        $('d2-persona').value = String(contenido.personaContacto).trim();
+      }
+      if (String(contenido.telefono || '').trim() && !$('d2-telefono').value.trim()) {
+        $('d2-telefono').value = String(contenido.telefono).trim();
+      }
+      restaurarCampos(borrador?.datos);
+      guardarBorrador();
       // Limpiar el token de la barra de direcciones para evitar reenvíos accidentales
       try {
         window.history.replaceState({}, '', 'distribuidores.html');
@@ -129,6 +225,7 @@
     } else {
       zonaEmail.textContent = '';
       aviso('dist-aviso-2', contenido.error || 'El enlace no es válido.', 'error');
+      borrarTokenBorrador();
       $('dist-form-2').querySelector('button[type="submit"]').disabled = true;
     }
   }
@@ -171,48 +268,46 @@
 
     const boton = $('dist-form-2').querySelector('button[type="submit"]');
     boton.disabled = true;
+    const recogidos = camposFormulario();
     const { ok, contenido } = await llamar('completar', {
       token: tokenVerificado,
       legalAceptado: $('d2-legal').checked,
       privacidadAceptado: $('d2-privacidad').checked,
       datos: {
-        empresa: f('d2-empresa'),
-        razonSocial: f('d2-razon'),
-        cif: f('d2-cif'),
-        personaContacto: f('d2-persona'),
-        telefono: f('d2-telefono'),
-        web: f('d2-web'),
-        territorio: f('d2-territorio'),
-        comentarios: f('d2-comentarios'),
-        tipoEstablecimiento: f('d2-tipo'),
-        actividad: f('d2-actividad'),
-        experiencia: f('d2-experiencia'),
-        comoNosConociste: f('d2-conociste'),
-        motivaciones: motivaciones.valores,
-        canales: marcados('d2-canales').valores,
+        ...recogidos,
         direccion: {
-          calle: f('d2-calle'),
-          cp: f('d2-cp'),
-          poblacion: f('d2-poblacion'),
-          provincia: f('d2-provincia'),
-          pais: $('d2-pais').value,
+          calle: recogidos.calle,
+          cp: recogidos.cp,
+          poblacion: recogidos.poblacion,
+          provincia: recogidos.provincia,
+          pais: recogidos.pais,
         },
       },
     });
     boton.disabled = false;
 
     if (ok) {
+      try { localStorage.removeItem(CLAVE_BORRADOR); } catch {}
       mostrar('dist-paso-gracias');
     } else {
       aviso('dist-aviso-2', contenido.error || 'No se pudo enviar la solicitud. Inténtalo de nuevo.', 'error');
     }
   });
 
+  // Autoguardado: cualquier cambio del formulario queda guardado al momento
+  $('dist-form-2').addEventListener('input', guardarBorrador);
+  $('dist-form-2').addEventListener('change', guardarBorrador);
+
   // ─── Arranque ─────────────────────────────────────────────────────────────
   const parametros = new URLSearchParams(window.location.search);
-  const token = (parametros.get('verificar') || '').trim();
-  if (token.length === 64) {
-    iniciarVerificacion(token);
+  const tokenUrl = (parametros.get('verificar') || '').trim();
+  const borrador = leerBorrador();
+  if (tokenUrl.length === 64) {
+    iniciarVerificacion(tokenUrl);
+  } else if (borrador?.token && String(borrador.token).length === 64) {
+    // Recarga o vuelta atrás con el correo ya confirmado: se recupera el
+    // formulario con todo lo escrito (el servidor revalida el enlace).
+    iniciarVerificacion(borrador.token);
   } else {
     cargarCaptcha();
   }
