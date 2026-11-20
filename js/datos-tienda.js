@@ -94,6 +94,41 @@ const DATOS_TIENDA = [
     return IMAGENES_CONOCIDAS[clave] || actual || "";
   };
 
+  // Imagen para el carrito (los botones guardan una miniatura): la primera de
+  // verdad; si el producto solo tiene vídeos, se queda con ese vídeo.
+  const imagenCarrito = (producto) => {
+    const lista = Array.isArray(producto.imagenes) ? producto.imagenes : [];
+    const sinVideo = lista.find((ruta) => !esVideoUrl(ruta));
+    if (!sinVideo || IMAGENES_SEMILLA.includes(sinVideo)) return imagenDe(producto);
+    return urlMedio(sinVideo);
+  };
+
+  // Resuelve rutas de medios restantes (compatibilidad Worker antiguo)
+  const urlMedio = (ruta) => {
+    const valor = String(ruta || "");
+    if (!valor || IMAGENES_SEMILLA.includes(valor)) return "";
+    if (/^(https?:)?\/\//.test(valor)) return valor;
+    if (typeof window.SHADDAI_API_BASE === "string" && window.SHADDAI_API_BASE && /^recursos\//.test(valor)) {
+      return window.SHADDAI_API_BASE.replace(/\/$/, "") + "/" + valor;
+    }
+    return valor;
+  };
+
+  const esVideoUrl = (ruta) => /\.(mp4|webm|mov)(\?|#|$)/i.test(String(ruta || ""));
+
+  // Medios del producto para el carrusel: la imagen principal primero y,
+  // debajo, el resto de imágenes y vídeos (viven juntos en producto.imagenes)
+  const mediosDe = (producto) => {
+    const medios = [];
+    const principal = imagenDe(producto);
+    if (principal) medios.push({ url: principal, video: esVideoUrl(principal) });
+    (Array.isArray(producto.imagenes) ? producto.imagenes : []).slice(1).forEach((ruta) => {
+      const url = urlMedio(ruta);
+      if (url && !medios.some((m) => m.url === url)) medios.push({ url, video: esVideoUrl(url) });
+    });
+    return medios;
+  };
+
   const precioTexto = (valor) => {
     const numero = Number(valor) || 0;
     const texto = numero.toLocaleString("es-ES", {
@@ -132,7 +167,7 @@ const DATOS_TIENDA = [
       `data-id="${CONEXION.escapar(producto.codigo || producto.slug || producto.id)}" ` +
       `data-nombre="${CONEXION.escapar(producto.nombre)}" ` +
       `data-precio="${efectivo}" ` +
-      `data-imagen="${CONEXION.escapar(imagenDe(producto))}"`;
+      `data-imagen="${CONEXION.escapar(imagenCarrito(producto))}"`;
     if (Number(producto.stock) === 0) {
       return `<button class="boton boton-lleno boton-anadir" ${atributos} disabled aria-disabled="true">Agotado</button>`;
     }
@@ -169,6 +204,74 @@ const DATOS_TIENDA = [
     return productos.slice().sort((a, b) => posicion(a) - posicion(b));
   };
 
+  // Carrusel de medios: visor encima y tira de miniaturas debajo del marco.
+  // Con un solo medio se mantiene el marcado clásico de una sola imagen.
+  const medioVisorHtml = (medio, producto, indice) =>
+    medio.video
+      ? `<video src="${CONEXION.escapar(medio.url)}" controls autoplay muted loop playsinline preload="metadata" aria-label="${CONEXION.escapar(producto.nombre)} — vídeo ${indice + 1}"></video>`
+      : `<img src="${CONEXION.escapar(medio.url)}" alt="${CONEXION.escapar(producto.nombre)} — SHADDAI" loading="lazy">`;
+
+  const carruselHtml = (producto, medidas) => {
+    const medios = mediosDe(producto);
+    if (medios.length === 0) return "";
+    if (medios.length === 1) {
+      const medio = medios[0];
+      return medio.video
+        ? `<div class="carrusel-producto"><div class="carrusel-producto-visor"><div class="carrusel-producto-medio">${medioVisorHtml(medio, producto, 0)}</div></div></div>`
+        : `<img src="${CONEXION.escapar(medio.url)}" alt="${CONEXION.escapar(producto.nombre)} — SHADDAI" loading="lazy" ${medidas}>`;
+    }
+    const flechas =
+      `<button type="button" class="carrusel-producto-flecha anterior" data-flecha="-1" aria-label="Medio anterior">&#8249;</button>` +
+      `<button type="button" class="carrusel-producto-flecha siguiente" data-flecha="1" aria-label="Medio siguiente">&#8250;</button>`;
+    const pulgares = medios
+      .map((medio, indice) =>
+        `<button type="button" class="carrusel-producto-pulgar${indice === 0 ? " activa" : ""}" data-pulgar="${indice}" aria-label="Ver ${medio.video ? "vídeo" : "imagen"} ${indice + 1} de ${medios.length}">` +
+        (medio.video
+          ? `<video src="${CONEXION.escapar(medio.url)}#t=0.1" muted preload="metadata"></video><span class="carrusel-producto-play" aria-hidden="true">▶</span>`
+          : `<img src="${CONEXION.escapar(medio.url)}" alt="" loading="lazy">`) +
+        `</button>`)
+      .join("");
+    return (
+      `<div class="carrusel-producto" data-carrusel>` +
+      `<div class="carrusel-producto-visor">` +
+      `<div class="carrusel-producto-medio">${medioVisorHtml(medios[0], producto, 0)}</div>` +
+      flechas +
+      `</div>` +
+      `<div class="carrusel-producto-miniaturas">${pulgares}</div>` +
+      `</div>`
+    );
+  };
+
+  // Conecta el carrusel de una sección: flechas y miniaturas cambian el visor
+  const conectarCarrusel = (seccion, producto) => {
+    const carrusel = seccion.querySelector("[data-carrusel]");
+    if (!carrusel) return;
+    const medios = mediosDe(producto);
+    const caja = carrusel.querySelector(".carrusel-producto-medio");
+    const tira = carrusel.querySelector(".carrusel-producto-miniaturas");
+    let indice = 0;
+    const irA = (destino) => {
+      indice = (destino + medios.length) % medios.length;
+      caja.innerHTML = medioVisorHtml(medios[indice], producto, indice);
+      tira.querySelectorAll(".carrusel-producto-pulgar").forEach((pulgar, i) => {
+        pulgar.classList.toggle("activa", i === indice);
+      });
+      const activo = tira.querySelectorAll(".carrusel-producto-pulgar")[indice];
+      if (activo && tira.scrollWidth > tira.clientWidth) {
+        tira.scrollTo({ left: activo.offsetLeft - tira.clientWidth / 2 + activo.clientWidth / 2, behavior: "smooth" });
+      }
+    };
+    carrusel.addEventListener("click", (evento) => {
+      const flecha = evento.target.closest("[data-flecha]");
+      if (flecha) {
+        irA(indice + Number(flecha.dataset.flecha));
+        return;
+      }
+      const pulgar = evento.target.closest("[data-pulgar]");
+      if (pulgar) irA(Number(pulgar.dataset.pulgar));
+    });
+  };
+
   // Mismo marcado y clases que las secciones estáticas para no romper estilos
   const crearSeccion = (producto, indice) => {
     const seccion = document.createElement("section");
@@ -190,7 +293,7 @@ const DATOS_TIENDA = [
       `<div class="contenedor dos-columnas${inversa ? " inversa" : ""}">` +
       (imagen
         ? `<div class="columna-imagen marco-imagen compra-figura${vertical ? " vertical" : ""} revelar visible">` +
-          `<img src="${CONEXION.escapar(imagen)}" alt="${CONEXION.escapar(producto.nombre)} — SHADDAI" loading="lazy" ${medidas}>` +
+          carruselHtml(producto, medidas) +
           `</div>`
         : "") +
       `<div class="compra revelar visible">` +
@@ -202,6 +305,7 @@ const DATOS_TIENDA = [
       `<p class="compra-nota">Por orden de solicitud.${notaZonas} Consulta la <a href="politica.html">Política de Envío Consciente</a>.</p>` +
       `</div>` +
       `</div>`;
+    conectarCarrusel(seccion, producto);
     return seccion;
   };
 

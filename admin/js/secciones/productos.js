@@ -4,9 +4,9 @@
 // los costes y los países de cada zona).
 // El stock lo descuenta la base de datos al confirmarse el pago de un pedido
 // (y lo devuelve si el pedido se cancela); aquí se consulta y corrige a mano.
-import { sb, asegurar, subirImagen, mensajeError } from '../bd.js';
+import { sb, asegurar, subirMedio, mensajeError } from '../bd.js';
 import {
-  escapar, euro, toast, confirmar, abrirModal, urlImagen, slugificar, etiquetaVacia,
+  escapar, euro, toast, confirmar, abrirModal, urlImagen, slugificar, etiquetaVacia, esVideo,
 } from '../api.js';
 
 const ZONAS_ENVIO_PRODUCTO = [
@@ -83,7 +83,11 @@ export default async function (contenedor, contexto) {
         <tbody>
           ${lista.map((p) => `
           <tr data-id="${escapar(p.id)}">
-            <td class="celda-miniatura">${p.imagenes?.[0] ? `<img class="miniatura-tabla" src="${escapar(urlImagen(p.imagenes[0]))}" alt="">` : '<span class="miniatura-vacia">✦</span>'}</td>
+            <td class="celda-miniatura">${p.imagenes?.[0]
+              ? (esVideo(p.imagenes[0])
+                ? `<video class="miniatura-tabla" src="${escapar(urlImagen(p.imagenes[0]))}" muted preload="metadata"></video>`
+                : `<img class="miniatura-tabla" src="${escapar(urlImagen(p.imagenes[0]))}" alt="">`)
+              : '<span class="miniatura-vacia">✦</span>'}</td>
             <td><strong>${escapar(p.nombre)}</strong>${p.codigo ? `<span class="texto-suave"> · ${escapar(p.codigo)}</span>` : ''}<br><span class="texto-suave">${escapar(p.slug)}</span></td>
             <td>${escapar(nombreCategoria(p.categoria))}</td>
             <td>${Number(p.precio_oferta) > 0 ? `<s class="texto-suave">${euro(p.precio)}</s> <strong>${euro(p.precio_oferta)}</strong>` : euro(p.precio)}</td>
@@ -207,10 +211,10 @@ function abrirFormulario(producto, categorias, alGuardar) {
       <textarea name="descripcion" rows="3" maxlength="3000">${escapar(producto?.descripcion || '')}</textarea>
       <label>Historia (página del producto)</label>
       <textarea name="historia" rows="6" maxlength="12000">${escapar(producto?.historia || '')}</textarea>
-      <label>Imágenes (JPEG, PNG o WebP · máx. 5 MB cada una)</label>
+      <label>Imágenes y vídeos (JPEG, PNG, WebP · máx. 5 MB · MP4, WebM o MOV · máx. 80 MB)</label>
       <div class="zona-subida">
-        <input type="file" accept="image/jpeg,image/png,image/webp" multiple class="entrada-archivo">
-        <span class="texto-suave">Se suben al bucket «recursos» de Supabase al elegir el archivo.</span>
+        <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" multiple class="entrada-archivo">
+        <span class="texto-suave">Se suben al bucket «recursos» de Supabase al elegir el archivo. La primera imagen es la principal; el resto aparece en la tienda en un carrusel bajo ella.</span>
       </div>
       <div class="zona-imagenes"></div>
       <div class="modal-acciones">
@@ -232,11 +236,17 @@ function abrirFormulario(producto, categorias, alGuardar) {
 
   function pintarImagenes() {
     zonaImagenes.innerHTML = imagenes.length
-      ? imagenes.map((ruta, indice) => `
+      ? imagenes.map((ruta, indice) => {
+        const video = esVideo(ruta);
+        const contenido = video
+          ? `<video src="${escapar(urlImagen(ruta))}" muted preload="metadata"></video><span class="miniatura-video" aria-hidden="true">▶</span>`
+          : `<img src="${escapar(urlImagen(ruta))}" alt="">`;
+        return `
         <div class="miniatura">
-          <img src="${escapar(urlImagen(ruta))}" alt="">
-          <button type="button" class="miniatura-quitar" data-indice="${indice}" aria-label="Quitar imagen">×</button>
-        </div>`).join('')
+          ${contenido}
+          <button type="button" class="miniatura-quitar" data-indice="${indice}" aria-label="Quitar ${video ? 'vídeo' : 'imagen'}">×</button>
+        </div>`;
+      }).join('')
       : '<p class="texto-suave">Sin imágenes todavía.</p>';
   }
 
@@ -251,7 +261,7 @@ function abrirFormulario(producto, categorias, alGuardar) {
   entradaArchivo.addEventListener('change', async () => {
     for (const archivo of entradaArchivo.files) {
       try {
-        const url = await subirImagen(archivo);
+        const url = await subirMedio(archivo);
         imagenes.push(url);
         pintarImagenes();
       } catch (error) {

@@ -337,8 +337,12 @@ const pintarCarrito = (articulos) => {
   articulos.forEach((articulo) => {
     const fila = document.createElement("article");
     fila.className = "carrito-item";
+    const esVideo = /\.(mp4|webm|mov)(\?|#|$)/i.test(articulo.imagen || "");
+    const miniatura = esVideo
+      ? `<video src="${articulo.imagen}" muted preload="metadata" aria-hidden="true"></video>`
+      : `<img src="${articulo.imagen}" alt="${articulo.nombre}">`;
     fila.innerHTML = `
-      <img src="${articulo.imagen}" alt="${articulo.nombre}">
+      ${miniatura}
       <div class="item-info">
         <h3>${articulo.nombre}</h3>
         <p class="item-precio">${formatearPrecio(articulo.precio)} / unidad</p>
