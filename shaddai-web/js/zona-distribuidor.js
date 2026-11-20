@@ -229,7 +229,24 @@
         imagenes: Array.isArray(p.imagenes) ? p.imagenes : [],
         agotado: Boolean(p.agotado),
         stock: Number(p.stock) || 0,
+        imagenExclusivaUrl: '',
+        descripcionDistribuidor: '',
+        notasComerciales: '',
       }));
+      // Fichas exclusivas por producto (imagen premium + dossier)
+      const { data: fichas } = await sb.from('oms_distrib_producto_info').select('*');
+      const porId = {};
+      (fichas || []).forEach((f) => { porId[f.producto_id] = f; });
+      for (const producto of catalogo) {
+        const ficha = porId[producto.id];
+        if (!ficha) continue;
+        producto.descripcionDistribuidor = String(ficha.descripcion_distribuidor || '');
+        producto.notasComerciales = String(ficha.notas_comerciales || '');
+        if (ficha.imagen_exclusiva) {
+          const { data: firma, error: errorFirma } = await sb.storage.from('oms-distrib').createSignedUrl(ficha.imagen_exclusiva, 3600);
+          if (!errorFirma && firma?.signedUrl) producto.imagenExclusivaUrl = firma.signedUrl;
+        }
+      }
       pintarTienda();
       pintarCarrito();
     } catch {
@@ -243,22 +260,25 @@
       <div class="zt-coleccion">
         <div class="zt-cabecera">
           <h2>La colección para tu espacio</h2>
-          <p>Selección oficial disponible para tu tienda, con tu precio de distribuidor ya aplicado (${escapar(Number(distribuidor.descuento_pct) || 0)}% sobre el precio oficial).</p>
+          <p>Selección oficial disponible para tu tienda, con tu precio de distribuidor ya aplicado (${escapar(Number(distribuidor.descuento_pct) || 0)}% sobre el precio oficial). Pulsa un producto para abrir su ficha completa.</p>
         </div>
-        <div class="zt-rejilla">
+        <div class="zt-lista">
           ${catalogo
             .map((p) => {
               const precio = precioDistribuidor(p);
               const enCarrito = Number(carrito[p.codigo]) || 0;
               const agotado = p.agotado || p.stock <= 0;
-              return `<article class="zt-tarjeta">
-                <div class="zt-imagen">
-                  ${p.imagenes[0] ? `<img src="${escapar(p.imagenes[0])}" alt="${escapar(p.nombre)}" loading="lazy">` : ''}
+              const imagen = p.imagenExclusivaUrl || (p.imagenes[0] || '');
+              return `<article class="zt-fila">
+                <button type="button" class="zt-fila-imagen" data-ficha="${escapar(p.id)}" aria-label="Ver ficha de ${escapar(p.nombre)}">
+                  ${imagen ? `<img src="${escapar(imagen)}" alt="${escapar(p.nombre)}" loading="lazy">` : ''}
                   ${agotado ? '<span class="zt-etiqueta-agotado">Sin stock</span>' : ''}
-                </div>
-                <div class="zt-cuerpo">
-                  <h3 class="zt-nombre">${escapar(p.nombre)}</h3>
-                  <p class="zt-desc">${escapar(p.descripcion.slice(0, 130))}${p.descripcion.length > 130 ? '…' : ''}</p>
+                  <span class="zt-ver">Ver ficha completa</span>
+                </button>
+                <div class="zt-fila-info">
+                  <span class="zt-codigo">${escapar(p.codigo)}</span>
+                  <h3 class="zt-nombre"><button type="button" data-ficha="${escapar(p.id)}">${escapar(p.nombre)}</button></h3>
+                  <p class="zt-desc">${escapar(p.descripcion.slice(0, 160))}${p.descripcion.length > 160 ? '…' : ''}</p>
                   <div class="zt-precios">
                     <span class="zt-pvp">${euro(p.precioEfectivo)}</span>
                     <span class="zt-precio">${euro(precio)}</span>
@@ -291,6 +311,150 @@
         toastVisual('Carrito actualizado.');
       });
     });
+    vista.querySelectorAll('[data-ficha]').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        const producto = catalogo.find((p) => p.id === boton.dataset.ficha);
+        if (producto) abrirFicha(producto);
+      });
+    });
+  }
+
+  // ─── FICHA COMPLETA DEL PRODUCTO (página entera con pestañas) ─────────────
+  function abrirFicha(producto) {
+    const vista = $('zona-vista-tienda');
+    const precio = precioDistribuidor(producto);
+    const margen = producto.precioEfectivo > 0
+      ? Math.round(((producto.precioEfectivo - precio) / producto.precioEfectivo) * 1000) / 10
+      : 0;
+    const agotado = producto.agotado || producto.stock <= 0;
+    const imagen = producto.imagenExclusivaUrl || (producto.imagenes[0] || '');
+    const enCarrito = Number(carrito[producto.codigo]) || 0;
+
+    vista.innerHTML = `
+      <button type="button" class="boton boton-fantasma" id="zt-volver" style="color:inherit;border-color:rgba(201,164,95,.4);">← Volver a la colección</button>
+      <div class="zt-ficha">
+        <div class="zt-ficha-media">
+          ${imagen ? `<img src="${escapar(imagen)}" alt="${escapar(producto.nombre)}">` : ''}
+          ${agotado ? '<span class="zt-etiqueta-agotado">Sin stock</span>' : ''}
+        </div>
+        <div class="zt-ficha-info">
+          <span class="zt-codigo">${escapar(producto.codigo)}</span>
+          <h2 class="zt-nombre" style="font-size:2.2rem;">${escapar(producto.nombre)}</h2>
+          <p class="zt-desc">${escapar(producto.descripcion)}</p>
+          <div class="zt-precios" style="margin:.6rem 0;">
+            <span class="zt-pvp">PVP ${euro(producto.precioEfectivo)}</span>
+            <span class="zt-precio">${euro(precio)}</span>
+            <span class="zt-precio-tag">tu precio (−${escapar(Number(distribuidor.descuento_pct) || 0)}%)</span>
+          </div>
+          <ul class="zt-datos">
+            <li><strong>Margen sobre PVP:</strong> ${margen}%</li>
+            <li><strong>Stock disponible:</strong> ${producto.stock} unidades</li>
+            <li><strong>Referencia:</strong> ${escapar(producto.codigo)}</li>
+          </ul>
+          ${
+            agotado
+              ? '<p class="aviso-formulario">Sin stock ahora mismo.</p>'
+              : `<div class="zt-compra" style="max-width:22rem;">
+                  <input type="number" min="1" max="999" value="${Math.max(1, enCarrito)}" id="zt-ficha-cantidad" aria-label="Cantidad">
+                  <button type="button" class="boton boton-lleno" id="zt-ficha-anadir">${enCarrito ? 'Actualizar carrito' : 'Añadir al pedido'}</button>
+                </div>`
+          }
+          <p class="zt-guardado" id="zt-ficha-guardado"></p>
+        </div>
+      </div>
+      <div class="zt-tabs" role="tablist">
+        <button type="button" data-pestana="cliente" class="activo">Vista cliente final</button>
+        <button type="button" data-pestana="dossier">Dossier distribuidor</button>
+        <button type="button" data-pestana="materiales">Materiales exclusivos</button>
+      </div>
+      <div class="zt-panel activo" id="zt-panel-cliente">
+        <p class="zt-panel-nota">Así lo ve el cliente final en la tienda pública:</p>
+        <div class="zt-panel-cuerpo">
+          <p>${producto.descripcion ? escapar(producto.descripcion) : '<em>Sin descripción pública.</em>'}</p>
+          ${producto.imagenes[0] ? `<img src="${escapar(producto.imagenes[0])}" alt="${escapar(producto.nombre)}" style="max-width:22rem;border-radius:10px;border:1px solid rgba(201,164,95,.4);margin-top:.8rem;">` : ''}
+          <p class="zt-panel-nota">Precio público: <strong>${euro(producto.precioEfectivo)}</strong></p>
+        </div>
+      </div>
+      <div class="zt-panel" id="zt-panel-dossier" hidden>
+        <p class="zt-panel-nota">Información extensa reservada para el canal distribuidor:</p>
+        <div class="zt-panel-cuerpo">
+          ${producto.descripcionDistribuidor
+            ? `<div class="zt-dossier">${producto.descripcionDistribuidor}</div>`
+            : '<p class="aviso-formulario">Este producto aún no tiene dossier de distribuidor.</p>'}
+          ${producto.notasComerciales ? `<h3 class="zt-sub">Notas comerciales</h3><div class="zt-dossier">${producto.notasComerciales}</div>` : ''}
+        </div>
+      </div>
+      <div class="zt-panel" id="zt-panel-materiales" hidden>
+        <p class="zt-panel-nota">Material comercial exclusivo de este producto (según tus carpetas autorizadas):</p>
+        <div id="zt-materiales-lista"><p class="aviso-formulario">Cargando materiales…</p></div>
+      </div>`;
+
+    $('zt-volver').addEventListener('click', () => {
+      pintarTienda();
+      pintarCarrito();
+    });
+    const entradaFicha = $('zt-ficha-cantidad');
+    if (entradaFicha && $('zt-ficha-anadir')) {
+      $('zt-ficha-anadir').addEventListener('click', () => {
+        const cantidad = Math.max(1, Math.min(999, Number.parseInt(entradaFicha.value, 10) || 1));
+        carrito[producto.codigo] = cantidad;
+        guardarCarrito();
+        pintarCarrito();
+        $('zt-ficha-guardado').textContent = 'Carrito actualizado.';
+      });
+    }
+    vista.querySelectorAll('.zt-tabs button').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        vista.querySelectorAll('.zt-tabs button').forEach((b) => b.classList.toggle('activo', b === boton));
+        vista.querySelectorAll('.zt-panel').forEach((panel) => {
+          panel.hidden = panel.id !== `zt-panel-${boton.dataset.pestana}`;
+          panel.classList.toggle('activo', panel.id === `zt-panel-${boton.dataset.pestana}`);
+        });
+        if (boton.dataset.pestana === 'materiales') cargarMaterialesFicha(producto);
+      });
+    });
+  }
+
+  async function cargarMaterialesFicha(producto) {
+    const lista = $('zt-materiales-lista');
+    try {
+      const { data: materiales, error } = await sb
+        .from('oms_distrib_recursos')
+        .select('*')
+        .eq('producto_id', producto.id)
+        .eq('visible', true)
+        .order('creado_en', { ascending: false });
+      if (error) throw error;
+      const listaMateriales = materiales || [];
+      if (!listaMateriales.length) {
+        lista.innerHTML = '<p class="aviso-formulario">Este producto aún no tiene materiales exclusivos asignados.</p>';
+        return;
+      }
+      lista.innerHTML = listaMateriales
+        .map((m) => {
+          const etiquetas = { logo: 'Logotipo', poster: 'Póster', ficha_producto: 'Ficha de producto (PDF)', intencion_ventas: 'Intención de ventas', ventas_reales: 'Ventas reales', otro: 'Documento' };
+          return `<div class="recurso-linea">
+            <span class="titulo"><strong>${escapar(m.titulo)}</strong><br><span style="font-size:.85rem;color:#7d7466;">${escapar(etiquetas[m.tipo] || m.tipo)}${m.descripcion ? ` · ${escapar(m.descripcion)}` : ''}</span></span>
+            <button type="button" class="boton boton-lleno" data-bajar="${escapar(m.archivo)}">Descargar</button>
+          </div>`;
+        })
+        .join('');
+      lista.querySelectorAll('[data-bajar]').forEach((boton) => {
+        boton.addEventListener('click', async () => {
+          boton.disabled = true;
+          try {
+            const { data, error: errorUrl } = await sb.storage.from('oms-distrib').createSignedUrl(boton.dataset.bajar, 600);
+            if (errorUrl || !data?.signedUrl) throw new Error('No se pudo preparar la descarga.');
+            window.open(data.signedUrl, '_blank', 'noopener');
+          } catch (errorDescarga) {
+            toastVisual(errorDescarga.message || 'Error al descargar.');
+          }
+          boton.disabled = false;
+        });
+      });
+    } catch {
+      lista.innerHTML = '<p class="aviso-formulario">No se pudieron cargar los materiales.</p>';
+    }
   }
 
   function pintarCarrito() {
