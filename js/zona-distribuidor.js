@@ -151,54 +151,24 @@
     mostrarVista('zona-app');
     $('zona-salir').style.display = '';
     $('zona-bienvenida').innerHTML = `
-      ${accesoConTemporal
-        ? '<strong>Estás usando la contraseña temporal de tu correo de bienvenida.</strong> Por seguridad, define la tuya ahora:'
-        : ''}
-      <strong>${escapar(distribuidor.empresa || distribuidor.email)}</strong> — descuento aplicado: <strong>${escapar(Number(distribuidor.descuento_pct) || 0)}%</strong>
-      ${Array.isArray(distribuidor.zonas_territorio) && distribuidor.zonas_territorio.length
-        ? ` · Territorios: ${escapar(distribuidor.zonas_territorio.join(', '))}`
-        : ''}
-      <br><span style="font-size:.88rem;">El descuento se aplica siempre en el cálculo final del pedido, verificado en el servidor.</span>
-      <br><button type="button" class="boton boton-fantasma" id="zona-mostrar-pass" style="margin-top:.6rem;color:inherit;border-color:rgba(201,164,95,.4);">${accesoConTemporal ? 'Definir mi contraseña ahora' : 'Cambiar contraseña'}</button>
-      <form id="zona-form-cambiar" class="formulario" autocomplete="off" ${accesoConTemporal ? '' : 'hidden'}>
-        <div class="campo">
-          <label for="zc-nueva">Nueva contraseña</label>
-          <input type="password" id="zc-nueva" minlength="8" placeholder="Mínimo 8 caracteres" required>
-        </div>
-        <div class="campo">
-          <label for="zc-nueva2">Repite la nueva contraseña</label>
-          <input type="password" id="zc-nueva2" minlength="8" placeholder="La misma contraseña" required>
-        </div>
-        <p class="aviso-formulario" id="zc-aviso-cambio" aria-live="polite"></p>
-        <button type="submit" class="boton boton-lleno">Guardar contraseña</button>
-      </form>`;
-    $('zona-mostrar-pass').addEventListener('click', () => {
-      const formulario = $('zona-form-cambiar');
-      formulario.hidden = !formulario.hidden;
-    });
-    $('zona-form-cambiar').addEventListener('submit', async (evento) => {
-      evento.preventDefault();
-      const avisoCambio = $('zc-aviso-cambio');
-      avisoCambio.textContent = '';
-      if ($('zc-nueva').value !== $('zc-nueva2').value) {
-        avisoCambio.textContent = 'Las contraseñas no coinciden.';
-        return;
-      }
-      const { error } = await sb.auth.updateUser({ password: $('zc-nueva').value });
-      if (error) {
-        avisoCambio.textContent = error.message || 'No se pudo cambiar la contraseña.';
-        return;
-      }
-      avisoCambio.textContent = 'Contraseña actualizada.';
-      $('zc-nueva').value = '';
-      $('zc-nueva2').value = '';
-      accesoConTemporal = false;
-      toastVisual('Contraseña guardada. Ya puedes usarla en tus próximos accesos.');
-    });
+      <div class="zt-bien-marca">
+        <span class="zt-bien-empresa">${escapar(distribuidor.empresa || distribuidor.email)}</span>
+        <span class="zt-bien-descuento">${escapar(Number(distribuidor.descuento_pct) || 0)}<small>%</small></span>
+      </div>
+      <p class="zt-bien-nota">Descuento de distribuidor aplicado automáticamente en el cálculo final de cada pedido, verificado en el servidor.${Array.isArray(distribuidor.zonas_territorio) && distribuidor.zonas_territorio.length ? ` Territorios: ${escapar(distribuidor.zonas_territorio.join(', '))}.` : ''}</p>`;
     cargarTienda();
     cargarMaterial();
     cargarPedidos();
-    cargarPerfil();
+    cargarPerfil().then(() => {
+      // Primer acceso con la contraseña temporal del correo: la definición de
+      // la nueva se pide dentro de Mi perfil.
+      if (accesoConTemporal) {
+        const pestanaPerfil = document.querySelector('.zona-pista button[data-vista="perfil"]');
+        if (pestanaPerfil) pestanaPerfil.click();
+        const formulario = $('zona-form-cambiar');
+        if (formulario) formulario.hidden = false;
+      }
+    });
   }
 
   document.querySelectorAll('.zona-pista button').forEach((boton) => {
@@ -894,7 +864,47 @@
           <button type="button" class="boton boton-lleno" id="zp-guardar">Guardar mis datos</button>
         </div>
         <p class="zt-leyenda">Los cambios se aplican a tu ficha de distribuidor y se usan en tus pedidos y facturación.</p>
+        <div class="zt-pass">
+          <p class="dist-checks-titulo">Contraseña</p>
+          <button type="button" class="boton boton-fantasma" id="zona-mostrar-pass" style="color:inherit;border-color:rgba(201,164,95,.4);">${accesoConTemporal ? 'Definir mi contraseña ahora (estás usando la temporal del correo)' : 'Cambiar contraseña'}</button>
+          <form id="zona-form-cambiar" class="formulario" autocomplete="off" hidden>
+            <div class="campo">
+              <label for="zc-nueva">Nueva contraseña</label>
+              <input type="password" id="zc-nueva" minlength="8" placeholder="Mínimo 8 caracteres" required>
+            </div>
+            <div class="campo">
+              <label for="zc-nueva2">Repite la nueva contraseña</label>
+              <input type="password" id="zc-nueva2" minlength="8" placeholder="La misma contraseña" required>
+            </div>
+            <p class="aviso-formulario" id="zc-aviso-cambio" aria-live="polite"></p>
+            <button type="submit" class="boton boton-lleno">Guardar contraseña</button>
+          </form>
+        </div>
       </div>`;
+
+    $('zona-mostrar-pass').addEventListener('click', () => {
+      const formulario = $('zona-form-cambiar');
+      formulario.hidden = !formulario.hidden;
+    });
+    $('zona-form-cambiar').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const avisoCambio = $('zc-aviso-cambio');
+      avisoCambio.textContent = '';
+      if ($('zc-nueva').value !== $('zc-nueva2').value) {
+        avisoCambio.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+      const { error } = await sb.auth.updateUser({ password: $('zc-nueva').value });
+      if (error) {
+        avisoCambio.textContent = error.message || 'No se pudo cambiar la contraseña.';
+        return;
+      }
+      avisoCambio.textContent = 'Contraseña actualizada.';
+      $('zc-nueva').value = '';
+      $('zc-nueva2').value = '';
+      accesoConTemporal = false;
+      toastVisual('Contraseña guardada. Ya puedes usarla en tus próximos accesos.');
+    });
 
     $('zp-guardar').addEventListener('click', async () => {
       const boton = $('zp-guardar');
