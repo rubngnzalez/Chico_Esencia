@@ -80,26 +80,46 @@ async function generarEnlaceRecuperacion(claveServicio, email, destinoUrl) {
     body: JSON.stringify({ type: 'recovery', email, redirect_to: destinoUrl }),
   });
   const datos = await respuesta.json().catch(() => ({}));
-  if (respuesta.ok && datos.action_link) return { enlace: String(datos.action_link) };
+  if (respuesta.ok && datos.action_link) return { enlace: String(datos.action_link), userId: String(datos.user?.id || "") };
   const codigo = datos.error_code || datos.code || '';
   const mensaje = datos.msg || datos.message || datos.error_description || '';
-  // Cliente o distribuidor que aún no tiene cuenta en Supabase Auth:
-  // se crea confirmada y se reintenta una vez.
-  if (codigo === 'user_not_found' || /not found/i.test(mensaje)) {
-    const creacion = await fetch(`${URL_SUPABASE}/auth/v1/admin/users`, {
-      method: 'POST',
-      headers: {
-        apikey: claveServicio,
-        Authorization: `Bearer ${claveServicio}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, email_confirm: true }),
-    });
-    if (!creacion.ok) {
-      const detalleCreacion = await creacion.text().catch(() => '');
-      return { error: `No se pudo crear la cuenta de acceso (${detalleCreacion.slice(0, 120)})` };
-    }
-    const reintento = await fetch(`${URL_SUPABASE}/auth/v1/admin/generate_link`, {
+    // Cliente o distribuidor que aún no tiene cuenta en Supabase Auth:
+    // se crea confirmada, se le da ficha de panel según su ámbito y se
+    // reintenta una vez.
+    if (codigo === 'user_not_found' || /not found/i.test(mensaje)) {
+      const creacion = await fetch(`${URL_SUPABASE}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: {
+          apikey: claveServicio,
+          Authorization: `Bearer ${claveServicio}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, email_confirm: true }),
+      });
+      if (!creacion.ok) {
+        const detalleCreacion = await creacion.text().catch(() => '');
+        return { error: `No se pudo crear la cuenta de acceso (${detalleCreacion.slice(0, 120)})` };
+      }
+      const datosCreacion = await creacion.json().catch(() => ({}));
+      if (datosCreacion.id) {
+        // Ficha de panel con el ámbito correcto para las listas de Usuarios/Clientes
+        await fetch(`${URL_SUPABASE}/rest/v1/oms_usuarios`, {
+          method: 'POST',
+          headers: {
+            apikey: claveServicio,
+            Authorization: `Bearer ${claveServicio}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: datosCreacion.id,
+            email,
+            rol: 'lector',
+            activo: false,
+            ambito: destino === 'distribuidor' ? 'distribuidor' : 'cliente',
+          }),
+        }).catch(() => {});
+      }
+      const reintento = await fetch(`${URL_SUPABASE}/auth/v1/admin/generate_link`, {
       method: 'POST',
       headers: {
         apikey: claveServicio,
@@ -109,7 +129,7 @@ async function generarEnlaceRecuperacion(claveServicio, email, destinoUrl) {
       body: JSON.stringify({ type: 'recovery', email, redirect_to: destinoUrl }),
     });
     const datosReintento = await reintento.json().catch(() => ({}));
-    if (reintento.ok && datosReintento.action_link) return { enlace: String(datosReintento.action_link) };
+    if (reintento.ok && datosReintento.action_link) return { enlace: String(datosReintento.action_link), userId: String(datosReintento.user?.id || "") };
     return { error: 'No se pudo generar el enlace de acceso tras crear la cuenta.' };
   }
   return { error: `Supabase respondió ${respuesta.status}: ${mensaje || codigo || 'error desconocido'}` };
@@ -145,6 +165,33 @@ export function registrar(enrutador) {
       return respuestaJson({ error: `No se pudo preparar el acceso: ${resultado.error}` }, 502);
     }
 
+    // Ficha de panel con el ámbito correcto (para las listas Usuarios/Clientes)
+    // si el usuario no la tiene todavía.
+    if (resultado.userId) {
+      const perfilResp = await fetch(
+        `${URL_SUPABASE}/rest/v1/oms_usuarios?select=id&email=eq.${encodeURIComponent(email)}`,
+        { headers: { apikey: c.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${c.env.SUPABASE_SERVICE_ROLE_KEY}` } }
+      ).catch(() => null);
+      const perfilFilas = perfilResp && perfilResp.ok ? await perfilResp.json().catch(() => []) : [];
+      if (!(perfilFilas || []).length) {
+        await fetch(`${URL_SUPABASE}/rest/v1/oms_usuarios`, {
+          method: 'POST',
+          headers: {
+            apikey: c.env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${c.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: resultado.userId,
+            email,
+            rol: 'lector',
+            activo: false,
+            ambito: destino === 'distribuidor' ? 'distribuidor' : 'cliente',
+          }),
+        }).catch(() => {});
+      }
+    }
+
     const config = PLANTILLAS[destino];
     const boton = `<a href="${resultado.enlace}" style="display:inline-block;background:#16261b;color:#f3eee2;font-family:Verdana,Arial,sans-serif;font-size:14px;padding:12px 22px;text-decoration:none;border-radius:4px;">${config.textoBoton}</a>`;
     const html = sobreMarca(config.titulo, reemplazarVariables(config.cuerpo, { BOTON: boton }));
@@ -155,7 +202,7 @@ export function registrar(enrutador) {
     // que Resend rechazaría.
     const ajustesEnvio = {
       ...ajustes,
-      smtp: { ...(ajustes.smtp || {}), desde: 'SHADDAI · Esencia de Umbral <accesos@omshaddai.com>' },
+      smtp: { ...(ajustes.smtp || {}), desde: 'OMSHADDAI · Esencia de Umbral <accesos@omshaddai.com>' },
     };
     const envio = await enviarCorreo(
       c.db,

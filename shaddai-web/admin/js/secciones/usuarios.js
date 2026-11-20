@@ -1,4 +1,7 @@
-// Usuarios (solo admin): alta desde el panel, roles, activación, contraseñas.
+// Usuarios (solo admin): ESTA LISTA ES SOLO PARA EL STAFF DEL PANEL.
+// Los clientes están en la sección «Clientes» y los distribuidores en su
+// página dedicada (Distribuidores → Aceptados). El campo «ambito» separa los
+// tres mundos; desde aquí se puede reclasificar una cuenta si entró mal.
 // Las contraseñas van cifradas (Supabase Auth): nunca se pueden ver, solo se
 // crean nuevas o se regeneran. Las acciones pasan por la función segura
 // «gestion-usuarios», que comprueba rol admin en el servidor.
@@ -7,26 +10,45 @@ import { escapar, fechaHora, toast, abrirModal, confirmar, etiquetaVacia } from 
 
 const ROLES = ['admin', 'editor', 'lector'];
 const ETIQUETA_ROL = { admin: 'Administración', editor: 'Edición', lector: 'Lectura' };
+const AMBITOS = ['staff', 'cliente', 'distribuidor'];
+const ETIQUETA_AMBITO = { staff: 'Staff', cliente: 'Cliente', distribuidor: 'Distribuidor' };
+
+let verAmbito = 'staff';
 
 export default async function (contenedor, contexto) {
   contenedor.innerHTML = `
     <div class="barra-herramientas">
-      <p class="texto-suave">admin: todo · editor: catálogo, blog y correos · lector: solo lectura y bandeja.
+      <p class="texto-suave">Lista del <strong>staff del panel</strong>: admin: todo · editor: catálogo, blog y correos · lector: solo lectura y bandeja.
+      Los clientes están en la sección «Clientes» y los distribuidores en «Distribuidores».
       Las contraseñas van cifradas: no se pueden ver, pero puedes crear cuentas, generar nuevas contraseñas o eliminar cuentas.</p>
       <div class="acciones-barra">
         <button class="boton boton-fantasma boton-pequeno" data-accion="mi-contrasena" type="button">Cambiar mi contraseña</button>
         <button class="boton boton-primario boton-pequeno" data-accion="nuevo" type="button">+ Nuevo usuario</button>
       </div>
     </div>
+    <div class="pestanas" role="tablist" style="margin-bottom:1rem;">
+      ${['staff', 'cliente', 'distribuidor', 'todos'].map((a) => {
+        const etiquetas = { staff: 'Staff', cliente: 'Clientes', distribuidor: 'Distribuidores', todos: 'Todos' };
+        return `<button class="pestana ${verAmbito === a ? 'activa' : ''}" data-ambito="${a}" type="button">${etiquetas[a]}${a === 'staff' ? ' (lista principal)' : ''}</button>`;
+      }).join('')}
+    </div>
     <div id="zona-usuarios" class="zona-tabla"><p class="cargando">Cargando usuarios…</p></div>`;
 
   const zona = contenedor.querySelector('#zona-usuarios');
   let usuarios = [];
 
+  zona.querySelectorAll('[data-ambito]').forEach((boton) => {
+    boton.addEventListener('click', () => {
+      verAmbito = boton.dataset.ambito;
+      zona.querySelectorAll('[data-ambito]').forEach((b) => b.classList.toggle('activa', b === boton));
+      pintar();
+    });
+  });
+
   async function cargar() {
     zona.innerHTML = '<p class="cargando">Cargando usuarios…</p>';
     try {
-      usuarios = (await asegurar(sb().from('oms_usuarios').select('id, nombre, email, rol, activo, creado_en, ultimo_acceso').order('creado_en'))) || [];
+      usuarios = (await asegurar(sb().from('oms_usuarios').select('id, nombre, email, rol, activo, ambito, creado_en, ultimo_acceso').order('creado_en'))) || [];
       pintar();
     } catch (error) {
       zona.innerHTML = etiquetaVacia(`No se pudieron cargar los usuarios: ${error.message}`);
@@ -34,17 +56,31 @@ export default async function (contenedor, contexto) {
   }
 
   function pintar() {
+    const visibles = verAmbito === 'todos' ? usuarios : usuarios.filter((u) => (u.ambito || 'staff') === verAmbito);
+    if (!visibles.length) {
+      zona.innerHTML = etiquetaVacia(
+        verAmbito === 'staff'
+          ? 'El staff del panel aparecerá aquí.'
+          : `Sin cuentas de ámbito «${ETIQUETA_AMBITO[verAmbito] || verAmbito}» todavía. Se clasifican con el selector de cada fila (vista Todos).`
+      );
+      return;
+    }
     zona.innerHTML = `
       <table class="tabla">
-        <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Último acceso</th><th>Alta</th><th>Activo</th><th class="alineado-derecha">Acciones</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Ámbito</th><th>Último acceso</th><th>Alta</th><th>Activo</th><th class="alineado-derecha">Acciones</th></tr></thead>
         <tbody>
-          ${usuarios.map((u) => {
+          ${visibles.map((u) => {
             const soyYo = u.id === contexto.usuario.id;
             return `
           <tr data-id="${escapar(u.id)}">
             <td><strong>${escapar(u.nombre || '(sin nombre)')}</strong>${soyYo ? ' <span class="chip">tú</span>' : ''}</td>
             <td class="texto-suave">${escapar(u.email)}</td>
             <td><span class="chip chip-oro">${escapar(ETIQUETA_ROL[u.rol] || u.rol)}</span></td>
+            <td>
+              <select data-accion="ambito" class="campo-select">
+                ${AMBITOS.map((a) => `<option value="${a}" ${(u.ambito || 'staff') === a ? 'selected' : ''}>${escapar(ETIQUETA_AMBITO[a])}</option>`).join('')}
+              </select>
+            </td>
             <td class="texto-suave">${u.ultimo_acceso ? fechaHora(u.ultimo_acceso) : 'nunca'}</td>
             <td class="texto-suave">${u.creado_en ? fechaHora(u.creado_en) : '—'}</td>
             <td><label class="interruptor"><input type="checkbox" data-accion="activo" ${u.activo !== false ? 'checked' : ''}><span class="interruptor-pista"></span></label></td>
@@ -128,6 +164,53 @@ export default async function (contenedor, contexto) {
     });
   }
 
+  function abrirFormularioEdicion(usuario, alGuardar) {
+    const { cerrar, cuerpo } = abrirModal(`Editar: ${usuario.nombre || usuario.email}`, `
+      <form class="formulario">
+        <label>Nombre</label>
+        <input name="nombre" maxlength="120" required value="${escapar(usuario.nombre || '')}">
+        <label>Email</label>
+        <input value="${escapar(usuario.email)}" disabled>
+        <p class="texto-suave">El email no se cambia aquí: está ligado al acceso (Supabase Auth).</p>
+        <label>Rol</label>
+        <select name="rol">
+          ${ROLES.map((r) => `<option value="${r}" ${usuario.rol === r ? 'selected' : ''}>${escapar(ETIQUETA_ROL[r])}</option>`).join('')}
+        </select>
+        <div class="modal-acciones">
+          <button type="button" class="boton boton-fantasma" data-cancelar>Cancelar</button>
+          <button type="submit" class="boton boton-primario">Guardar</button>
+        </div>
+      </form>`, '26rem');
+    const formulario = cuerpo.querySelector('form');
+    cuerpo.querySelector('[data-cancelar]').addEventListener('click', cerrar);
+    formulario.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const boton = formulario.querySelector('button[type="submit"]');
+      const nuevoRol = formulario.elements.rol.value;
+      if (usuario.rol === 'admin' && nuevoRol !== 'admin') {
+        const otrosAdmins = usuarios.filter((u) => u.rol === 'admin' && u.activo !== false && u.id !== usuario.id);
+        if (!otrosAdmins.length) {
+          toast('No puede dejar de haber al menos un administrador activo.', 'error');
+          return;
+        }
+      }
+      boton.disabled = true;
+      try {
+        const error = (await sb().from('oms_usuarios').update({
+          nombre: formulario.elements.nombre.value.trim(),
+          rol: nuevoRol,
+        }).eq('id', usuario.id)).error;
+        if (error) throw new Error(mensajeError(error));
+        toast('Usuario actualizado.');
+        cerrar();
+        await alGuardar();
+      } catch (error) {
+        toast(error.message, 'error');
+        boton.disabled = false;
+      }
+    });
+  }
+
   function abrirMiContrasena() {
     const { cerrar, cuerpo } = abrirModal('Cambiar mi contraseña', `
       <form class="formulario">
@@ -162,6 +245,23 @@ export default async function (contenedor, contexto) {
   }
 
   zona.addEventListener('change', async (evento) => {
+    const selectorAmbito = evento.target.closest('select[data-accion="ambito"]');
+    if (selectorAmbito) {
+      const usuario = usuarios.find((u) => u.id === selectorAmbito.closest('tr').dataset.id);
+      if (!usuario) return;
+      const nuevoAmbito = selectorAmbito.value;
+      try {
+        const error = (await sb().from('oms_usuarios').update({ ambito: nuevoAmbito }).eq('id', usuario.id)).error;
+        if (error) throw new Error(mensajeError(error));
+        usuario.ambito = nuevoAmbito;
+        toast(`«${usuario.nombre || usuario.email}» ahora es ${ETIQUETA_AMBITO[nuevoAmbito] || nuevoAmbito}.`);
+        if (verAmbito !== 'todos') pintar(); // si salió de la vista actual, desaparece de la lista
+      } catch (error) {
+        selectorAmbito.value = usuario.ambito || 'staff';
+        toast(error.message, 'error');
+      }
+      return;
+    }
     const interruptor = evento.target.closest('input[data-accion="activo"]');
     if (!interruptor) return;
     const usuario = usuarios.find((u) => u.id === interruptor.closest('tr').dataset.id);

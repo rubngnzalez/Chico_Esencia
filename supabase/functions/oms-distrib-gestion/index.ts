@@ -219,7 +219,7 @@ Deno.serve(async (request: Request) => {
         // tiene trigger sobre auth.users; el perfil se crea explícitamente).
         await db
           .from('oms_usuarios')
-          .upsert({ id: yaExiste.id, email: solicitud.email, nombre: persona, rol: 'lector', activo: false }, { onConflict: 'id' });
+          .upsert({ id: yaExiste.id, email: solicitud.email, nombre: persona, rol: 'lector', activo: false, ambito: 'distribuidor' }, { onConflict: 'id' });
       } else {
         const { data: enlace, error: errorEnlace } = await admin.auth.admin.generateLink({
           type: 'invite',
@@ -234,7 +234,7 @@ Deno.serve(async (request: Request) => {
         if (userId) {
           await db
             .from('oms_usuarios')
-            .upsert({ id: userId, email: solicitud.email, nombre: persona, rol: 'lector', activo: false }, { onConflict: 'id' });
+            .upsert({ id: userId, email: solicitud.email, nombre: persona, rol: 'lector', activo: false, ambito: 'distribuidor' }, { onConflict: 'id' });
         }
       }
     } catch (error) {
@@ -494,7 +494,7 @@ Deno.serve(async (request: Request) => {
         await db
           .from('oms_usuarios')
           .upsert(
-            { id: userId, email: distribuidor.email, nombre: distribuidor.persona_contacto || distribuidor.empresa, rol: 'lector', activo: false },
+            { id: userId, email: distribuidor.email, nombre: distribuidor.persona_contacto || distribuidor.empresa, rol: 'lector', activo: false, ambito: 'distribuidor' },
             { onConflict: 'id' }
           );
       } else if (!['admin', 'editor'].includes(perfil.rol)) {
