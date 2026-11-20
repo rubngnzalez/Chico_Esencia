@@ -223,9 +223,16 @@ async function iniciar() {
   try {
     sb().auth.onAuthStateChange((evento) => {
       if (evento === 'SIGNED_OUT' && usuarioActual) {
-        usuarioActual = null;
-        contenidoSeccion.innerHTML = '';
-        mostrarVista('login');
+        // Verificación real antes de expulsar: los eventos cruzados de otras
+        // pestañas o aplicaciones (zonas de cliente y distribuidor) no deben
+        // cerrar la sesión del panel.
+        sb().auth.getSession().then(({ data }) => {
+          if (!data?.session) {
+            usuarioActual = null;
+            contenidoSeccion.innerHTML = '';
+            mostrarVista('login');
+          }
+        }).catch(() => {});
       }
     });
     const { data, error } = await sb().auth.getSession();
