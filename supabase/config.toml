@@ -20,3 +20,34 @@ verify_jwt = false
 
 [functions.oms-enviar-campana]
 entrypoint = "functions/oms-enviar-campana/index.ts"
+
+# ─── Programa de distribuidores (2026-11-19) ──────────────────────────────
+# Públicas (captación en la web): nunca verifican JWT de Supabase.
+[functions.oms-distrib-captcha]
+entrypoint = "functions/oms-distrib-captcha/index.ts"
+verify_jwt = false
+
+[functions.oms-distrib-solicitar]
+entrypoint = "functions/oms-distrib-solicitar/index.ts"
+verify_jwt = false
+
+[functions.oms-distrib-verificar]
+entrypoint = "functions/oms-distrib-verificar/index.ts"
+verify_jwt = false
+
+[functions.oms-distrib-completar]
+entrypoint = "functions/oms-distrib-completar/index.ts"
+verify_jwt = false
+
+# Del panel / zona VIP: llegan con el JWT de sesión del llamador.
+[functions.oms-distrib-gestion]
+entrypoint = "functions/oms-distrib-gestion/index.ts"
+
+[functions.oms-distrib-pagos-firma]
+entrypoint = "functions/oms-distrib-pagos-firma/index.ts"
+
+[functions.oms-distrib-pedido]
+entrypoint = "functions/oms-distrib-pedido/index.ts"
+
+[functions.oms-cliente-acceso]
+entrypoint = "functions/oms-cliente-acceso/index.ts"

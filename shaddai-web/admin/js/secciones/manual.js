@@ -159,7 +159,39 @@ const SECCIONES_MANUAL = [
       solos.</p>`,
   },
   {
-    id: 'redsys', titulo: '10 · Pago (Redsys): test y producción',
+    id: 'distribuidores', titulo: '10 · Distribuidores y zona VIP',
+    contenido: `
+      <p>El programa <strong>«Hazte distribuidor»</strong> capta interesados en la web
+      (<code>distribuidores.html</code>), los verifica por email y concentra aquí la revisión y la aceptación.
+      Todo vive en la sección <em>Distribuidores</em>.</p>
+      <ul>
+        <li><strong>Solicitudes</strong>: estados reales — «Email sin verificar», «Verificado · formulario pendiente»,
+        «Pendiente de aceptación», «Aceptado», «Rechazado», «Descartado». El botón <em>Ver</em> muestra el
+        cuestionario completo, la traza legal (aceptaciones, versión de textos, IP) y las notas internas.</li>
+        <li><strong>Aceptar</strong>: fija el % de descuento y los territorios; el sistema crea la cuenta de la
+        zona VIP y envía el correo de marca con el enlace para definir la contraseña (vigente una sola vez).</li>
+        <li><strong>Banco de emails</strong>: interesados que nunca verificaron su correo, con
+        <em>reenviar enlace</em> (↻) y <em>eliminar</em> (🗑).</li>
+        <li><strong>Aceptados</strong>: edita descuento y territorios (✎), autoriza las <strong>carpetas de
+        material</strong> que ve cada uno (▤), <strong>deshabilita el acceso puntualmente</strong> (⏸ — no podrán
+        entrar ni pedir) y reenvía el correo de activación (✉).</li>
+        <li><strong>Recursos</strong>: sube logos, pósters, fichas PDF, hojas de intención y ventas reales
+        (PDF/PNG/JPG/WebP/ZIP, máx. 20 MB) a carpetas (zonas) en minúsculas. El bucket es PRIVADO: solo lo
+        descargan los distribuidores con esa carpeta autorizada.</li>
+        <li><strong>Proformas</strong>: los pedidos por transferencia de la zona VIP llegan a <em>Pedidos</em>
+        con método «Transferencia». Cuando llegue el dinero, marca el estado «Pagado» (el stock se descuenta
+        solo) y pulsa el aviso de correo para que el distribuidor sepa que está en preparación.</li>
+        <li><strong>Ajustes → Distribución</strong>: emails de destino de los avisos, IBAN y texto de
+        transferencia, logotipo de los correos, textos legales del formulario (con versión) y las plantillas
+        de todos los correos del programa. Los correos SIEMPRE llevan la cabecera con el logo de la marca.</li>
+      </ul>
+      <p><strong>Zona VIP</strong> (<code>zona-distribuidor.html</code>): tienda privada con el precio de
+      distribuidor ya descontado, pago con Redsys o proforma por transferencia, material comercial y sus
+      pedidos. El importe se recalcula siempre en el servidor: si cambias el % de descuento, el siguiente
+      pedido ya sale con el nuevo.</p>`,
+  },
+  {
+    id: 'redsys', titulo: '11 · Pago (Redsys): test y producción',
     contenido: `
       <p>En <em>Ajustes → Pago (Redsys)</em> se guardan el <strong>FUC</strong>, el <strong>terminal</strong>, la
       moneda (978 = euros), el <strong>entorno</strong> y la <strong>clave secreta</strong> de firma.</p>
@@ -176,7 +208,7 @@ const SECCIONES_MANUAL = [
       </ul>`,
   },
   {
-    id: 'ajustes', titulo: '11 · Resto de ajustes',
+    id: 'ajustes', titulo: '12 · Resto de ajustes',
     contenido: `
       <ul>
         <li><strong>Contacto</strong>: los emails de destino (uno por línea) reciben los avisos internos; también
@@ -196,7 +228,7 @@ const SECCIONES_MANUAL = [
       </ul>`,
   },
   {
-    id: 'usuarios', titulo: '12 · Usuarios',
+    id: 'usuarios', titulo: '13 · Usuarios',
     contenido: `
       <p>Solo la administración ve esta sección. Puedes <strong>dar de alta cuentas nuevas</strong> desde el propio
       panel («+ Nuevo usuario»: genera una contraseña segura que se muestra una sola vez) o desde el dashboard de
@@ -209,38 +241,6 @@ const SECCIONES_MANUAL = [
       <p><strong>Contraseñas:</strong> se autogestionan en Supabase — «Send password recovery» en
       Authentication → Users envía el correo para fijar una nueva. Desde la esquina inferior del panel
       cualquier persona puede cambiar su propia contraseña.</p>`,
-  },
-  {
-    id: 'distribuidores', titulo: '13 · Distribuidores (alianza B2B)',
-    contenido: `
-      <p>La sección <strong>Distribuidores</strong> gestiona la alianza B2B. La página pública
-      <code>omshaddai.com/distribuidores.html</code> solo <strong>presenta la marca y recoge solicitudes</strong> con el
-      formulario «Solicitar alianza»: los packs y sus valores <strong>NO se publican</strong> en la web abierta. Tiene
-      tres pestañas:</p>
-      <h3>Packs</h3>
-      <p>Cada pack de la propuesta de alianza (Pack «Umbral», Pack «Ceremonia»…) con todos sus <strong>costes y
-      valores</strong>: contenido, inversión (un importe fijo o un rango con nota, p. ej. «descuento aplicado»), PVP,
-      beneficio con su nota («aprox. 50 % de margen») y el argumento de venta. Estos datos nunca se muestran a
-      visitantes: solo los ve el distribuidor con sesión iniciada en su área privada, con su descuento aplicado a la
-      inversión. El interruptor «Web» oculta un pack a los distribuidores sin borrarlo; «Orden» decide qué pack se
-      muestra primero y «Recomendado» añade el sello dorado.</p>
-      <h3>Solicitudes</h3>
-      <p>Aquí llegan las peticiones del formulario «Solicitar alianza» de la web, con espacio, contacto, email,
-      teléfono y mensaje. Puedes <strong>Ver</strong> el mensaje completo, <strong>Crear acceso</strong> (abre el
-      formulario de cuenta ya rellenado; al crearla la solicitud queda marcada «Con cuenta»), <strong>Descartar</strong>
-      o volver a ponerla «A pendiente». Solo la administración elimina solicitudes.</p>
-      <h3>Cuentas de acceso</h3>
-      <p>Cada distribuidor accede a <code>https://omshaddai.com/distribuidor.html</code> (página discreta, sin enlace
-      en el menú ni en el pie: se entra por URL directa) con un <strong>usuario y contraseña reales</strong>
-      (Supabase Auth) que se crean aquí. Al crear la cuenta — o al generar una contraseña nueva con «Contraseña» —
-      el sistema <strong>envía las credenciales por email automáticamente</strong> al distribuidor: con Resend si está
-      configurado (clave en vault); si no, el correo queda descargable en <strong>Panel → Correo → Bandeja de
-      salida</strong>. La contraseña también se muestra <em>una sola vez</em> en pantalla, por si hay que entregarla a
-      mano. La ficha guarda empresa, contacto, ciudad, notas y un <strong>descuento (%)</strong> que el área privada
-      aplica sobre la inversión de los packs para pintar «sus condiciones». Desde ahí también pueden pedir stock: su
-      solicitud llega a la Bandeja de entrada. El interruptor «Activo» corta el acceso sin borrar la cuenta;
-      «Eliminar» la da de baja para siempre. Las cuentas de distribuidor NO pueden entrar en este panel de gestión:
-      solo en su área privada.</p>`,
   },
   {
     id: 'datos', titulo: '14 · Dónde viven los datos y copias de seguridad',

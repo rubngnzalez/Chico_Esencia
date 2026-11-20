@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#16261b">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Zona Clientes — SHADDAI · Esencia de Umbral</title>
+  <meta name="description" content="Zona de clientes de SHADDAI · Esencia de Umbral: consulta tus pedidos y su estado.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.ico">
+  <link rel="stylesheet" href="css/estilos.css?v=15">
+  <style>
+    /* Estilos propios de la zona de clientes (no afectan al resto de la web) */
+    .zona-marco { max-width: 62rem; margin: 0 auto; }
+    .zona-acceso { max-width: 30rem; margin: 3rem auto; }
+    .aviso-zona { background: rgba(201,164,95,.1); border: 1px solid rgba(201,164,95,.4); padding: .9rem 1.1rem; margin-bottom: 1.4rem; }
+    .zona-tabla { width: 100%; border-collapse: collapse; }
+    .zona-tabla th, .zona-tabla td { text-align: left; padding: .55rem .5rem; border-bottom: 1px solid rgba(201,164,95,.25); font-size: .95rem; }
+    .estado-badge { display: inline-block; border: 1px solid rgba(201,164,95,.5); padding: .1rem .5rem; font-size: .8rem; }
+    .pedido-articulo { border: 1px solid rgba(201,164,95,.35); padding: 1rem 1.2rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body data-pagina="zona-cliente">
+
+  <div class="fondo-magico" aria-hidden="true"></div>
+
+  <header class="cabecera">
+    <div class="barra">
+      <a href="index.html" class="marca">
+        <span class="shin"><img src="img/shin-logo.webp" alt="" width="512" height="512"></span>
+        <span class="nombre">SHADDAI<small>Zona Clientes</small></span>
+      </a>
+      <div class="acciones-cabecera">
+        <button class="menu-boton" id="zona-salir" style="display:none;" aria-label="Cerrar sesión">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="cabecera-pagina">
+      <div class="contenedor">
+        <span class="etiqueta">Área privada</span>
+        <h1>Zona <span class="oro">clientes</span></h1>
+        <p class="entradilla" id="zona-subtitulo">Consulta tus pedidos con el correo con el que compraste.</p>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor zona-marco">
+
+        <!-- ACCESO -->
+        <div id="zona-acceso" class="zona-acceso">
+          <!-- Paso 1 · correo -->
+          <div id="zc-paso-correo">
+            <form id="zona-form-login" class="formulario" autocomplete="off">
+              <div class="campo">
+                <label for="zl-email">Correo con el que hiciste tu pedido</label>
+                <input type="email" id="zl-email" placeholder="tu@correo.com" required>
+              </div>
+              <div class="campo-trampa" aria-hidden="true">
+                <label for="zl-web">No rellenes este campo</label>
+                <input type="text" id="zl-web" name="web" tabindex="-1" autocomplete="off">
+              </div>
+              <div class="centrar">
+                <button type="submit" class="boton boton-lleno" id="zl-boton">Enviar código de acceso</button>
+              </div>
+              <p class="aviso-formulario centrar" id="zl-aviso" aria-live="polite"></p>
+              <p style="text-align:center;font-size:.85rem;margin-top:.8rem;color:#7d7466;">
+                Te enviaremos un código de 6 dígitos para entrar sin contraseña. ¿Eres distribuidor?
+                <a href="zona-distribuidor.html">Acceso distribuidores</a>.
+              </p>
+            </form>
+          </div>
+
+          <!-- Paso 2 · código -->
+          <div id="zc-paso-codigo" hidden>
+            <div class="aviso-zona">Hemos enviado un código de 6 dígitos al correo <strong id="zc-correo-recordado"></strong>. Escríbelo aquí para entrar. Revisa también la carpeta de spam.</div>
+            <form id="zona-form-codigo" class="formulario" autocomplete="one-time-code">
+              <div class="campo">
+                <label for="zc-codigo">Código de acceso</label>
+                <input type="text" id="zc-codigo" inputmode="numeric" maxlength="6" placeholder="000000" required>
+              </div>
+              <div class="centrar">
+                <button type="submit" class="boton boton-lleno" id="zc-boton-codigo">Entrar</button>
+              </div>
+              <p class="aviso-formulario centrar" id="zc-aviso-codigo" aria-live="polite"></p>
+              <p style="text-align:center;margin-top:.8rem;">
+                <button type="button" class="boton boton-fantasma" id="zc-volver" style="color:inherit;border-color:rgba(201,164,95,.4);">Cambiar de correo</button>
+              </p>
+            </form>
+          </div>
+        </div>
+
+        <!-- APLICACIÓN -->
+        <div id="zona-app" hidden>
+          <div class="aviso-zona" id="zona-bienvenida"></div>
+          <div id="zona-pedidos"><p class="aviso-formulario">Cargando pedidos…</p></div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="base">© 2026 SHADDAI · Esencia de Umbral · Zona privada de clientes</div>
+    </div>
+  </footer>
+
+  <script src="js/config-api.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/config-supabase.js"></script>
+  <script src="js/zona-cliente.js?v=3"></script>
+</body>
+</html>

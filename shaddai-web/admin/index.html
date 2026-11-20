@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="../img/favicon.ico">
-  <link rel="stylesheet" href="panel.css?v=2026-11-17a">
+  <link rel="stylesheet" href="panel.css?v=2026-11-20b">
 </head>
 <body>
 
@@ -68,9 +68,12 @@
         <button class="menu-item" data-seccion="email"><span>✉</span> Email marketing</button>
         <button class="menu-item" data-seccion="bandeja"><span>📪</span> Bandeja de entrada <em class="contador" id="contador-bandeja" hidden></em></button>
         <button class="menu-item" data-seccion="pedidos"><span>❖</span> Pedidos</button>
+        <button class="menu-item" data-seccion="distribuidores"><span>◈</span> Distribuidores <em class="contador" id="contador-distribuidores" hidden></em></button>
+        <button class="menu-item" data-seccion="estadisticas"><span>◔</span> Estadísticas</button>
         <button class="menu-item" data-seccion="etiquetas"><span>▤</span> Etiquetas de envío</button>
         <button class="menu-item" data-seccion="ajustes"><span>⚙</span> Ajustes</button>
         <button class="menu-item" data-seccion="usuarios"><span>☉</span> Usuarios</button>
+        <button class="menu-item" data-seccion="clientes"><span>◍</span> Clientes</button>
         <button class="menu-item" data-seccion="manual"><span>☰</span> Manual del panel</button>
       </nav>
       <div class="lateral-pie">
@@ -97,6 +100,7 @@
   <script src="../js/supabase.js"></script>
   <script src="../js/config-supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-  <script type="module" src="panel.js?v=2026-11-17a"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script type="module" src="panel.js?v=2026-11-20b"></script>
 </body>
 </html>

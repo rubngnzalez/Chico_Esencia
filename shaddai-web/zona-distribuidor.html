@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#16261b">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Zona Distribuidores — SHADDAI · Esencia de Umbral</title>
+  <meta name="description" content="Zona privada para distribuidores autorizados de SHADDAI · Esencia de Umbral.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.ico">
+  <link rel="stylesheet" href="css/estilos.css?v=15">
+  <style>
+    /* Estilos propios de la zona VIP (no afectan al resto de la web) */
+    .zona-marco { max-width: 62rem; margin: 0 auto; }
+    .zona-acceso { max-width: 30rem; margin: 3rem auto; }
+    .zona-pista { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.8rem; }
+    .zona-pista button { background:none; border:1px solid rgba(201,164,95,.4); color:inherit; padding:.5rem 1.1rem; cursor:pointer; font-family:inherit; letter-spacing:.08em; }
+    .zona-pista button.activo { background: var(--oro, #c9a45f); color: var(--verde, #16261b); border-color: var(--oro, #c9a45f); }
+    .zona-vista { display:none; }
+    .zona-vista.activa { display:block; }
+    .prod-rejilla { display:grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap:1.4rem; }
+    .prod-tarjeta { border:1px solid rgba(201,164,95,.35); padding:1.1rem; display:flex; flex-direction:column; gap:.6rem; }
+    .prod-tarjeta img { width:100%; height:auto; }
+    .prod-tarjeta .pvp { text-decoration: line-through; opacity:.6; font-size:.9rem; }
+    .prod-tarjeta .precio-dist { font-family:'Cormorant Garamond',serif; font-size:1.5rem; color: var(--oro, #c9a45f); }
+    .prod-tarjeta input { max-width:5rem; }
+    .carrito-linea { display:flex; align-items:center; gap:.8rem; border-bottom:1px solid rgba(201,164,95,.25); padding:.6rem 0; flex-wrap:wrap; }
+    .carrito-linea .nombre { flex:1 1 12rem; }
+    .zona-tabla { width:100%; border-collapse:collapse; }
+    .zona-tabla th, .zona-tabla td { text-align:left; padding:.55rem .5rem; border-bottom:1px solid rgba(201,164,95,.25); font-size:.95rem; }
+    .carpeta-cabecera { font-family:'Cormorant Garamond',serif; font-size:1.3rem; color: var(--oro, #c9a45f); margin:1.6rem 0 .6rem; }
+    .recurso-linea { display:flex; align-items:center; gap:.8rem; padding:.5rem 0; border-bottom:1px solid rgba(201,164,95,.2); flex-wrap:wrap; }
+    .recurso-linea .titulo { flex:1 1 14rem; }
+    .aviso-zona { background: rgba(201,164,95,.1); border:1px solid rgba(201,164,95,.4); padding:.9rem 1.1rem; margin-bottom:1.4rem; }
+    .estado-badge { display:inline-block; border:1px solid rgba(201,164,95,.5); padding:.1rem .5rem; font-size:.8rem; }
+    @media (max-width: 640px) { .prod-rejilla { grid-template-columns: 1fr 1fr; } }
+    /* Tienda B2B premium */
+    .zt-coleccion { background: rgba(15,24,17,.4); border:1px solid rgba(201,164,95,.3); border-radius:16px; padding:1.8rem 1.6rem; }
+    .zt-cabecera { text-align:center; margin-bottom:1.6rem; }
+    .zt-cabecera h2 { font-family:'Cormorant Garamond',serif; font-weight:500; font-size:2rem; color:#f3eee2; margin:0; }
+    .zt-cabecera p { font-size:.9rem; color:rgba(217,212,197,.6); margin:.35rem 0 0; letter-spacing:.04em; }
+    .zt-rejilla { display:grid; grid-template-columns:repeat(auto-fill,minmax(18rem,1fr)); gap:1.6rem; }
+    @media (max-width: 560px) { .zt-rejilla { grid-template-columns:1fr; } }
+    .zt-tarjeta { background:rgba(15,24,17,.55); border:1px solid rgba(201,164,95,.28); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; transition:transform .3s ease, border-color .3s ease, box-shadow .3s ease; }
+    .zt-tarjeta:hover { transform:translateY(-5px); border-color:rgba(201,164,95,.75); box-shadow:0 20px 44px rgba(0,0,0,.5); }
+    .zt-imagen { position:relative; aspect-ratio:4/3; overflow:hidden; background:rgba(201,164,95,.08); }
+    .zt-imagen img { width:100%; height:100%; object-fit:cover; transition:transform .6s ease; }
+    .zt-tarjeta:hover .zt-imagen img { transform:scale(1.06); }
+    .zt-etiqueta-agotado { position:absolute; top:.7rem; left:.7rem; background:rgba(15,24,17,.85); border:1px solid rgba(201,164,95,.5); color:#e3c98f; font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; padding:.25rem .6rem; border-radius:999px; }
+    .zt-cuerpo { padding:1.15rem 1.2rem 1.3rem; display:flex; flex-direction:column; gap:.5rem; flex:1; }
+    .zt-nombre { font-family:'Cormorant Garamond',serif; font-size:1.5rem; line-height:1.2; color:#f3eee2; margin:0; }
+    .zt-desc { font-size:.88rem; color:rgba(217,212,197,.62); flex:1; margin:0; }
+    .zt-precios { display:flex; align-items:baseline; gap:.6rem; margin:.2rem 0 .1rem; }
+    .zt-pvp { text-decoration:line-through; opacity:.5; font-size:.88rem; }
+    .zt-precio { font-family:'Cormorant Garamond',serif; font-size:1.7rem; color:#e3c98f; }
+    .zt-precio-tag { font-size:.68rem; letter-spacing:.16em; text-transform:uppercase; color:#c9a45f; }
+    .zt-compra { display:flex; gap:.55rem; align-items:stretch; margin-top:.35rem; }
+    .zt-compra input { flex:0 0 4.2rem; background:rgba(15,24,17,.6); border:1px solid rgba(201,164,95,.4); color:#f3eee2; padding:.5rem .6rem; border-radius:6px; text-align:center; font-family:inherit; }
+    .zt-compra .boton { flex:1; }
+    .zt-guardado { font-size:.8rem; color:#e3c98f; margin:.3rem 0 0; }
+    /* Perfil */
+    .zt-perfil-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.9rem 1.4rem; margin-bottom:1rem; }
+    @media (max-width: 640px) { .zt-perfil-grid { grid-template-columns:1fr; } }
+    .zt-perfil-grid .campo { margin-bottom:0; }
+    .zt-perfil-grid .campo label { font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:#c9a45f; }
+    .zt-lectura { display:inline-block; background:rgba(201,164,95,.1); border:1px solid rgba(201,164,95,.4); padding:.15rem .6rem; border-radius:999px; font-size:.85rem; color:#f3eee2; }
+    .zt-leyenda { font-size:.8rem; color:#7d7466; margin:.3rem 0 0; }
+    /* Catálogo editorial + ficha completa */
+    .zt-lista { display:flex; flex-direction:column; gap:1.2rem; }
+    .zt-fila { display:grid; grid-template-columns:14rem 1fr; gap:1.4rem; background:rgba(15,24,17,.45); border:1px solid rgba(201,164,95,.28); border-radius:14px; padding:1.1rem; align-items:center; }
+    @media (max-width:640px) { .zt-fila { grid-template-columns:1fr; } }
+    .zt-fila-imagen { position:relative; width:14rem; aspect-ratio:4/3; border-radius:10px; overflow:hidden; border:none; padding:0; cursor:pointer; background:rgba(201,164,95,.08); display:block; }
+    .zt-fila-imagen img { width:100%; height:100%; object-fit:cover; display:block; }
+    .zt-ver { position:absolute; bottom:0; left:0; right:0; background:rgba(15,24,17,.85); color:#e3c98f; font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; padding:.4rem; }
+    .zt-codigo { font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:#c9a45f; }
+    .zt-nombre button { background:none; border:none; color:#f3eee2; font-family:'Cormorant Garamond',serif; font-size:1.7rem; cursor:pointer; padding:0; text-align:left; line-height:1.2; }
+    .zt-nombre button:hover { color:#e3c98f; }
+    .zt-ficha { display:grid; grid-template-columns:minmax(16rem, 30rem) 1fr; gap:1.8rem; background:rgba(15,24,17,.45); border:1px solid rgba(201,164,95,.3); border-radius:16px; padding:1.6rem; margin-bottom:1.4rem; }
+    @media (max-width:760px) { .zt-ficha { grid-template-columns:1fr; } }
+    .zt-ficha-media { position:relative; border-radius:14px; overflow:hidden; border:1px solid rgba(201,164,95,.35); }
+    .zt-ficha-media img { width:100%; display:block; }
+    .zt-datos { list-style:none; padding:0; margin:.4rem 0; font-size:.9rem; color:rgba(217,212,197,.75); }
+    .zt-tabs { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+    .zt-tabs button { background:rgba(15,24,17,.5); border:1px solid rgba(201,164,95,.35); color:#d9d4c5; padding:.5rem 1.1rem; border-radius:999px; cursor:pointer; font-family:inherit; font-size:.85rem; letter-spacing:.06em; }
+    .zt-tabs button.activo { background:#c9a45f; color:#16261b; border-color:#c9a45f; font-weight:600; }
+    .zt-panel { background:rgba(15,24,17,.4); border:1px solid rgba(201,164,95,.25); border-radius:12px; padding:1.3rem 1.5rem; margin-bottom:1.4rem; }
+    .zt-panel[hidden] { display:none; }
+    .zt-panel-nota { font-size:.85rem; color:rgba(217,212,197,.6); margin:0 0 .8rem; }
+    .zt-panel-cuerpo { line-height:1.7; }
+    .zt-dossier { line-height:1.8; }
+    .zt-sub { font-family:'Cormorant Garamond',serif; color:#e3c98f; margin:1.2rem 0 .4rem; }
+  </style>
+</head>
+<body data-pagina="zona-distribuidor">
+
+  <div class="fondo-magico" aria-hidden="true"></div>
+
+  <header class="cabecera">
+    <div class="barra">
+      <a href="index.html" class="marca">
+        <span class="shin"><img src="img/shin-logo.webp" alt="" width="512" height="512"></span>
+        <span class="nombre">SHADDAI<small>Zona Distribuidores</small></span>
+      </a>
+      <div class="acciones-cabecera">
+        <button class="menu-boton" id="zona-salir" style="display:none;" aria-label="Cerrar sesión">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="cabecera-pagina">
+      <div class="contenedor">
+        <span class="etiqueta">Área privada</span>
+        <h1>Zona <span class="oro">distribuidores</span></h1>
+        <p class="entradilla" id="zona-subtitulo">Acceso exclusivo para distribuidores autorizados por SHADDAI.</p>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor zona-marco">
+
+        <!-- ACCESO -->
+        <div id="zona-acceso" class="zona-acceso">
+          <form id="zona-form-login" class="formulario" autocomplete="off">
+            <div class="campo">
+              <label for="zl-email">Correo electrónico</label>
+              <input type="email" id="zl-email" placeholder="tu@negocio.com" required>
+            </div>
+            <div class="campo">
+              <label for="zl-pass">Contraseña</label>
+              <input type="password" id="zl-pass" placeholder="Tu contraseña" required>
+            </div>
+            <div class="centrar">
+              <button type="submit" class="boton boton-lleno">Entrar</button>
+            </div>
+            <p class="aviso-formulario centrar" id="zl-aviso" aria-live="polite"></p>
+            <p style="text-align:center;font-size:.9rem;margin-top:1rem;color:#7d7466;">
+              ¿Contraseña olvidada? Escríbenos desde la página de
+              <a href="contacto.html">contacto</a> y te enviaremos un acceso temporal nuevo.
+            </p>
+            <p style="text-align:center;font-size:.85rem;margin-top:.8rem;color:#7d7466;">
+              ¿Quieres ser distribuidor? Solicítalo en <a href="distribuidores.html">Hazte distribuidor</a>.
+            </p>
+          </form>
+        </div>
+
+        <!-- DEFINIR CONTRASEÑA (tras la invitación) -->
+        <div id="zona-password" class="zona-acceso" hidden>
+          <div class="aviso-zona">Bienvenido al programa de distribuidores. Define tu contraseña para acceder a tu zona privada (mínimo 8 caracteres).</div>
+          <form id="zona-form-password" class="formulario" autocomplete="off">
+            <div class="campo">
+              <label for="zp-pass">Nueva contraseña</label>
+              <input type="password" id="zp-pass" minlength="8" placeholder="Mínimo 8 caracteres" required>
+            </div>
+            <div class="campo">
+              <label for="zp-pass2">Repite la contraseña</label>
+              <input type="password" id="zp-pass2" minlength="8" placeholder="La misma contraseña" required>
+            </div>
+            <div class="centrar">
+              <button type="submit" class="boton boton-lleno">Guardar y entrar</button>
+            </div>
+            <p class="aviso-formulario centrar" id="zp-aviso" aria-live="polite"></p>
+          </form>
+        </div>
+
+        <!-- APLICACIÓN -->
+        <div id="zona-app" hidden>
+          <div class="aviso-zona" id="zona-bienvenida"></div>
+          <div class="zona-pista" role="tablist">
+            <button type="button" data-vista="tienda" class="activo">Tienda de distribuidor</button>
+            <button type="button" data-vista="material">Material comercial</button>
+            <button type="button" data-vista="pedidos">Mis pedidos</button>
+            <button type="button" data-vista="perfil">Mi perfil</button>
+          </div>
+
+          <div class="zona-vista activa" id="zona-vista-tienda"><p class="aviso-formulario">Cargando catálogo…</p></div>
+          <div class="zona-vista" id="zona-vista-material"><p class="aviso-formulario">Cargando material…</p></div>
+          <div class="zona-vista" id="zona-vista-pedidos"><p class="aviso-formulario">Cargando pedidos…</p></div>
+          <div class="zona-vista" id="zona-vista-perfil"><p class="aviso-formulario">Cargando perfil…</p></div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="base">© 2026 SHADDAI · Esencia de Umbral · Zona privada para distribuidores autorizados</div>
+    </div>
+  </footer>
+
+  <script src="js/config-api.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/config-supabase.js"></script>
+  <script src="js/zona-distribuidor.js?v=7"></script>
+</body>
+</html>
