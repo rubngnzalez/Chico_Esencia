@@ -71,14 +71,14 @@
     if (error || !filas) {
       mostrarVista('zona-acceso');
       avisoZona('Esta cuenta no pertenece a ningún distribuidor autorizado.');
-      await sb.auth.signOut();
+      await sb.auth.signOut({ scope: 'local' });
       return;
     }
     distribuidor = filas;
     if (distribuidor.acceso_habilitado !== true) {
       mostrarVista('zona-acceso');
       avisoZona('Tu acceso está deshabilitado temporalmente. Contacta con SHADDAI para reactivarlo.');
-      await sb.auth.signOut();
+      await sb.auth.signOut({ scope: 'local' });
       return;
     }
 
@@ -139,7 +139,7 @@
   }
 
   $('zona-salir').addEventListener('click', async () => {
-    await sb.auth.signOut();
+    await sb.auth.signOut({ scope: 'local' });
     location.reload();
   });
 

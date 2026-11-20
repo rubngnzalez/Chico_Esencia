@@ -83,7 +83,7 @@
   // sesión en esta página y onAuthStateChange dispara la entrada.
 
   $('zona-salir').addEventListener('click', async () => {
-    await sb.auth.signOut();
+    await sb.auth.signOut({ scope: 'local' });
     location.reload();
   });
 
