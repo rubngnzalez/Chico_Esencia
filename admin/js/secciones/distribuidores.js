@@ -53,6 +53,7 @@ export default async function (contenedor, contexto) {
       <button class="pestana ${pestana === 'banco' ? 'activa' : ''}" data-pestanas="banco" type="button">Banco de emails</button>
       <button class="pestana ${pestana === 'aceptados' ? 'activa' : ''}" data-pestanas="aceptados" type="button">Distribuidores aceptados</button>
       <button class="pestana ${pestana === 'recursos' ? 'activa' : ''}" data-pestanas="recursos" type="button">Recursos</button>
+      <button class="pestana ${pestana === 'fichas' ? 'activa' : ''}" data-pestanas="fichas" type="button">Fichas de producto</button>
     </div>
     <div id="zona-distrib"></div>`;
 
@@ -70,7 +71,8 @@ export default async function (contenedor, contexto) {
     if (pestana === 'solicitudes') pintarSolicitudes();
     else if (pestana === 'banco') pintarBanco();
     else if (pestana === 'aceptados') pintarAceptados();
-    else pintarRecursos();
+    else if (pestana === 'recursos') pintarRecursos();
+    else pintarFichas();
   }
 
   async function refrescarContadorDistrib() {
@@ -731,6 +733,9 @@ export default async function (contenedor, contexto) {
         <label>Carpeta (zona) *</label>
         <input type="text" id="rec-zona" placeholder="Ej. marca, producto, formacion">
         <p class="texto-suave">Carpeta temática en minúsculas: decide qué distribuidores la ven (Distribuidores → Carpetas).</p>
+        <label>Producto asociado (opcional)</label>
+        <select id="rec-producto"><option value="">— Material general de carpeta —</option></select>
+        <p class="texto-suave">Si lo vinculas a un producto, aparece en la ficha completa de ese producto en la zona VIP (siempre que el distribuidor tenga autorizada esta carpeta).</p>
         <label>Descripción</label>
         <input type="text" id="rec-descripcion" placeholder="Notas cortas para el distribuidor">
         <label>Archivo *</label>
@@ -745,6 +750,19 @@ export default async function (contenedor, contexto) {
       '32rem'
     );
     cuerpo.querySelector('[data-opcion="no"]').addEventListener('click', cerrar);
+    sb().from('oms_productos')
+      .select('id, nombre')
+      .order('nombre')
+      .then(({ data }) => {
+        const selector = cuerpo.querySelector('#rec-producto');
+        (data || []).forEach((p) => {
+          const opcion = document.createElement('option');
+          opcion.value = p.id;
+          opcion.textContent = p.nombre;
+          selector.append(opcion);
+        });
+      })
+      .catch(() => {});
     cuerpo.querySelector('[data-opcion="si"]').addEventListener('click', async () => {
       const titulo = cuerpo.querySelector('#rec-titulo').value.trim();
       const carpeta = cuerpo
@@ -794,6 +812,7 @@ export default async function (contenedor, contexto) {
             archivo: ruta,
             descripcion: cuerpo.querySelector('#rec-descripcion').value.trim().slice(0, 300),
             visible: cuerpo.querySelector('#rec-visible').checked,
+            producto_id: cuerpo.querySelector('#rec-producto').value || null,
           })
         );
         toast('Recurso subido.');
@@ -803,6 +822,123 @@ export default async function (contenedor, contexto) {
         toast(error.message, 'error');
         boton.disabled = false;
         boton.textContent = 'Subir';
+      }
+    });
+  }
+
+  // ─── FICHAS DE PRODUCTO ───────────────────────────────────────────────────
+  // Imagen exclusiva + dossier del distribuidor POR PRODUCTO. Lo que ve la
+  // zona VIP en la ficha completa de cada producto.
+  const MIME_IMAGEN = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+
+  async function pintarFichas() {
+    zona.innerHTML = '<div id="dist-fichas"><p class="cargando">Cargando productos…</p></div>';
+    const lista = zona.querySelector('#dist-fichas');
+    try {
+      const [productos, fichas] = await Promise.all([
+        asegurar(sb().from('oms_productos').select('id, nombre, codigo, activo').order('nombre')),
+        asegurar(sb().from('oms_distrib_producto_info').select('*')),
+      ]);
+      const porProducto = {};
+      (fichas || []).forEach((f) => { porProducto[f.producto_id] = f; });
+
+      if (!productos.length) {
+        lista.innerHTML = etiquetaVacia('No hay productos en el catálogo.');
+        return;
+      }
+      lista.innerHTML = `
+        <p class="texto-suave" style="margin-bottom:1rem;">La ficha alimenta la página completa del producto en la zona VIP: imagen exclusiva, dossier extenso para el distribuidor y notas comerciales. La descripción del cliente final sigue en Productos, sin cambios.</p>
+        <table class="tabla">
+          <thead><tr><th>Producto</th><th>Imagen exclusiva</th><th>Dossier distribuidor</th><th>Notas comerciales</th><th class="celda-acciones">Acciones</th></tr></thead>
+          <tbody>
+            ${productos
+              .map((p) => {
+                const f = porProducto[p.id] || {};
+                const punto = (hay) => (hay ? '<span class="badge badge-verde">✓</span>' : '<span class="texto-suave">—</span>');
+                return `<tr>
+                  <td><strong>${escapar(p.nombre)}</strong><br><span class="texto-suave">${escapar(p.codigo || '')}${p.activo === false ? ' · inactivo' : ''}</span></td>
+                  <td>${punto(f.imagen_exclusiva)}</td>
+                  <td>${punto(f.descripcion_distribuidor)}</td>
+                  <td>${punto(f.notas_comerciales)}</td>
+                  <td class="celda-acciones"><button class="boton boton-fantasma boton-pequeno" data-ficha="${escapar(p.id)}" type="button">Editar ficha</button></td>
+                </tr>`;
+              })
+              .join('')}
+          </tbody>
+        </table>`;
+
+      lista.querySelectorAll('[data-ficha]').forEach((boton) => {
+        boton.addEventListener('click', () => {
+          abrirModalFicha(productos.find((p) => p.id === boton.dataset.ficha), porProducto[boton.dataset.ficha] || {}, () => pintarFichas());
+        });
+      });
+    } catch (error) {
+      lista.innerHTML = etiquetaVacia(`No se pudieron cargar las fichas: ${error.message}`);
+    }
+  }
+
+  function abrirModalFicha(producto, ficha, alGuardar) {
+    const { cerrar, cuerpo } = abrirModal(
+      `Ficha distribuidor · ${producto.nombre}`,
+      `
+      <div class="modal-cuerpo-formulario">
+        <label>Imagen exclusiva para distribuidores (PNG, JPG o WebP · máx. 5 MB)</label>
+        <input type="file" id="fch-imagen" accept=".png,.jpg,.jpeg,.webp">
+        ${ficha.imagen_exclusiva ? '<p class="texto-suave">Ya existe una imagen exclusiva: si subes otra, la sustituye.</p>' : '<p class="texto-suave">Sin imagen exclusiva: la zona VIP muestra la imagen pública del producto.</p>'}
+        <label>Descripción extensa para el distribuidor (dossier)</label>
+        <textarea name="descripcion" rows="8" placeholder="Historia del producto, notas olfativas detalladas, argumentos de venta, presentación, formato, unidades por caja…">${escapar(ficha.descripcion_distribuidor || '')}</textarea>
+        <label>Notas comerciales</label>
+        <textarea name="notas" rows="5" placeholder="Margen orientativo, unidades recomendadas, fechas clave de promoción…">${escapar(ficha.notas_comerciales || '')}</textarea>
+      </div>
+      <p class="nota-secreto">Los materiales comerciales (PDF, pósters…) se asocian al producto desde la pestaña Recursos → «Producto asociado».</p>
+      <div class="modal-acciones">
+        <button type="button" class="boton boton-fantasma" data-opcion="no">Cancelar</button>
+        <button type="button" class="boton boton-primario" data-opcion="si">Guardar ficha</button>
+      </div>`,
+      '34rem'
+    );
+    cuerpo.querySelector('[data-opcion="no"]').addEventListener('click', cerrar);
+    cuerpo.querySelector('[data-opcion="si"]').addEventListener('click', async () => {
+      const boton = cuerpo.querySelector('[data-opcion="si"]');
+      const archivo = cuerpo.querySelector('#fch-imagen').files[0];
+      if (archivo && !MIME_IMAGEN[archivo.type]) {
+        toast('Formato no admitido: usa PNG, JPG o WebP.', 'error');
+        return;
+      }
+      if (archivo && archivo.size > 5 * 1024 * 1024) {
+        toast('La imagen supera el límite de 5 MB.', 'error');
+        return;
+      }
+      boton.disabled = true;
+      boton.textContent = 'Guardando…';
+      try {
+        let imagenExclusiva = ficha.imagen_exclusiva || '';
+        if (archivo) {
+          const ruta = `producto-imagenes/${producto.id}.${MIME_IMAGEN[archivo.type]}`;
+          const respuesta = await sb().storage
+            .from('oms-distrib')
+            .upload(ruta, archivo, { contentType: archivo.type, upsert: true });
+          if (respuesta.error) throw new Error(mensajeError(respuesta.error));
+          imagenExclusiva = ruta;
+        }
+        await asegurar(
+          sb().from('oms_distrib_producto_info').upsert(
+            {
+              producto_id: producto.id,
+              imagen_exclusiva: imagenExclusiva,
+              descripcion_distribuidor: cuerpo.querySelector('[name="descripcion"]').value,
+              notas_comerciales: cuerpo.querySelector('[name="notas"]').value,
+            },
+            { onConflict: 'producto_id' }
+          )
+        );
+        toast('Ficha guardada.');
+        cerrar();
+        alGuardar();
+      } catch (error) {
+        toast(error.message, 'error');
+        boton.disabled = false;
+        boton.textContent = 'Guardar ficha';
       }
     });
   }

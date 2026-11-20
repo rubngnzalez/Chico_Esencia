@@ -68,6 +68,30 @@
     .zt-perfil-grid .campo label { font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:#c9a45f; }
     .zt-lectura { display:inline-block; background:rgba(201,164,95,.1); border:1px solid rgba(201,164,95,.4); padding:.15rem .6rem; border-radius:999px; font-size:.85rem; color:#f3eee2; }
     .zt-leyenda { font-size:.8rem; color:#7d7466; margin:.3rem 0 0; }
+    /* Catálogo editorial + ficha completa */
+    .zt-lista { display:flex; flex-direction:column; gap:1.2rem; }
+    .zt-fila { display:grid; grid-template-columns:14rem 1fr; gap:1.4rem; background:rgba(15,24,17,.45); border:1px solid rgba(201,164,95,.28); border-radius:14px; padding:1.1rem; align-items:center; }
+    @media (max-width:640px) { .zt-fila { grid-template-columns:1fr; } }
+    .zt-fila-imagen { position:relative; width:14rem; aspect-ratio:4/3; border-radius:10px; overflow:hidden; border:none; padding:0; cursor:pointer; background:rgba(201,164,95,.08); display:block; }
+    .zt-fila-imagen img { width:100%; height:100%; object-fit:cover; display:block; }
+    .zt-ver { position:absolute; bottom:0; left:0; right:0; background:rgba(15,24,17,.85); color:#e3c98f; font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; padding:.4rem; }
+    .zt-codigo { font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:#c9a45f; }
+    .zt-nombre button { background:none; border:none; color:#f3eee2; font-family:'Cormorant Garamond',serif; font-size:1.7rem; cursor:pointer; padding:0; text-align:left; line-height:1.2; }
+    .zt-nombre button:hover { color:#e3c98f; }
+    .zt-ficha { display:grid; grid-template-columns:minmax(16rem, 30rem) 1fr; gap:1.8rem; background:rgba(15,24,17,.45); border:1px solid rgba(201,164,95,.3); border-radius:16px; padding:1.6rem; margin-bottom:1.4rem; }
+    @media (max-width:760px) { .zt-ficha { grid-template-columns:1fr; } }
+    .zt-ficha-media { position:relative; border-radius:14px; overflow:hidden; border:1px solid rgba(201,164,95,.35); }
+    .zt-ficha-media img { width:100%; display:block; }
+    .zt-datos { list-style:none; padding:0; margin:.4rem 0; font-size:.9rem; color:rgba(217,212,197,.75); }
+    .zt-tabs { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+    .zt-tabs button { background:rgba(15,24,17,.5); border:1px solid rgba(201,164,95,.35); color:#d9d4c5; padding:.5rem 1.1rem; border-radius:999px; cursor:pointer; font-family:inherit; font-size:.85rem; letter-spacing:.06em; }
+    .zt-tabs button.activo { background:#c9a45f; color:#16261b; border-color:#c9a45f; font-weight:600; }
+    .zt-panel { background:rgba(15,24,17,.4); border:1px solid rgba(201,164,95,.25); border-radius:12px; padding:1.3rem 1.5rem; margin-bottom:1.4rem; }
+    .zt-panel[hidden] { display:none; }
+    .zt-panel-nota { font-size:.85rem; color:rgba(217,212,197,.6); margin:0 0 .8rem; }
+    .zt-panel-cuerpo { line-height:1.7; }
+    .zt-dossier { line-height:1.8; }
+    .zt-sub { font-family:'Cormorant Garamond',serif; color:#e3c98f; margin:1.2rem 0 .4rem; }
   </style>
 </head>
 <body data-pagina="zona-distribuidor">
@@ -171,6 +195,6 @@
   <script src="js/config-api.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/config-supabase.js"></script>
-  <script src="js/zona-distribuidor.js?v=5"></script>
+  <script src="js/zona-distribuidor.js?v=6"></script>
 </body>
 </html>
