@@ -31,6 +31,7 @@ import * as rutasPedidos from './rutas/pedidos.js';
 import * as rutasUsuarios from './rutas/usuarios.js';
 import * as rutasPublico from './rutas/publico.js';
 import * as rutasSubirImagen from './rutas/subir-imagen.js';
+import * as rutasAccesoZona from './rutas/acceso-zona.js';
 
 // CORS solo para pruebas locales (mismo dominio en producción)
 const CORS_ORIGENES = ['https://omshaddai.com'];
@@ -93,6 +94,7 @@ function construirEnrutador(colecciones) {
   rutasUsuarios.registrar(enrutador, contexto);
   rutasPublico.registrar(enrutador, contexto);
   rutasSubirImagen.registrar(enrutador, contexto);
+  rutasAccesoZona.registrar(enrutador);
   return enrutador;
 }
 

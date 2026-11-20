@@ -109,12 +109,29 @@
       $('zl-aviso').textContent = 'Escribe tu correo arriba y pulsa «Enviar enlace de acceso».';
       return;
     }
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://omshaddai.com/zona-distribuidor.html?invite=1',
-    });
-    $('zl-aviso').textContent = error
-      ? 'No se pudo enviar el enlace. Inténtalo de nuevo.'
-      : 'Si el correo pertenece a un distribuidor, te llegará un enlace para definir tu contraseña en unos minutos.';
+    $('zl-aviso').textContent = 'Enviando…';
+    const control = new AbortController();
+    const reloj = setTimeout(() => control.abort(), 20000);
+    let respuesta;
+    try {
+      const base = window.SHADDAI_API_BASE || 'https://shaddai-panel.redes-301dpi.workers.dev';
+      respuesta = await fetch(`${base.replace(/\/$/, '')}/api/acceso-zona`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, destino: 'distribuidor' }),
+        signal: control.signal,
+      });
+    } catch {
+      $('zl-aviso').textContent = 'No hemos podido conectar. Inténtalo de nuevo.';
+      return;
+    } finally {
+      clearTimeout(reloj);
+    }
+    const contenido = await respuesta.json().catch(() => ({}));
+    $('zl-aviso').textContent =
+      respuesta.ok && contenido.ok
+        ? 'Si el correo pertenece a un distribuidor, te llegará un correo de marca con el enlace para definir tu contraseña en unos minutos.'
+        : contenido.error || 'No se pudo enviar el enlace. Inténtalo de nuevo.';
   });
 
   $('zona-form-password').addEventListener('submit', async (evento) => {
