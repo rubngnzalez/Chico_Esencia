@@ -65,7 +65,7 @@
     // Perfil de distribuidor (RLS: solo la propia fila)
     const { data: filas, error } = await sb
       .from('oms_distribuidores')
-      .select('id, empresa, email, persona_contacto, descuento_pct, acceso_habilitado, zonas_territorio')
+      .select('id, empresa, razon_social, cif, email, persona_contacto, telefono, descuento_pct, acceso_habilitado, zonas_territorio, direccion')
       .eq('user_id', usuario.id)
       .maybeSingle();
     if (error || !filas) {
@@ -160,7 +160,7 @@
         : ''}
       <br><span style="font-size:.88rem;">El descuento se aplica siempre en el cálculo final del pedido, verificado en el servidor.</span>
       <br><button type="button" class="boton boton-fantasma" id="zona-mostrar-pass" style="margin-top:.6rem;color:inherit;border-color:rgba(201,164,95,.4);">${accesoConTemporal ? 'Definir mi contraseña ahora' : 'Cambiar contraseña'}</button>
-      <form id="zona-form-cambiar" class="formulario" autocomplete="off" hidden>
+      <form id="zona-form-cambiar" class="formulario" autocomplete="off" ${accesoConTemporal ? '' : 'hidden'}>
         <div class="campo">
           <label for="zc-nueva">Nueva contraseña</label>
           <input type="password" id="zc-nueva" minlength="8" placeholder="Mínimo 8 caracteres" required>
@@ -198,6 +198,7 @@
     cargarTienda();
     cargarMaterial();
     cargarPedidos();
+    cargarPerfil();
   }
 
   document.querySelectorAll('.zona-pista button').forEach((boton) => {
@@ -239,26 +240,43 @@
   function pintarTienda() {
     const vista = $('zona-vista-tienda');
     vista.innerHTML = `
-      <p class="aviso-formulario">Precios de distribuidor con tu <strong>${escapar(Number(distribuidor.descuento_pct) || 0)}%</strong> de descuento sobre el precio oficial.</p>
-      <div class="prod-rejilla">
-        ${catalogo
-          .map((p) => {
-            const precio = precioDistribuidor(p);
-            const enCarrito = Number(carrito[p.codigo]) || 0;
-            return `<article class="prod-tarjeta">
-              ${p.imagenes[0] ? `<img src="${escapar(p.imagenes[0])}" alt="${escapar(p.nombre)}" loading="lazy">` : ''}
-              <strong>${escapar(p.nombre)}</strong>
-              <p style="font-size:.88rem;flex:1;">${escapar(p.descripcion.slice(0, 110))}${p.descripcion.length > 110 ? '…' : ''}</p>
-              <div><span class="pvp">${euro(p.precioEfectivo)}</span> <span class="precio-dist">${euro(precio)}</span></div>
-              ${p.agotado || p.stock <= 0
-                ? '<p class="aviso-formulario">Sin stock ahora mismo</p>'
-                : `<div style="display:flex;gap:.6rem;align-items:center;">
-                    <input type="number" min="1" max="999" value="${Math.max(1, enCarrito)}" data-cantidad="${escapar(p.codigo)}" aria-label="Cantidad">
-                    <button type="button" class="boton boton-lleno" data-anadir="${escapar(p.codigo)}">${enCarrito ? 'Actualizar' : 'Añadir'}</button>
-                  </div>`}
-            </article>`;
-          })
-          .join('')}
+      <div class="zt-coleccion">
+        <div class="zt-cabecera">
+          <h2>La colección para tu espacio</h2>
+          <p>Selección oficial disponible para tu tienda, con tu precio de distribuidor ya aplicado (${escapar(Number(distribuidor.descuento_pct) || 0)}% sobre el precio oficial).</p>
+        </div>
+        <div class="zt-rejilla">
+          ${catalogo
+            .map((p) => {
+              const precio = precioDistribuidor(p);
+              const enCarrito = Number(carrito[p.codigo]) || 0;
+              const agotado = p.agotado || p.stock <= 0;
+              return `<article class="zt-tarjeta">
+                <div class="zt-imagen">
+                  ${p.imagenes[0] ? `<img src="${escapar(p.imagenes[0])}" alt="${escapar(p.nombre)}" loading="lazy">` : ''}
+                  ${agotado ? '<span class="zt-etiqueta-agotado">Sin stock</span>' : ''}
+                </div>
+                <div class="zt-cuerpo">
+                  <h3 class="zt-nombre">${escapar(p.nombre)}</h3>
+                  <p class="zt-desc">${escapar(p.descripcion.slice(0, 130))}${p.descripcion.length > 130 ? '…' : ''}</p>
+                  <div class="zt-precios">
+                    <span class="zt-pvp">${euro(p.precioEfectivo)}</span>
+                    <span class="zt-precio">${euro(precio)}</span>
+                    <span class="zt-precio-tag">tu precio</span>
+                  </div>
+                  ${
+                    agotado
+                      ? '<p class="zt-guardado">Avisaremos cuando vuelva a estar disponible.</p>'
+                      : `<div class="zt-compra">
+                          <input type="number" min="1" max="999" value="${Math.max(1, enCarrito)}" data-cantidad="${escapar(p.codigo)}" aria-label="Cantidad de ${escapar(p.nombre)}">
+                          <button type="button" class="boton boton-lleno" data-anadir="${escapar(p.codigo)}">${enCarrito ? 'Actualizar' : 'Añadir'}</button>
+                        </div>`
+                  }
+                </div>
+              </article>`;
+            })
+            .join('')}
+        </div>
       </div>
       <div id="zona-carrito" style="margin-top:2.4rem;"></div>`;
 
@@ -612,6 +630,150 @@
   }
 
   // ─── Arranque (detecta sesión del enlace de invitación) ───────────────────
+  // ─── MI PERFIL ────────────────────────────────────────────────────────────
+
+  async function llamarPerfil(cuerpo) {
+    const { data: sesion } = await sb.auth.getSession();
+    const token = sesion?.session?.access_token;
+    if (!token) {
+      avisoZona('Tu sesión ha caducado. Vuelve a entrar.');
+      mostrarVista('zona-acceso');
+      return { ok: false, contenido: {} };
+    }
+    const control = new AbortController();
+    const reloj = setTimeout(() => control.abort(), 20000);
+    try {
+      const base = (window.SHADDAI_API_BASE || 'https://shaddai-panel.redes-301dpi.workers.dev').replace(/\/$/, '');
+      const respuesta = await fetch(`${base}/api/distribuidor-perfil`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(cuerpo || {}),
+        signal: control.signal,
+      });
+      const contenido = await respuesta.json().catch(() => ({}));
+      return { ok: respuesta.ok && !contenido.error, contenido };
+    } catch {
+      return { ok: false, contenido: { error: 'No hemos podido conectar. Inténtalo de nuevo.' } };
+    } finally {
+      clearTimeout(reloj);
+    }
+  }
+
+  function pintarPerfil(perfil) {
+    const vista = $('zona-vista-perfil');
+    const dir = perfil.direccion || {};
+    vista.innerHTML = `
+      <div class="zt-coleccion">
+        <div class="zt-cabecera">
+          <h2>Mi perfil</h2>
+          <p>Tus datos de empresa y de contacto. El correo y el descuento los gestiona SHADDAI.</p>
+        </div>
+        <div class="zt-perfil-grid">
+          <div class="campo">
+            <label>Correo de acceso (no editable)</label>
+            <span class="zt-lectura">${escapar(perfil.email || '')}</span>
+          </div>
+          <div class="campo">
+            <label>Descuento de distribuidor</label>
+            <span class="zt-lectura">${escapar(Number(perfil.descuento_pct) || 0)}%</span>
+          </div>
+          <div class="campo">
+            <label>Territorios asignados</label>
+            <span class="zt-lectura">${escapar(Array.isArray(perfil.zonas_territorio) && perfil.zonas_territorio.length ? perfil.zonas_territorio.join(', ') : '—')}</span>
+          </div>
+          <div class="campo">
+            <label>Estado del acceso</label>
+            <span class="zt-lectura">${perfil.acceso_habilitado === false ? 'Deshabilitado' : 'Activo'}</span>
+          </div>
+          <div class="campo">
+            <label for="zp-empresa">Nombre comercial</label>
+            <input type="text" id="zp-empresa" value="${escapar(perfil.empresa || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-razon">Razón social</label>
+            <input type="text" id="zp-razon" value="${escapar(perfil.razon_social || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-cif">CIF / NIF</label>
+            <input type="text" id="zp-cif" value="${escapar(perfil.cif || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-persona">Persona de contacto</label>
+            <input type="text" id="zp-persona" value="${escapar(perfil.persona_contacto || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-telefono">Teléfono</label>
+            <input type="tel" id="zp-telefono" value="${escapar(perfil.telefono || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-calle">Dirección fiscal</label>
+            <input type="text" id="zp-calle" value="${escapar(dir.calle || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-cp">Código postal</label>
+            <input type="text" id="zp-cp" value="${escapar(dir.cp || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-poblacion">Población</label>
+            <input type="text" id="zp-poblacion" value="${escapar(dir.poblacion || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-provincia">Provincia</label>
+            <input type="text" id="zp-provincia" value="${escapar(dir.provincia || '')}">
+          </div>
+          <div class="campo">
+            <label for="zp-pais">País</label>
+            <input type="text" id="zp-pais" value="${escapar(dir.pais || 'España')}">
+          </div>
+        </div>
+        <div class="centrar" style="margin-top:1.2rem;">
+          <button type="button" class="boton boton-lleno" id="zp-guardar">Guardar mis datos</button>
+        </div>
+        <p class="zt-leyenda">Los cambios se aplican a tu ficha de distribuidor y se usan en tus pedidos y facturación.</p>
+      </div>`;
+
+    $('zp-guardar').addEventListener('click', async () => {
+      const boton = $('zp-guardar');
+      boton.disabled = true;
+      const { ok, contenido } = await llamarPerfil({
+        guardar: true,
+        campos: {
+          empresa: $('zp-empresa').value,
+          razon_social: $('zp-razon').value,
+          cif: $('zp-cif').value,
+          persona_contacto: $('zp-persona').value,
+          telefono: $('zp-telefono').value,
+          direccion: {
+            calle: $('zp-calle').value,
+            cp: $('zp-cp').value,
+            poblacion: $('zp-poblacion').value,
+            provincia: $('zp-provincia').value,
+            pais: $('zp-pais').value,
+          },
+        },
+      });
+      boton.disabled = false;
+      if (ok) {
+        Object.assign(distribuidor, contenido.perfil);
+        toastVisual('Tus datos se han guardado.');
+        cargarPerfil();
+      } else {
+        toastVisual(contenido.error || 'No se pudieron guardar tus datos.');
+      }
+    });
+  }
+
+  async function cargarPerfil() {
+    const vista = $('zona-vista-perfil');
+    const { ok, contenido } = await llamarPerfil({});
+    if (ok && contenido.perfil) {
+      Object.assign(distribuidor, contenido.perfil);
+      pintarPerfil(contenido.perfil);
+    } else {
+      vista.innerHTML = `<p class="aviso-formulario">${escapar(contenido.error || 'No se pudo cargar tu perfil.')}</p>`;
+    }
+  }
+
   sb.auth.onAuthStateChange((evento) => {
     if (evento === 'SIGNED_IN' || evento === 'TOKEN_REFRESHED' || evento === 'PASSWORD_RECOVERY') {
       determinarEstado();
