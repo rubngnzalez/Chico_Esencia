@@ -33,13 +33,12 @@ const DEFECTO_ACEPTACION = {
   html: '<p>Hola, {{persona_contacto}}:</p><p>Nos alegra confirmarte que <strong>{{empresa}}</strong> ha sido aceptada en el programa de distribuidores de SHADDAI · Esencia de Umbral.</p><p>Tus datos de acceso a la zona privada (tienda de distribuidor, material comercial y tus pedidos):</p><ul><li><strong>Correo:</strong> {{email}}</li><li><strong>Contraseña temporal:</strong> <code>{{contrasena}}</code></li></ul><p>Entra desde este botón y, por seguridad, cambia la contraseña desde tu zona cuando quieras:</p><p style="text-align:center;margin:24px 0;"><a href="{{enlace}}" style="display:inline-block;background:#16261b;color:#f3eee2;font-family:Verdana,Arial,sans-serif;font-size:14px;padding:12px 22px;text-decoration:none;border-radius:4px;">Entrar en mi zona</a></p><p>Tu descuento de distribuidor aplicado: <strong>{{descuento}}%</strong>.</p><p>Bienvenido al Umbral.<br>SHADDAI · Esencia de Umbral</p>',
 };
 
-// Contraseña temporal legible (sin caracteres confusos: sin I, L, O, 0, 1)
+// Contraseña temporal de 6 dígitos numéricos (fácil de teclear); el
+// distribuidor debe definir la suya en su primer acceso a la zona.
 function contrasenaTemporal(): string {
-  const alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const bytes = new Uint8Array(10);
+  const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
-  const base = Array.from(bytes).map((b) => alfabeto[b % alfabeto.length]).join('');
-  return `SHAD-${base.slice(0, 5)}-${base.slice(5)}`;
+  return Array.from(bytes).map((b) => String(b % 10)).join('');
 }
 
 const DEFECTO_RECHAZO = {
