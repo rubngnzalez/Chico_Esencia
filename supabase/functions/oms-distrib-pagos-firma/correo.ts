@@ -179,8 +179,10 @@ export function plantillaDe(
   return { asunto, html };
 }
 
-// Envío real con Resend si hay clave; si no, fila en oms_outbox (el panel la
-// ofrece como .eml descargable) — igual que «oms-enviar-campana».
+// Envío real con Resend si hay clave; si no (o si Resend rechaza el envío),
+// fila en oms_outbox (el panel la ofrece como .eml descargable) — igual que
+// «oms-enviar-campana». Devuelve SIEMPRE por qué no se envió realmente, para
+// que el panel pueda decirle al admin el motivo exacto en vez de un genérico.
 export async function enviarCorreo(
   db: { from: (t: string) => any },
   claveResend: string | undefined,
@@ -190,7 +192,8 @@ export async function enviarCorreo(
   html: string,
   responderA?: string,
   refPedido?: string
-): Promise<{ enviado: boolean }> {
+): Promise<{ enviado: boolean; detalle?: string }> {
+  let detalle = claveResend ? '' : 'falta la clave RESEND_API_KEY del proyecto';
   if (claveResend) {
     try {
       const respuesta = await fetch('https://api.resend.com/emails', {
@@ -205,8 +208,15 @@ export async function enviarCorreo(
         }),
       });
       if (respuesta.ok) return { enviado: true };
-    } catch {
-      // cae a la bandeja de salida
+      detalle = `Resend rechazó el envío (HTTP ${respuesta.status})`;
+      try {
+        const cuerpo = await respuesta.json();
+        if (cuerpo?.message) detalle += `: ${cuerpo.message}`;
+      } catch {
+        // respuesta sin cuerpo JSON legible
+      }
+    } catch (error) {
+      detalle = `no se pudo conectar con Resend: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
   const cabeceras = [
@@ -221,15 +231,21 @@ export async function enviarCorreo(
     'X-SHADDAI-Estado: pendiente',
     '',
   ];
-  await db.from('oms_outbox').insert({
-    para,
-    asunto,
-    html,
-    eml: cabeceras.join('\r\n') + html + '\r\n',
-    estado: 'pendiente',
-    ...(refPedido ? { ref_pedido: refPedido } : {}),
-  });
-  return { enviado: false };
+  try {
+    const { error } = await db.from('oms_outbox').insert({
+      para,
+      asunto,
+      html,
+      eml: cabeceras.join('\r\n') + html + '\r\n',
+      estado: 'pendiente',
+      ...(refPedido ? { ref_pedido: refPedido } : {}),
+    });
+    // supabase-js v2 no lanza con fallos de PostgREST: devuelve { error }
+    if (error) detalle += `; además falló la Bandeja de salida: ${error.message}`;
+  } catch (error) {
+    detalle += `; además falló la Bandeja de salida: ${error instanceof Error ? error.message : String(error)}`;
+  }
+  return { enviado: false, detalle };
 }
 
 // Ajustes del programa (sección distribucion) + remitente de SMTP

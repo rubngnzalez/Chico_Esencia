@@ -333,7 +333,7 @@ Deno.serve(async (request: Request) => {
         distribuidorId,
         mensaje: envio.enviado
           ? 'Distribuidor aceptado: cuenta creada y correo de activación enviado.'
-          : 'Distribuidor aceptado y cuenta creada. Sin envío real configurado, el correo de activación está en la Bandeja de salida (.eml).',
+          : `Distribuidor aceptado y cuenta creada, pero el correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
       }),
       { headers: cabeceras(request) }
     );
@@ -366,7 +366,7 @@ Deno.serve(async (request: Request) => {
       const correo = plantillaDe(ajustes.distribucion, 'rechazo', {
         persona_contacto: escaparHtml(persona),
       }, DEFECTO_RECHAZO);
-      await enviarCorreo(
+      const envio = await enviarCorreo(
         db,
         claveResend,
         ajustes.desde,
@@ -374,6 +374,16 @@ Deno.serve(async (request: Request) => {
         correo.asunto,
         sobreMarca(correo.html, ajustes.logotipo),
         ajustes.responderA
+      );
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          estado: nuevoEstado,
+          mensaje: envio.enviado
+            ? 'Solicitud rechazada y correo de aviso enviado.'
+            : `Solicitud rechazada, pero el correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
+        }),
+        { headers: cabeceras(request) }
       );
     }
     return new Response(JSON.stringify({ ok: true, estado: nuevoEstado }), { headers: cabeceras(request) });
@@ -436,7 +446,7 @@ Deno.serve(async (request: Request) => {
         ok: true,
         mensaje: envio.enviado
           ? 'Correo de verificación reenviado.'
-          : 'Sin envío real configurado: el correo está en la Bandeja de salida (.eml).',
+          : `El correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
       }),
       { headers: cabeceras(request) }
     );
@@ -523,7 +533,7 @@ Deno.serve(async (request: Request) => {
           ok: true,
           mensaje: envio.enviado
             ? 'Correo de acceso enviado (con contraseña temporal nueva).'
-            : 'Sin envío real configurado: el correo está en la Bandeja de salida (.eml).',
+            : `El correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
         }),
         { headers: cabeceras(request) }
       );
@@ -582,7 +592,7 @@ Deno.serve(async (request: Request) => {
         ok: true,
         mensaje: envio.enviado
           ? 'Correo de transferencia recibida enviado.'
-          : 'Sin envío real configurado: el correo está en la Bandeja de salida (.eml).',
+          : `El correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
       }),
       { headers: cabeceras(request) }
     );

@@ -96,14 +96,14 @@ export function abrirModal(titulo, cuerpoHtml, ancho = '') {
   return { fondo, cuerpo: fondo.querySelector('.modal-cuerpo'), cerrar };
 }
 
-export function confirmar(titulo, mensaje, textoBoton = 'Eliminar') {
+export function confirmar(titulo, mensaje, textoBoton = 'Eliminar', peligroso = true) {
   return new Promise((resolver) => {
     const { cerrar, cuerpo } = abrirModal(
       titulo,
       `<p class="confirmar-texto">${escapar(mensaje)}</p>
        <div class="modal-acciones">
          <button type="button" class="boton boton-fantasma" data-opcion="no">Cancelar</button>
-         <button type="button" class="boton boton-peligro" data-opcion="si">${escapar(textoBoton)}</button>
+         <button type="button" class="boton ${peligroso ? 'boton-peligro' : 'boton-primario'}" data-opcion="si">${escapar(textoBoton)}</button>
        </div>`,
       '26rem'
     );

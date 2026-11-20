@@ -274,7 +274,7 @@ async function pintarSeguimientos(zona) {
     if (!boton) return;
     const fila = filas.find((f) => f.id === boton.closest('tr').dataset.id);
     if (!fila) return;
-    const seguro = await confirmar('Cancelar correo', `¿Cancelar el correo «${TIPOS_SEGUIMIENTO[fila.tipo] || fila.tipo}» del pedido ${fila.oms_pedidos?.numero || ''}?`);
+    const seguro = await confirmar('Cancelar correo', `¿Cancelar el correo «${TIPOS_SEGUIMIENTO[fila.tipo] || fila.tipo}» del pedido ${fila.oms_pedidos?.numero || ''}?`, 'Sí, cancelar');
     if (!seguro) return;
     try {
       const error = (await sb().from('oms_seguimientos').update({ estado: 'cancelado' }).eq('id', fila.id)).error;
