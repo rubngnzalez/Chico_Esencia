@@ -359,7 +359,7 @@ function abrirDetalle(pedido, lineas, correos = [], seguimientos = [], esAdmin =
     if (!boton) return;
     const fila = seguimientos.find((s) => s.id === boton.dataset.cancelarSeguimiento);
     if (!fila) return;
-    const seguro = await confirmar('Cancelar correo', `¿Cancelar el correo «${ETIQUETAS_SEGUIMIENTO[fila.tipo] || fila.tipo}» de este pedido?`);
+    const seguro = await confirmar('Cancelar correo', `¿Cancelar el correo «${ETIQUETAS_SEGUIMIENTO[fila.tipo] || fila.tipo}» de este pedido?`, 'Sí, cancelar');
     if (!seguro) return;
     try {
       const error = (await sb().from('oms_seguimientos').update({ estado: 'cancelado' }).eq('id', fila.id)).error;

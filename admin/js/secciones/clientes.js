@@ -73,7 +73,9 @@ export default async function (contenedor) {
     if (!cliente) return;
     const seguro = await confirmar(
       'Convertir en staff',
-      `¿Convertir «${cliente.email}» en staff del panel (rol lectura)? Pasará a la lista de Usuarios y dejará de figurar aquí.`
+      `¿Convertir «${cliente.email}» en staff del panel (rol lectura)? Pasará a la lista de Usuarios y dejará de figurar aquí.`,
+      'Convertir',
+      false
     );
     if (!seguro) return;
     boton.disabled = true;

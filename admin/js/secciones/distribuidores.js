@@ -259,7 +259,7 @@ export default async function (contenedor, contexto) {
         }
       },
       descartar: async () => {
-        const seguro = await confirmar('Descartar solicitud', `¿Descartar la solicitud de «${datos.empresa || s.email}»? Podrá solicitarse de nuevo con el mismo email.`);
+        const seguro = await confirmar('Descartar solicitud', `¿Descartar la solicitud de «${datos.empresa || s.email}»? Podrá solicitarse de nuevo con el mismo email.`, 'Descartar');
         if (!seguro) return;
         try {
           await invocarFuncion('oms-distrib-gestion', { accion: 'descartar', solicitudId: s.id });
@@ -503,7 +503,9 @@ export default async function (contenedor, contexto) {
             nuevo ? 'Habilitar acceso' : 'Deshabilitar acceso',
             nuevo
               ? `¿Volver a habilitar el acceso de «${d.empresa}» a la zona VIP?`
-              : `¿Deshabilitar PUNTUALMENTE el acceso de «${d.empresa}»? No podrá entrar ni pedir mientras esté deshabilitado.`
+              : `¿Deshabilitar PUNTUALMENTE el acceso de «${d.empresa}»? No podrá entrar ni pedir mientras esté deshabilitado.`,
+            nuevo ? 'Habilitar' : 'Deshabilitar',
+            !nuevo
           );
           if (!seguro) return;
           try {
@@ -519,7 +521,7 @@ export default async function (contenedor, contexto) {
       lista.querySelectorAll('[data-invite]').forEach((boton) => {
         boton.addEventListener('click', async () => {
           const d = porId(boton.dataset.invite);
-          const seguro = await confirmar('Reenviar acceso', `¿Enviar a «${d.email}» un correo con un nuevo enlace para definir su contraseña de la zona VIP?`);
+          const seguro = await confirmar('Reenviar acceso', `¿Enviar a «${d.email}» un correo con un nuevo enlace para definir su contraseña de la zona VIP?`, 'Enviar', false);
           if (!seguro) return;
           try {
             const respuesta = await invocarFuncion('oms-distrib-gestion', { accion: 'reenviar-invite', distribuidorId: d.id });

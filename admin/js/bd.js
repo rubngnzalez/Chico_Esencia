@@ -79,9 +79,22 @@ export async function tocarAcceso() {
   } catch {}
 }
 
-// Llama a una Edge Function con la sesión actual (fase 2; opcional)
+// Llama a una Edge Function con la sesión actual (fase 2; opcional).
+// Las respuestas no-2xx llegan como FunctionsHttpError con un mensaje
+// genérico («returned a non-2 status code»); el JSON real del servidor
+// (campo «error») viaja en error.context — lo extraemos para mostrar el
+// motivo de verdad («Ese email ya tiene una cuenta.», permisos, 404…).
 export async function invocarFuncion(nombre, cuerpo) {
-  const { data, error } = await sb().functions.invoke(nombre, { body: cuerpo });
-  if (error) throw new Error(mensajeError(error));
-  return data;
+  try {
+    const { data, error } = await sb().functions.invoke(nombre, { body: cuerpo });
+    if (error) throw new Error(mensajeError(error));
+    return data;
+  } catch (error) {
+    if (error?.name === 'FunctionsHttpError' && typeof error?.context?.json === 'function') {
+      const datos = await error.context.json().catch(() => null);
+      const motivo = datos && datos.error ? String(datos.error) : '';
+      throw new Error(motivo || 'La función del servidor rechazó la operación.');
+    }
+    throw error;
+  }
 }
