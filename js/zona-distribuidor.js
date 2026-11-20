@@ -103,9 +103,9 @@
       $('zl-aviso').textContent = 'Correo o contraseña incorrectos.';
       return;
     }
-    // La contraseña temporal del correo de bienvenida (SHAD-…) obliga a
-    // definir una propia en cuanto se entra por primera vez.
-    accesoConTemporal = /^SHAD-[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(contrasena);
+    // La contraseña temporal del correo de bienvenida (6 dígitos, o el
+    // formato SHAD-… anterior) obliga a definir una propia en el primer acceso.
+    accesoConTemporal = /^(SHAD-[A-Z2-9]{5}-[A-Z2-9]{5}|\d{6})$/.test(contrasena);
     determinarEstado();
   });
 
