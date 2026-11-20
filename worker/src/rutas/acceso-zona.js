@@ -23,26 +23,26 @@ const DESTINOS = {
 
 const PLANTILLAS = {
   cliente: {
-    asunto: 'Acceso a tu zona de clientes — SHADDAI',
+    asunto: 'Acceso a tu zona de clientes — OMSHADDAI',
     titulo: 'Acceso a tu zona de clientes',
     textoBoton: 'Ver mis pedidos',
     cuerpo:
       '<p>Hola:</p>' +
-      '<p>Pulsa el botón para entrar en tu zona de clientes y ver el estado de tus pedidos de SHADDAI · Esencia de Umbral. El enlace es personal y caduca en una hora.</p>' +
-      '[BOTON]' +
+      '<p>Pulsa el botón para entrar en tu zona de clientes y ver el estado de tus pedidos de OMSHADDAI · Esencia de Umbral. El enlace es personal y caduca en una hora.</p>' +
+      '{{BOTON}}' +
       '<p style="margin-top:14px;">Si tú no solicitaste este acceso, ignora este mensaje.</p>' +
-      '<p>SHADDAI · Esencia de Umbral</p>',
+      '<p>OMSHADDAI · Esencia de Umbral</p>',
   },
   distribuidor: {
-    asunto: 'Define tu contraseña de distribuidor — SHADDAI',
+    asunto: 'Define tu contraseña de distribuidor — OMSHADDAI',
     titulo: 'Tu acceso de distribuidor',
     textoBoton: 'Definir mi contraseña',
     cuerpo:
       '<p>Hola:</p>' +
       '<p>Pulsa el botón para definir la contraseña de tu zona privada de distribuidor (tienda B2B, material comercial y tus pedidos). El enlace es personal y de un solo uso.</p>' +
-      '[BOTON]' +
+      '{{BOTON}}' +
       '<p style="margin-top:14px;">Si tú no solicitaste este acceso, ignora este mensaje.</p>' +
-      '<p>SHADDAI · Esencia de Umbral</p>',
+      '<p>OMSHADDAI · Esencia de Umbral</p>',
   },
 };
 
@@ -55,13 +55,13 @@ function sobreMarca(titulo, htmlInterno) {
   <table role="presentation" width="620" cellpadding="0" cellspacing="0" style="max-width:620px;width:100%;background:#f3eee2;border:1px solid rgba(201,164,95,.45);">
     <tr><td align="center" style="padding:28px 24px 10px;">
       <img src="${LOGO}" alt="SHADDAI · Esencia de Umbral" width="72" height="72" style="display:inline-block;border:0;outline:none;text-decoration:none;">
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:6px;color:#c9a45f;text-transform:uppercase;margin-top:10px;">SHADDAI · ${titulo}</div>
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:6px;color:#c9a45f;text-transform:uppercase;margin-top:10px;">OMSHADDAI · ${titulo}</div>
     </td></tr>
     <tr><td style="padding:6px 34px 30px;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.75;color:#2b332c;">
       ${htmlInterno}
     </td></tr>
     <tr><td style="padding:16px 34px 26px;border-top:1px solid rgba(201,164,95,.35);font-family:Verdana,Arial,sans-serif;font-size:11px;color:#7d7466;text-align:center;">
-      SHADDAI · Esencia de Umbral — Inhala · Exhala™<br>
+      OMSHADDAI · Esencia de Umbral — Inhala · Exhala™<br>
       <a href="https://omshaddai.com" style="color:#8a6d3b;">omshaddai.com</a>
     </td></tr>
   </table>
