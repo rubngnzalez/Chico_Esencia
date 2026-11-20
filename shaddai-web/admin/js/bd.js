@@ -40,14 +40,24 @@ export async function asegurar(promesa) {
 // ---- uploads al bucket «recursos» (devuelve la URL pública COMPLETA) ----
 
 const EXTENSION_PERMITIDAS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+const EXTENSION_VIDEO = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' };
 
-export async function subirImagen(archivo) {
-  if (archivo.size > 5 * 1024 * 1024) {
-    throw new Error(`«${archivo.name}» supera el límite de 5 MB.`);
+// true si la ruta/URL apunta a un vídeo (por extensión); decide cómo se pinta
+export function esVideo(ruta) {
+  return /\.(mp4|webm|mov)(\?|#|$)/i.test(String(ruta || ''));
+}
+
+// Sube una imagen (5 MB) o un vídeo (80 MB) al bucket «recursos» y devuelve
+// la URL pública COMPLETA que se guarda en productos.imagenes
+export async function subirMedio(archivo) {
+  const esVideoArchivo = Boolean(EXTENSION_VIDEO[archivo.type]);
+  const limite = esVideoArchivo ? 80 * 1024 * 1024 : 5 * 1024 * 1024;
+  if (archivo.size > limite) {
+    throw new Error(`«${archivo.name}» supera el límite de ${esVideoArchivo ? '80 MB (vídeo)' : '5 MB (imagen)'}.`);
   }
-  const tipo = EXTENSION_PERMITIDAS[archivo.type];
+  const tipo = EXTENSION_PERMITIDAS[archivo.type] || EXTENSION_VIDEO[archivo.type];
   if (!tipo) {
-    throw new Error(`«${archivo.name}» no es JPEG, PNG ni WebP.`);
+    throw new Error(`«${archivo.name}» no es JPEG, PNG, WebP, MP4 ni WebM.`);
   }
   const aleatorio = crypto.getRandomValues(new Uint32Array(2)).join('');
   const ruta = `subidas/${Date.now()}-${aleatorio}.${tipo}`;
@@ -57,6 +67,10 @@ export async function subirImagen(archivo) {
   if (respuesta.error) throw new Error(mensajeError(respuesta.error));
   const { data } = sb().storage.from('recursos').getPublicUrl(ruta);
   return data.publicUrl; // se guarda en productos.imagenes / articulos.imagen_portada
+}
+
+export async function subirImagen(archivo) {
+  return subirMedio(archivo);
 }
 
 export function urlImagen(ruta) {

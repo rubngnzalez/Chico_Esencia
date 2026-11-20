@@ -2070,7 +2070,8 @@ body[data-pagina="usos"] .tarjeta .icono {
   border-bottom: 1px solid rgba(201, 164, 95, 0.22);
 }
 
-.carrito-item img {
+.carrito-item img,
+.carrito-item video {
   width: 5.5rem;
   height: 5.5rem;
   object-fit: cover;
@@ -2209,7 +2210,8 @@ body[data-pagina="usos"] .tarjeta .icono {
     grid-template-columns: 4.2rem 1fr;
   }
 
-  .carrito-item img {
+  .carrito-item img,
+  .carrito-item video {
     width: 4.2rem;
     height: 4.2rem;
   }

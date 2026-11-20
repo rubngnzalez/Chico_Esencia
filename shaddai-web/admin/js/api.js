@@ -1,7 +1,7 @@
 // Utilidades comunes del panel: formato, avisos, modales y vista previa.
 // (Adaptado de servidor/panel/js/api.js: la capa de red vive ahora en js/bd.js.)
 
-export { subirImagen, urlImagen } from './bd.js';
+export { subirImagen, subirMedio, esVideo, urlImagen } from './bd.js';
 
 export function escapar(texto) {
   return String(texto ?? '').replace(/[&<>"']/g, (c) => (
