@@ -37,10 +37,10 @@ export default async function (contenedor, contexto) {
   const zona = contenedor.querySelector('#zona-usuarios');
   let usuarios = [];
 
-  zona.querySelectorAll('[data-ambito]').forEach((boton) => {
+  contenedor.querySelectorAll('[data-ambito]').forEach((boton) => {
     boton.addEventListener('click', () => {
       verAmbito = boton.dataset.ambito;
-      zona.querySelectorAll('[data-ambito]').forEach((b) => b.classList.toggle('activa', b === boton));
+      contenedor.querySelectorAll('[data-ambito]').forEach((b) => b.classList.toggle('activa', b === boton));
       pintar();
     });
   });
