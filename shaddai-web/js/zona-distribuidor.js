@@ -20,6 +20,7 @@
   let distribuidor = null; // { id, empresa, email, descuento_pct, … }
   let catalogo = [];
   let carrito = leerCarrito();
+  let accesoConTemporal = false; // entró con la contraseña SHAD-… del email de bienvenida
 
   function leerCarrito() {
     try {
@@ -92,46 +93,20 @@
   $('zona-form-login').addEventListener('submit', async (evento) => {
     evento.preventDefault();
     $('zl-aviso').textContent = '';
+    const correo = $('zl-email').value.trim();
+    const contrasena = $('zl-pass').value;
     const { error } = await sb.auth.signInWithPassword({
-      email: $('zl-email').value.trim(),
-      password: $('zl-pass').value,
+      email: correo,
+      password: contrasena,
     });
     if (error) {
       $('zl-aviso').textContent = 'Correo o contraseña incorrectos.';
       return;
     }
+    // La contraseña temporal del correo de bienvenida (SHAD-…) obliga a
+    // definir una propia en cuanto se entra por primera vez.
+    accesoConTemporal = /^SHAD-[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(contrasena);
     determinarEstado();
-  });
-
-  $('zona-recuperar').addEventListener('click', async () => {
-    const email = $('zl-email').value.trim();
-    if (!email) {
-      $('zl-aviso').textContent = 'Escribe tu correo arriba y pulsa «Enviar enlace de acceso».';
-      return;
-    }
-    $('zl-aviso').textContent = 'Enviando…';
-    const control = new AbortController();
-    const reloj = setTimeout(() => control.abort(), 20000);
-    let respuesta;
-    try {
-      const base = window.SHADDAI_API_BASE || 'https://shaddai-panel.redes-301dpi.workers.dev';
-      respuesta = await fetch(`${base.replace(/\/$/, '')}/api/acceso-zona`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, destino: 'distribuidor' }),
-        signal: control.signal,
-      });
-    } catch {
-      $('zl-aviso').textContent = 'No hemos podido conectar. Inténtalo de nuevo.';
-      return;
-    } finally {
-      clearTimeout(reloj);
-    }
-    const contenido = await respuesta.json().catch(() => ({}));
-    $('zl-aviso').textContent =
-      respuesta.ok && contenido.ok
-        ? 'Si el correo pertenece a un distribuidor, te llegará un correo de marca con el enlace para definir tu contraseña en unos minutos.'
-        : contenido.error || 'No se pudo enviar el enlace. Inténtalo de nuevo.';
   });
 
   $('zona-form-password').addEventListener('submit', async (evento) => {
@@ -168,18 +143,23 @@
     location.reload();
   });
 
+  // ─── SESIÓN Y PEDIDOS ─────────────────────────────────────────────────────
+
   // ─── APLICACIÓN ───────────────────────────────────────────────────────────
 
   function abrirApp() {
     mostrarVista('zona-app');
     $('zona-salir').style.display = '';
     $('zona-bienvenida').innerHTML = `
+      ${accesoConTemporal
+        ? '<strong>Estás usando la contraseña temporal de tu correo de bienvenida.</strong> Por seguridad, define la tuya ahora:'
+        : ''}
       <strong>${escapar(distribuidor.empresa || distribuidor.email)}</strong> — descuento aplicado: <strong>${escapar(Number(distribuidor.descuento_pct) || 0)}%</strong>
       ${Array.isArray(distribuidor.zonas_territorio) && distribuidor.zonas_territorio.length
         ? ` · Territorios: ${escapar(distribuidor.zonas_territorio.join(', '))}`
         : ''}
       <br><span style="font-size:.88rem;">El descuento se aplica siempre en el cálculo final del pedido, verificado en el servidor.</span>
-      <br><button type="button" class="boton boton-fantasma" id="zona-mostrar-pass" style="margin-top:.6rem;color:inherit;border-color:rgba(201,164,95,.4);">Cambiar contraseña</button>
+      <br><button type="button" class="boton boton-fantasma" id="zona-mostrar-pass" style="margin-top:.6rem;color:inherit;border-color:rgba(201,164,95,.4);">${accesoConTemporal ? 'Definir mi contraseña ahora' : 'Cambiar contraseña'}</button>
       <form id="zona-form-cambiar" class="formulario" autocomplete="off" hidden>
         <div class="campo">
           <label for="zc-nueva">Nueva contraseña</label>
@@ -212,7 +192,8 @@
       avisoCambio.textContent = 'Contraseña actualizada.';
       $('zc-nueva').value = '';
       $('zc-nueva2').value = '';
-      toastVisual('Contraseña cambiada.');
+      accesoConTemporal = false;
+      toastVisual('Contraseña guardada. Ya puedes usarla en tus próximos accesos.');
     });
     cargarTienda();
     cargarMaterial();
