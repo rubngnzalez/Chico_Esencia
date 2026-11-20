@@ -176,4 +176,101 @@ export function registrar(enrutador) {
         : 'El correo de acceso quedó en cola de envío del panel (sin envío real configurado).',
     });
   });
+
+  // ─── PERFIL DEL DISTRIBUIDOR ────────────────────────────────────────────
+  // Con la sesión de Supabase del distribuidor: devuelve su ficha y permite
+  // actualizar sus datos personales y de empresa (nunca descuento, territorios
+  // ni acceso: eso lo gestiona el panel).
+  const CAMPOS_PERFIL = {
+    empresa: 120,
+    razon_social: 160,
+    cif: 24,
+    persona_contacto: 120,
+    telefono: 40,
+  };
+
+  enrutador.post('/api/distribuidor-perfil', async (c) => {
+    const limite = await limitar(c.db, 'perfil-dist:' + ipDeRequest(c.request), 30, 60 * 60 * 1000, 15 * 60 * 1000);
+    if (limite.bloqueado) return respuestaLimitador(limite);
+
+    const token = (c.request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+    if (!token) return respuestaJson({ error: 'Entra en tu zona para ver tu perfil.' }, 401);
+    const clave = c.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!clave) return respuestaJson({ error: 'El perfil no está configurado todavía en el servidor.' }, 500);
+
+    let userId = '';
+    try {
+      const r = await fetch(`${URL_SUPABASE}/auth/v1/user`, {
+        headers: { apikey: clave, Authorization: `Bearer ${token}` },
+      });
+      const datos = await r.json().catch(() => ({}));
+      if (!r.ok || !datos?.id) return respuestaJson({ error: 'Tu sesión ha caducado. Vuelve a entrar.' }, 401);
+      userId = String(datos.id);
+    } catch {
+      return respuestaJson({ error: 'No se pudo validar la sesión.' }, 502);
+    }
+
+    const filaResp = await fetch(
+      `${URL_SUPABASE}/rest/v1/oms_distribuidores?user_id=eq.${encodeURIComponent(userId)}&select=*`,
+      { headers: { apikey: clave, Authorization: `Bearer ${clave}` } }
+    );
+    const filas = await filaResp.json().catch(() => []);
+    const fila = (filas || [])[0];
+    if (!fila) return respuestaJson({ error: 'Distribuidor no encontrado.' }, 404);
+
+    // Guardado (solo campos permitidos; descuento, territorios y acceso los
+    // gestiona el panel)
+    if (c.cuerpo && c.cuerpo.guardar) {
+      const campos = c.cuerpo.campos || {};
+      const direccion = (campos.direccion && typeof campos.direccion === 'object') ? campos.direccion : {};
+      const cambios = {
+        empresa: String(campos.empresa ?? fila.empresa ?? '').trim().slice(0, CAMPOS_PERFIL.empresa),
+        razon_social: String(campos.razon_social ?? fila.razon_social ?? '').trim().slice(0, CAMPOS_PERFIL.razon_social),
+        cif: String(campos.cif ?? fila.cif ?? '').trim().slice(0, CAMPOS_PERFIL.cif),
+        persona_contacto: String(campos.persona_contacto ?? fila.persona_contacto ?? '').trim().slice(0, CAMPOS_PERFIL.persona_contacto),
+        telefono: String(campos.telefono ?? fila.telefono ?? '').trim().slice(0, CAMPOS_PERFIL.telefono),
+        direccion: {
+          calle: String(direccion.calle ?? '').trim().slice(0, 200),
+          cp: String(direccion.cp ?? '').trim().slice(0, 12),
+          poblacion: String(direccion.poblacion ?? '').trim().slice(0, 100),
+          provincia: String(direccion.provincia ?? '').trim().slice(0, 100),
+          pais: String(direccion.pais ?? '').trim().slice(0, 60),
+        },
+      };
+      const patch = await fetch(
+        `${URL_SUPABASE}/rest/v1/oms_distribuidores?user_id=eq.${encodeURIComponent(userId)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            apikey: clave,
+            Authorization: `Bearer ${clave}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify(cambios),
+        }
+      );
+      const actualizadas = await patch.json().catch(() => []);
+      if (!patch.ok || !(actualizadas || [])[0]) {
+        return respuestaJson({ error: 'No se pudieron guardar tus datos. Inténtalo de nuevo.' }, 502);
+      }
+      Object.assign(fila, (actualizadas || [])[0]);
+    }
+
+    return respuestaJson({
+      ok: true,
+      perfil: {
+        empresa: fila.empresa,
+        razon_social: fila.razon_social,
+        cif: fila.cif,
+        persona_contacto: fila.persona_contacto,
+        email: fila.email,
+        telefono: fila.telefono,
+        direccion: fila.direccion || {},
+        descuento_pct: Number(fila.descuento_pct) || 0,
+        zonas_territorio: fila.zonas_territorio || [],
+        acceso_habilitado: fila.acceso_habilitado,
+      },
+    });
+  });
 }
