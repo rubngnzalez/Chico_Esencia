@@ -39,56 +39,48 @@
     setTimeout(() => nota.remove(), 4000);
   }
 
-  // ─── PASO 1 · pedir el código ─────────────────────────────────────────────
+  // ─── PASO 1 · pedir el enlace de acceso (correo de marca vía panel-worker) ─
   $('zona-form-login').addEventListener('submit', async (evento) => {
     evento.preventDefault();
     $('zl-aviso').textContent = '';
     emailAcceso = $('zl-email').value.trim();
     $('zl-boton').disabled = true;
-    $('zl-boton').textContent = 'Enviando código…';
-    const { error } = await sb.auth.signInWithOtp({
-      email: emailAcceso,
-      options: { shouldCreateUser: true },
-    });
+    $('zl-boton').textContent = 'Enviando…';
+    const control = new AbortController();
+    const reloj = setTimeout(() => control.abort(), 20000);
+    let respuesta;
+    try {
+      const base = window.SHADDAI_API_BASE || 'https://shaddai-panel.redes-301dpi.workers.dev';
+      respuesta = await fetch(`${base.replace(/\/$/, '')}/api/acceso-zona`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailAcceso, destino: 'cliente', web: $('zl-web').value }),
+        signal: control.signal,
+      });
+    } catch {
+      $('zl-boton').disabled = false;
+      $('zl-boton').textContent = 'Enviar código de acceso';
+      $('zl-aviso').textContent = 'No hemos podido conectar. Inténtalo de nuevo.';
+      return;
+    } finally {
+      clearTimeout(reloj);
+    }
+    const contenido = await respuesta.json().catch(() => ({}));
     $('zl-boton').disabled = false;
     $('zl-boton').textContent = 'Enviar código de acceso';
-    if (error) {
-      $('zl-aviso').textContent = error.message || 'No se pudo enviar el código. Inténtalo de nuevo.';
-      return;
+    if (respuesta.ok && contenido.ok) {
+      $('zl-aviso').textContent = '';
+      $('zl-aviso').style.color = '';
+      $('zl-aviso').textContent = contenido.mensaje || 'Revisa tu correo: te hemos enviado el enlace de acceso.';
+      $('zl-email').value = '';
+    } else {
+      $('zl-aviso').textContent = contenido.error || 'No se pudo enviar el acceso. Inténtalo de nuevo en unos minutos.';
     }
-    $('zc-correo-recordado').textContent = emailAcceso;
-    mostrarPaso('codigo');
-    $('zc-codigo').focus();
   });
 
-  // ─── PASO 2 · verificar el código ─────────────────────────────────────────
-  $('zona-form-codigo').addEventListener('submit', async (evento) => {
-    evento.preventDefault();
-    $('zc-aviso-codigo').textContent = '';
-    const codigo = $('zc-codigo').value.trim().replace(/\s+/g, '');
-    if (codigo.length < 6) {
-      $('zc-aviso-codigo').textContent = 'El código tiene 6 dígitos.';
-      return;
-    }
-    $('zc-boton-codigo').disabled = true;
-    // El token llega según la plantilla configurada: probamos ambos tipos.
-    let error = null;
-    for (const tipo of ['email', 'magiclink']) {
-      const intento = await sb.auth.verifyOTP({ email: emailAcceso, token: codigo, type: tipo });
-      error = intento.error;
-      if (!error) break;
-    }
-    $('zc-boton-codigo').disabled = false;
-    if (error) {
-      $('zc-aviso-codigo').textContent = 'Código incorrecto o caducado. Vuelve a pedirlo si es necesario.';
-      return;
-    }
-    toastVisual('Acceso concedido. Bienvenido de nuevo.');
-  });
-
-  $('zc-volver').addEventListener('click', () => {
-    mostrarPaso('correo');
-  });
+  // ─── PASO 2 · el acceso llega por correo (enlace de sesión) ───────────────
+  // Sin UI de código: al pulsar el enlace del correo, Supabase entrega la
+  // sesión en esta página y onAuthStateChange dispara la entrada.
 
   $('zona-salir').addEventListener('click', async () => {
     await sb.auth.signOut();
