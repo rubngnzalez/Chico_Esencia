@@ -42,6 +42,7 @@ const SECCIONES = {
   etiquetas: { titulo: 'Etiquetas de envío', mod: './js/secciones/etiquetas.js', roles: TODOS },
   ajustes: { titulo: 'Ajustes', mod: './js/secciones/ajustes.js', roles: ['admin'] },
   usuarios: { titulo: 'Usuarios', mod: './js/secciones/usuarios.js', roles: ['admin'] },
+  clientes: { titulo: 'Clientes', mod: './js/secciones/clientes.js', roles: ['admin'] },
   manual: { titulo: 'Manual del panel', mod: './js/secciones/manual.js', roles: TODOS },
 };
 
