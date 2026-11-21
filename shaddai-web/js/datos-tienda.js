@@ -206,9 +206,11 @@ const DATOS_TIENDA = [
 
   // Carrusel de medios: visor encima y tira de miniaturas debajo del marco.
   // Con un solo medio se mantiene el marcado clásico de una sola imagen.
+  // El visor permite el AUDIO del vídeo: sin muted ni autoplay (los navegadores
+  // bloquean el sonido sin gesto); lo arranca el usuario con el botón ▶.
   const medioVisorHtml = (medio, producto, indice) =>
     medio.video
-      ? `<video src="${CONEXION.escapar(medio.url)}" controls autoplay muted loop playsinline preload="metadata" aria-label="${CONEXION.escapar(producto.nombre)} — vídeo ${indice + 1}"></video>`
+      ? `<video src="${CONEXION.escapar(medio.url)}" controls playsinline preload="metadata" aria-label="${CONEXION.escapar(producto.nombre)} — vídeo ${indice + 1}"></video>`
       : `<img src="${CONEXION.escapar(medio.url)}" alt="${CONEXION.escapar(producto.nombre)} — SHADDAI" loading="lazy">`;
 
   const carruselHtml = (producto, medidas) => {
