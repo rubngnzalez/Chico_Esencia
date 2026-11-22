@@ -32,7 +32,7 @@ body {
   overflow-x: clip;
 }
 
-/* Bloquea el scroll de fondo mientras el menÃº mÃ³vil estÃ¡ abierto */
+/* Bloquea el scroll de fondo mientras el menú móvil está abierto */
 body.menu-abierto {
   overflow: hidden;
 }
@@ -149,7 +149,7 @@ p + p {
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 50;
-  /* Respeta el Ã¡rea segura superior en iPhone con notch (viewport-fit=cover) */
+  /* Respeta el área segura superior en iPhone con notch (viewport-fit=cover) */
   padding-top: env(safe-area-inset-top);
   transition: background 0.4s ease, box-shadow 0.4s ease;
 }
@@ -161,7 +161,7 @@ p + p {
 }
 
 .cabecera .barra {
-  width: min(1240px, 94%);
+  width: min(1340px, 96%);
   margin-inline: auto;
   display: flex;
   align-items: center;
@@ -220,14 +220,16 @@ p + p {
 .navegacion ul {
   list-style: none;
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: nowrap;
+  gap: 1.15rem;
 }
 
 .navegacion a {
   color: var(--texto);
-  font-size: 0.82rem;
-  letter-spacing: 0.24em;
+  font-size: 0.74rem;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
+  white-space: nowrap;
   padding-bottom: 0.3rem;
   border-bottom: 1px solid transparent;
   transition: color 0.3s ease, border-color 0.3s ease;
@@ -239,7 +241,7 @@ p + p {
   border-color: var(--oro);
 }
 
-/* El botÃ³n de cierre del menÃº solo existe en la capa mÃ³vil */
+/* El botón de cierre del menú solo existe en la capa móvil */
 .navegacion .cerrar {
   display: none;
 }
@@ -250,13 +252,13 @@ p + p {
   border: 1px solid rgba(201, 164, 95, 0.55);
   color: var(--oro);
   font-size: 1.3rem;
-  /* 44 px mÃ­nimos de Ã¡rea tÃ¡ctil */
+  /* 44 px mínimos de área táctil */
   width: 2.75rem;
   height: 2.75rem;
   cursor: pointer;
 }
 
-/* ---------- HÃ©roe ---------- */
+/* ---------- Héroe ---------- */
 .heroe {
   min-height: 100vh; /* fallback para navegadores sin svh */
   min-height: 100svh;
@@ -346,7 +348,7 @@ p + p {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
-/* Vï¿½deo de presentaciï¿½n del producto (Manifiesto, portada) */
+/* V�deo de presentaci�n del producto (Manifiesto, portada) */
 .columna-imagen video {
   display: block;
   width: 100%;
@@ -504,7 +506,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   height: auto;
   display: block;
 }
-/* ---------- Vï¿½deo promocional ---------- */
+/* ---------- V�deo promocional ---------- */
 .video-escena {
   margin: 0 auto;
   max-width: 940px;
@@ -525,7 +527,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   background: rgba(11, 18, 13, 0.9);
 }
 
-/* Variante con texto superpuesto sobre el vÃ­deo */
+/* Variante con texto superpuesto sobre el vídeo */
 .video-escena.video-con-texto {
   position: relative;
 }
@@ -655,7 +657,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   margin-top: 0.4rem;
 }
 
-/* ---------- DÃºo inhala / exhala ---------- */
+/* ---------- Dúo inhala / exhala ---------- */
 .duo {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -676,7 +678,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   margin-bottom: 1rem;
 }
 
-/* ---------- GalerÃ­a ---------- */
+/* ---------- Galería ---------- */
 .carrusel-universo {
   max-width: 900px;
   margin: 0 auto;
@@ -749,7 +751,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 }
 
 .universo-puntos button {
-  /* Borde transparente amplÃ­a la zona tÃ¡ctil sin cambiar el punto visible */
+  /* Borde transparente amplía la zona táctil sin cambiar el punto visible */
   width: 1.35rem;
   height: 1.35rem;
   padding: 0;
@@ -864,7 +866,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   font-size: 1.35rem;
 }
 
-/* Logo oficial de Bizum en la opciÃ³n de pago */
+/* Logo oficial de Bizum en la opción de pago */
 .metodo-pago .bizum-logo {
   height: 1.15rem;
   width: auto;
@@ -897,7 +899,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: var(--oro-claro);
 }
 
-/* ---------- Cabecera de pÃ¡gina interior ---------- */
+/* ---------- Cabecera de página interior ---------- */
 .cabecera-pagina {
   padding: 10.5rem 0 4.5rem;
   text-align: center;
@@ -999,7 +1001,7 @@ body[data-pagina="usos"] .tarjeta .icono {
 }
 
 .lista-mistica li::before {
-  content: "âœ¦";
+  content: "✦";
   position: absolute;
   left: 0;
   color: var(--oro);
@@ -1019,7 +1021,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   align-items: start;
 }
 
-/* Orden editorial: marca, navegaciï¿½n, boletï¿½n */
+/* Orden editorial: marca, navegaci�n, bolet�n */
 .pie .columnas > div:nth-child(1) { order: 2; }
 .pie .columnas > div:nth-child(2) {
   order: 1;
@@ -1089,7 +1091,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: rgba(217, 212, 197, 0.45);
 }
 
-/* ---------- AnimaciÃ³n de apariciÃ³n ---------- */
+/* ---------- Animación de aparición ---------- */
 .revelar {
   opacity: 0;
   transform: translateY(28px);
@@ -1112,27 +1114,10 @@ body[data-pagina="usos"] .tarjeta .icono {
   }
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 900px) {
-  .dos-columnas,
-  .duo,
-  .shin-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .dos-columnas.inversa .columna-imagen {
-    order: 0;
-  }
-
-  .rejilla-3,
-  .ficha {
-    grid-template-columns: 1fr;
-  }
-
-  .pie .columnas {
-    grid-template-columns: 1fr;
-  }
-
+/* ---------- Menú de pantalla completa (hamburguesa) ----------
+   Por debajo de ~1330 px la fila horizontal completa (9 secciones + logo +
+   carrito) ya no cabe: el menú pasa a la capa a pantalla completa. */
+@media (max-width: 1330px) {
   .menu-boton {
     display: grid;
     place-items: center;
@@ -1143,7 +1128,7 @@ body[data-pagina="usos"] .tarjeta .icono {
     inset: 0;
     background: rgba(15, 24, 17, 0.98);
     display: grid;
-    /* overflow + margen automÃ¡tico: el menÃº se centra y se puede desplazar en pantallas bajas */
+    /* overflow + margen automático: el menú se centra y se puede desplazar en pantallas bajas */
     overflow-y: auto;
     padding: calc(env(safe-area-inset-top) + 4.5rem) 1rem calc(env(safe-area-inset-bottom) + 3rem);
     opacity: 0;
@@ -1169,9 +1154,16 @@ body[data-pagina="usos"] .tarjeta .icono {
 
   .navegacion a {
     font-size: 1.05rem;
-    /* Ãrea tÃ¡ctil amplia en los enlaces del menÃº */
+    /* Área táctil amplia en los enlaces del menú */
     display: inline-block;
     padding: 0.65rem 1.2rem;
+    white-space: normal;
+  }
+
+  .navegacion .acceso-boton {
+    font-size: 1.05rem;
+    padding: 0.65rem 1.2rem;
+    white-space: normal;
   }
 
   .navegacion .cerrar {
@@ -1191,6 +1183,28 @@ body[data-pagina="usos"] .tarjeta .icono {
     border: none;
     cursor: pointer;
   }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .dos-columnas,
+  .duo,
+  .shin-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .dos-columnas.inversa .columna-imagen {
+    order: 0;
+  }
+
+  .rejilla-3,
+  .ficha {
+    grid-template-columns: 1fr;
+  }
+
+  .pie .columnas {
+    grid-template-columns: 1fr;
+  }
 
   /* El aura y las motas del marco no pueden sobresalir del ancho de pantalla */
   .marco-imagen::before,
@@ -1205,7 +1219,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   }
 }
 
-/* CompacciÃ³n de la marca en pantallas muy estrechas */
+/* Compacción de la marca en pantallas muy estrechas */
 @media (max-width: 400px) {
   .cabecera .barra {
     gap: 0.5rem;
@@ -1235,7 +1249,7 @@ body[data-pagina="usos"] .tarjeta .icono {
     aspect-ratio: 4 / 3;
   }
 
-  /* Menos tracking en el subtÃ­tulo del hÃ©roe para que no envuelva en 320 px */
+  /* Menos tracking en el subtítulo del héroe para que no envuelva en 320 px */
   .heroe .subtitulo {
     letter-spacing: 0.2em;
   }
@@ -1250,7 +1264,7 @@ body[data-pagina="usos"] .tarjeta .icono {
     width: 100%;
   }
 
-  /* Botones de cantidad con Ã¡rea tÃ¡ctil de 44 px */
+  /* Botones de cantidad con área táctil de 44 px */
   .cantidad button {
     width: 2.75rem;
     height: 2.75rem;
@@ -1266,7 +1280,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   }
 }
 
-/* ---------- Escenas (Presencia, Equilibrio, Claridad, Desconexiï¿½n) ---------- */
+/* ---------- Escenas (Presencia, Equilibrio, Claridad, Desconexi�n) ---------- */
 .rejilla-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1336,7 +1350,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: var(--oro-claro);
 }
 
-/* ---------- Boletï¿½n del Umbral (pie) ---------- */
+/* ---------- Bolet�n del Umbral (pie) ---------- */
 .boletin {
   display: flex;
   gap: 0.6rem;
@@ -1351,7 +1365,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: var(--crema);
   padding: 0.65rem 0.9rem;
   font-family: var(--sans);
-  /* 16 px evita el zoom automÃ¡tico de iOS al enfocar */
+  /* 16 px evita el zoom automático de iOS al enfocar */
   font-size: 1rem;
 }
 
@@ -1383,7 +1397,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   margin-top: 0.5rem;
 }
 
-/* ---------- Nota de audio meditaciï¿½n ---------- */
+/* ---------- Nota de audio meditaci�n ---------- */
 .panel-nota {
   border: 1px dashed rgba(201, 164, 95, 0.5);
   background: rgba(201, 164, 95, 0.06);
@@ -1428,7 +1442,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   isolation: isolate;
 }
 
-/* Ventana de vï¿½deo del ritual */
+/* Ventana de v�deo del ritual */
 .ritual-video {
   margin: 2.6rem auto 0;
   max-width: 680px;
@@ -1456,7 +1470,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   font-size: 1.25rem;
 }
 
-/* ---------- Fondo mï¿½gico: luciï¿½rnagas y niebla del umbral ---------- */
+/* ---------- Fondo m�gico: luci�rnagas y niebla del umbral ---------- */
 .fondo-magico {
   position: fixed;
   inset: 0;
@@ -1465,7 +1479,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   pointer-events: none;
 }
 
-/* Universo del Umbral: estrellas interactivas (canvas bajo las luciï¿½rnagas) */
+/* Universo del Umbral: estrellas interactivas (canvas bajo las luci�rnagas) */
 #universo-umbral {
   position: absolute;
   inset: 0;
@@ -1671,7 +1685,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   .cabecera-pagina .entradilla::after { animation: none; }
 }
 
-/* ---------- Carta poÃ©tica: figuras y divisores entrelazados ---------- */
+/* ---------- Carta poética: figuras y divisores entrelazados ---------- */
 .carta-panel {
   position: relative;
   background:
@@ -1865,7 +1879,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   }
 }
 
-/* ---------- Carrusel del hï¿½roe: brote de niebla pulverizada ---------- */
+/* ---------- Carrusel del h�roe: brote de niebla pulverizada ---------- */
 .heroe .contenedor {
   position: relative;
   z-index: 2;
@@ -1901,7 +1915,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   animation: kenburns 26s ease-in-out forwards;
 }
 
-/* Vï¿½deo de fondo del hï¿½roe (presentaciï¿½n del producto) */
+/* V�deo de fondo del h�roe (presentaci�n del producto) */
 .carrusel-video {
   position: absolute;
   inset: 0;
@@ -2189,22 +2203,6 @@ body[data-pagina="usos"] .tarjeta .icono {
   margin-top: 2rem;
 }
 
-@media (max-width: 1200px) {
-  .navegacion ul {
-    gap: 1.05rem;
-  }
-
-  .navegacion a {
-    font-size: 0.74rem;
-    letter-spacing: 0.14em;
-  }
-
-  .navegacion .acceso-boton {
-    font-size: 0.74rem;
-    letter-spacing: 0.14em;
-  }
-}
-
 @media (max-width: 560px) {
   .carrito-item {
     grid-template-columns: 4.2rem 1fr;
@@ -2362,7 +2360,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: rgba(217, 212, 197, 0.65);
 }
 
-/* CupÃ³n de descuento en el checkout */
+/* Cupón de descuento en el checkout */
 .cupon-zona {
   display: flex;
   gap: 0.7rem;
@@ -2449,8 +2447,8 @@ body[data-pagina="usos"] .tarjeta .icono {
   object-position: center;
 }
 
-/* ---------- Carrusel de imÃ¡genes y vÃ­deos del producto ---------- */
-/* Visor bajo el marco principal: la imagen o el vÃ­deo activo */
+/* ---------- Carrusel de imágenes y vídeos del producto ---------- */
+/* Visor bajo el marco principal: la imagen o el vídeo activo */
 .carrusel-producto-visor {
   position: relative;
 }
@@ -2570,7 +2568,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   pointer-events: none;
 }
 
-/* Esencia (cenital), BÃ¡lsamo y DÃºo: producto centrado en el marco horizontal */
+/* Esencia (cenital), Bálsamo y Dúo: producto centrado en el marco horizontal */
 .compra-figura img[src*="esencia-meditacion"],
 .compra-figura img[src*="perfume-solido"],
 .compra-figura img[src*="duo-esencial"],
@@ -2585,7 +2583,7 @@ body[data-pagina="usos"] .tarjeta .icono {
     object-position: center 42%;
   }
 }
-/* ---------- Mï¿½sica ambiente del Umbral ---------- */
+/* ---------- M�sica ambiente del Umbral ---------- */
 .musica-iframe {
   position: fixed;
   left: -9999px;
@@ -2803,7 +2801,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   fill: currentColor;
 }
 
-/* AceptaciÃ³n de suscripciÃ³n al boletÃ­n en el checkout (pago.html) */
+/* Aceptación de suscripción al boletín en el checkout (pago.html) */
 .campo-check {
   display: flex;
   align-items: flex-start;
@@ -3213,9 +3211,10 @@ body[data-pagina="usos"] .tarjeta .icono {
   padding: 0;
   color: var(--texto);
   font: inherit;
-  font-size: 0.82rem;
-  letter-spacing: 0.24em;
+  font-size: 0.74rem;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
+  white-space: nowrap;
   border-bottom: 1px solid transparent;
   transition: color 0.3s ease, border-color 0.3s ease;
   display: inline-flex;
@@ -3262,7 +3261,7 @@ body[data-pagina="usos"] .tarjeta .icono {
   color: var(--oro-claro);
   border-bottom: none;
 }
-@media (min-width: 901px) {
+@media (min-width: 1331px) {
   .navegacion .acceso-menu:hover .acceso-submenu {
     display: block;
   }
@@ -3274,7 +3273,7 @@ body[data-pagina="usos"] .tarjeta .icono {
     z-index: 70;
   }
 }
-@media (max-width: 900px) {
+@media (max-width: 1330px) {
   .navegacion .acceso-boton {
     font-size: 1.05rem;
     padding: 0.65rem 1.2rem;
