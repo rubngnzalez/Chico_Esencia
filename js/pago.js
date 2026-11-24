@@ -512,6 +512,18 @@ if (formularioPagoR) {
     }
     avisoPagoR.textContent = "";
 
+    // Consentimiento previo obligatorio (art. 108.2 TRLGDCU): la casilla
+    // desmarcada por defecto registra que el cliente aceptó las condiciones
+    // de compra y la política de envíos y devoluciones antes de pagar
+    const aceptoCondiciones = formularioPagoR.querySelector("[data-acepto-condiciones]");
+    if (aceptoCondiciones && !aceptoCondiciones.checked) {
+      avisoPagoR.textContent =
+        "Para continuar, marca la casilla de aceptación de las Condiciones de Compra y la Política de Envíos y Devoluciones.";
+      aceptoCondiciones.focus();
+      aceptoCondiciones.closest(".campo-check")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     const datos = new FormData(formularioPagoR);
     const nombre = (datos.get("nombre") || "").toString().trim();
     const apellidos = (datos.get("apellidos") || "").toString().trim();
