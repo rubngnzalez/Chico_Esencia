@@ -560,7 +560,7 @@ video.miniatura-tabla { pointer-events: none; }
 
 /* Los interruptores dentro de formularios no deben heredar el estilo de
    etiqueta de campo (.formulario label gana por especificidad y rompe la
-   pista: display:block + mayúsculas dejan el interruptor invisible). */
+   pista: display:block + mayÃºsculas dejan el interruptor invisible). */
 .formulario label.interruptor {
   display: inline-flex;
   margin: 0;
@@ -1042,7 +1042,7 @@ video.miniatura-tabla { pointer-events: none; }
 }
 
 
-/* ---------- Etiquetas de envío ---------- */
+/* ---------- Etiquetas de envÃ­o ---------- */
 .etiqueta-prev {
   background: #fff;
   color: #000;
@@ -1105,7 +1105,7 @@ video.miniatura-tabla { pointer-events: none; }
   background: #fff;
 }
 
-/* ---------- Distribuidores: contador en la pestaña y contraseña nueva ---------- */
+/* ---------- Distribuidores: contador en la pestaÃ±a y contraseÃ±a nueva ---------- */
 .pestana .contador {
   font-style: normal;
   font-size: 0.68rem;
@@ -1130,7 +1130,7 @@ video.miniatura-tabla { pointer-events: none; }
   user-select: all;
 }
 
-/* ---------- Distribuidores y estadísticas (2026-11-19) ---------- */
+/* ---------- Distribuidores y estadÃ­sticas (2026-11-19) ---------- */
 .celda-acciones {
   white-space: nowrap;
   text-align: right;

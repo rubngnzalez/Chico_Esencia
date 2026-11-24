@@ -304,7 +304,7 @@ const DATOS_TIENDA = [
       `<p class="texto-grande">${CONEXION.escapar(producto.descripcion || producto.historia || "")}</p>` +
       `<p class="compra-precio">${precioHtml(producto)}</p>` +
       botonHtml(producto) +
-      `<p class="compra-nota">Por orden de solicitud.${notaZonas} Consulta la <a href="politica.html">Política de Envío Consciente</a>.</p>` +
+      `<p class="compra-nota">Por orden de solicitud.${notaZonas} Tu pedido incluye una mini muestra para descubrir la esencia sin romper el precinto. Por motivos de higiene, no se aceptan devoluciones una vez abierto el precinto de garantía: consulta la <a href="devoluciones.html">Política de Devoluciones</a> y la <a href="politica.html">Política de Envío Consciente</a>.</p>` +
       `</div>` +
       `</div>`;
     conectarCarrusel(seccion, producto);
