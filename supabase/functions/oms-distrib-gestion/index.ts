@@ -244,12 +244,18 @@ Deno.serve(async (request: Request) => {
 
     // Contraseña temporal: con la autoconfirmación activa, el enlace de
     // invitación NO crea sesión, así que entregamos una contraseña por correo
-    // y el distribuidor la cambia desde su zona.
+    // y el distribuidor la cambia desde su zona. Se confirma también el correo
+    // del usuario: generateLink(invite) deja la cuenta sin confirmar y el
+    // signInWithPassword fallaría con «email_not_confirmed» aunque la
+    // contraseña fuera correcta.
     let contrasenaTemporalTexto = '';
     if (userId) {
       try {
         contrasenaTemporalTexto = contrasenaTemporal();
-        const cambio = await admin.auth.admin.updateUserById(userId, { password: contrasenaTemporalTexto });
+        const cambio = await admin.auth.admin.updateUserById(userId, {
+          password: contrasenaTemporalTexto,
+          email_confirm: true,
+        });
         if (cambio.error) throw new Error(cambio.error.message);
       } catch (error) {
         const mensaje = error instanceof Error ? error.message : String(error);
@@ -485,9 +491,14 @@ Deno.serve(async (request: Request) => {
         await db.from('oms_distribuidores').update({ user_id: userId }).eq('id', distribuidor.id);
       }
 
-      // Contraseña temporal nueva (la anterior deja de servir)
+      // Contraseña temporal nueva (la anterior deja de servir). Se confirma
+      // también el correo: sin confirmación el login devolvería
+      // «email_not_confirmed» aunque la contraseña fuera correcta.
       const temporal = contrasenaTemporal();
-      const cambio = await admin.auth.admin.updateUserById(userId, { password: temporal });
+      const cambio = await admin.auth.admin.updateUserById(userId, {
+        password: temporal,
+        email_confirm: true,
+      });
       if (cambio.error) {
         return errorJson(`No se pudo fijar la contraseña temporal: ${cambio.error.message}`, 500, request);
       }

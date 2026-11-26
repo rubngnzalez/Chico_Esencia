@@ -307,8 +307,40 @@ const DATOS_TIENDA = [
       `<p class="compra-nota">Por orden de solicitud.${notaZonas} Tu pedido incluye una mini muestra para descubrir la esencia sin romper el precinto. Por motivos de higiene, no se aceptan devoluciones una vez abierto el precinto de garantía: consulta la <a href="devoluciones.html">Política de Devoluciones</a> y la <a href="politica.html">Política de Envío Consciente</a>.</p>` +
       `</div>` +
       `</div>`;
+    seccion.dataset.productoTienda = codigoCarrito;
     conectarCarrusel(seccion, producto);
     return seccion;
+  };
+
+  // URLs directas por producto para campañas y enlaces compartidos:
+  //   tienda.html?producto=esencia-umbral-50 | perfume-solido | duo-ritual
+  // Muestra solo esa ficha, la destaca y centra el scroll; con un código
+  // desconocido (o sin parámetro) la tienda funciona con normalidad.
+  const productoPedido = (() => {
+    const pedido = new URLSearchParams(location.search).get("producto");
+    if (!pedido) return "";
+    const clave = String(pedido).toLowerCase().trim();
+    return IMAGENES_ALIAS[clave] || clave;
+  })();
+
+  const aplicarProductoPedido = () => {
+    if (!productoPedido) return;
+    const todas = Array.from(document.querySelectorAll("[data-producto-tienda]"));
+    const objetivo = todas.find((seccion) => (seccion.dataset.productoTienda || "") === productoPedido);
+    if (!objetivo) return;
+    document.querySelectorAll(".enlace-todos").forEach((enlace) => enlace.remove());
+    todas.forEach((seccion) => { seccion.hidden = seccion !== objetivo; });
+    objetivo.hidden = false;
+    objetivo.classList.add("producto-destacado");
+    const enlace = document.createElement("p");
+    enlace.className = "centrar enlace-todos";
+    enlace.innerHTML = `<a href="tienda.html">&#8592; Ver todos los productos de la tienda</a>`;
+    objetivo.parentNode.insertBefore(enlace, objetivo);
+    const titulo = objetivo.querySelector(".titulo");
+    if (titulo) document.title = `${titulo.textContent.trim()} — SHADDAI · Esencia de Umbral`;
+    setTimeout(() => {
+      objetivo.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
   };
 
   // Si no hay conexión no pasa nada: queda el HTML estático actual.
@@ -332,5 +364,9 @@ const DATOS_TIENDA = [
         if (ancla && ancla.parentNode) ancla.parentNode.insertBefore(seccion, ancla);
         else document.querySelector("main").appendChild(seccion);
       });
+    aplicarProductoPedido();
   });
+
+  // Sin conexión a la base de datos: el filtro actúa sobre las fichas estáticas
+  aplicarProductoPedido();
 })();
