@@ -100,7 +100,15 @@
       password: contrasena,
     });
     if (error) {
-      $('zl-aviso').textContent = 'Correo o contraseña incorrectos.';
+      const codigo = error.code || '';
+      if (codigo === 'email_not_confirmed' || /not confirmed/i.test(error.message || '')) {
+        $('zl-aviso').textContent =
+          'Tu correo aún no está confirmado. Pide a SHADDAI que reenvíe el acceso (botón ✉ del panel) y entra con la contraseña nueva del correo.';
+      } else if (codigo === 'over_request_rate_limit' || codigo === 'over_email_send_rate_limit') {
+        $('zl-aviso').textContent = 'Demasiados intentos seguidos. Espera un minuto e inténtalo de nuevo.';
+      } else {
+        $('zl-aviso').textContent = 'Correo o contraseña incorrectos.';
+      }
       return;
     }
     // La contraseña temporal del correo de bienvenida (6 dígitos, o el
