@@ -59,7 +59,7 @@
       });
     } catch {
       $('zl-boton').disabled = false;
-      $('zl-boton').textContent = 'Enviar código de acceso';
+      $('zl-boton').textContent = 'Enviar enlace de acceso';
       $('zl-aviso').textContent = 'No hemos podido conectar. Inténtalo de nuevo.';
       return;
     } finally {
@@ -67,7 +67,7 @@
     }
     const contenido = await respuesta.json().catch(() => ({}));
     $('zl-boton').disabled = false;
-    $('zl-boton').textContent = 'Enviar código de acceso';
+    $('zl-boton').textContent = 'Enviar enlace de acceso';
     if (respuesta.ok && contenido.ok) {
       $('zl-aviso').textContent = '';
       $('zl-aviso').style.color = '';
