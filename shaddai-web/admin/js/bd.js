@@ -104,9 +104,14 @@ export async function invocarFuncion(nombre, cuerpo) {
     if (error) throw new Error(mensajeError(error));
     return data;
   } catch (error) {
-    if (error?.name === 'FunctionsHttpError' && typeof error?.context?.json === 'function') {
-      const datos = await error.context.json().catch(() => null);
-      const motivo = datos && datos.error ? String(datos.error) : '';
+    if (error?.name === 'FunctionsHttpError') {
+      // El cuerpo real puede venir en error.context (Response) o en el propio
+      // error, según la versión de supabase-js; el campo es «error» o «msg».
+      const fuente = typeof error?.context?.json === 'function'
+        ? error.context
+        : (typeof error?.json === 'function' ? error : null);
+      const datos = fuente ? await fuente.json().catch(() => null) : null;
+      const motivo = datos ? String(datos.error || datos.msg || '') : '';
       throw new Error(motivo || 'La función del servidor rechazó la operación.');
     }
     throw error;

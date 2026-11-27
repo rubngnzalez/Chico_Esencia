@@ -471,7 +471,9 @@ Deno.serve(async (request: Request) => {
   // confirmación el login devolvería «email_not_confirmed» aunque la
   // contraseña fuera correcta (causa real de los accesos que fallaban).
   if (accion === 'reenviar-invite' || accion === 'regenerar-contrasena') {
-    const enviarCorreo = accion === 'reenviar-invite' ? true : cuerpo.enviarCorreo === true;
+    // «conCorreo» y no «enviarCorreo»: ese nombre colisiona con la función
+    // importada de correo.ts y el envío real fallaría en runtime.
+    const conCorreo = accion === 'reenviar-invite' ? true : cuerpo.enviarCorreo === true;
     const distribuidorId = String(cuerpo.distribuidorId || '');
     const { data: encontrados, error: errorDist } = await db
       .from('oms_distribuidores')
@@ -540,7 +542,7 @@ Deno.serve(async (request: Request) => {
         descuento: String(Number(distribuidor.descuento_pct) || 0),
       }, DEFECTO_ACEPTACION);
       let envio: { enviado: boolean; detalle?: string } = { enviado: false, detalle: 'no solicitado' };
-      if (enviarCorreo) {
+      if (conCorreo) {
         envio = await enviarCorreo(
           db,
           claveResend,
@@ -556,8 +558,8 @@ Deno.serve(async (request: Request) => {
           ok: true,
           contrasena: temporal,
           enviado: envio.enviado,
-          ...(envio.detalle && enviarCorreo && !envio.enviado ? { detalle: envio.detalle } : {}),
-          mensaje: !enviarCorreo
+          ...(envio.detalle && conCorreo && !envio.enviado ? { detalle: envio.detalle } : {}),
+          mensaje: !conCorreo
             ? 'Contraseña temporal regenerada (sin envío por email): cópiala y entrégasela al distribuidor.'
             : envio.enviado
               ? 'Correo de acceso enviado (con contraseña temporal nueva).'
