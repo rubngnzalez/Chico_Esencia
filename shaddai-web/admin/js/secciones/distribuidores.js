@@ -475,7 +475,7 @@ export default async function (contenedor, contexto) {
                     <button class="boton boton-fantasma boton-pequeno" data-editar="${escapar(d.id)}" type="button" title="Editar descuento, territorios y notas">✎</button>
                     <button class="boton boton-fantasma boton-pequeno" data-carpetas="${escapar(d.id)}" type="button" title="Carpetas autorizadas">▤</button>
                     <button class="boton boton-fantasma boton-pequeno" data-toggle="${escapar(d.id)}" type="button" title="${d.acceso_habilitado ? 'Deshabilitar acceso puntualmente' : 'Habilitar acceso'}">${d.acceso_habilitado ? '⏸' : '▶'}</button>
-                    <button class="boton boton-fantasma boton-pequeno" data-invite="${escapar(d.id)}" type="button" title="Reenviar email de activación">✉</button>
+                    <button class="boton boton-fantasma boton-pequeno" data-invite="${escapar(d.id)}" type="button" title="Generar y enviar nueva contraseña temporal">🔑</button>
                   </td>
                 </tr>`;
               })
@@ -521,19 +521,71 @@ export default async function (contenedor, contexto) {
       lista.querySelectorAll('[data-invite]').forEach((boton) => {
         boton.addEventListener('click', async () => {
           const d = porId(boton.dataset.invite);
-          const seguro = await confirmar('Reenviar acceso', `¿Enviar a «${d.email}» un correo con un nuevo enlace para definir su contraseña de la zona VIP?`, 'Enviar', false);
+          const seguro = await confirmar(
+            'Nueva contraseña temporal',
+            `¿Generar una NUEVA contraseña temporal para «${d.empresa || d.email}» y enviársela a ${d.email}? La contraseña anterior deja de servir y su correo queda confirmado automáticamente.`,
+            'Generar y enviar',
+            false
+          );
           if (!seguro) return;
+          boton.disabled = true;
           try {
-            const respuesta = await invocarFuncion('oms-distrib-gestion', { accion: 'reenviar-invite', distribuidorId: d.id });
-            toast(respuesta?.mensaje || 'Enlace enviado.');
+            const respuesta = await invocarFuncion('oms-distrib-gestion', {
+              accion: 'reenviar-invite',
+              distribuidorId: d.id,
+              mostrarContrasena: true,
+            });
+            abrirModalContrasena(d, respuesta);
           } catch (error) {
             toast(error.message, 'error');
+          } finally {
+            boton.disabled = false;
           }
         });
       });
     } catch (error) {
       lista.innerHTML = etiquetaVacia(`No se pudieron cargar los distribuidores: ${error.message}`);
     }
+  }
+
+  // Modal tras generar la contraseña temporal: muestra el estado del envío y
+  // la propia contraseña para copiarla y entregarla por otro canal si el
+  // correo no llegara (quedaría en la Bandeja de salida).
+  function abrirModalContrasena(d, respuesta) {
+    const contrasena = String(respuesta?.contrasena || '');
+    const { cerrar, cuerpo } = abrirModal(
+      `Nueva contraseña — «${d.empresa || d.email}»`,
+      `
+      <p class="texto-suave">${escapar(respuesta?.mensaje || 'Contraseña temporal generada.')}</p>
+      ${contrasena
+        ? `
+      <div class="modal-cuerpo-formulario">
+        <label>Contraseña temporal (enviada por correo; cópiala por si hay que entregarla por otro canal)</label>
+        <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+          <code style="font-size:1.5rem; letter-spacing:.25em; background:rgba(201,164,95,.12); border:1px solid rgba(201,164,95,.4); padding:.45rem .9rem; border-radius:6px;">${escapar(contrasena)}</code>
+          <button type="button" class="boton boton-fantasma" data-copiar-pass>Copiar</button>
+        </div>
+        <p class="texto-suave" style="margin:.7rem 0 0;">Su correo ya queda confirmado: con esta contraseña puede entrar ahora mismo. En el primer acceso deberá definir la suya desde «Mi perfil».</p>
+      </div>`
+        : ''}
+      <div class="modal-acciones">
+        <button type="button" class="boton boton-primario" data-opcion="ok">Entendido</button>
+      </div>`,
+      '30rem'
+    );
+    const copiar = cuerpo.querySelector('[data-copiar-pass]');
+    if (copiar) {
+      copiar.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(contrasena);
+          copiar.textContent = '¡Copiada!';
+          setTimeout(() => (copiar.textContent = 'Copiar'), 1600);
+        } catch {
+          toast('No se pudo copiar automáticamente: selecciónala y cópiala a mano.', 'error');
+        }
+      });
+    }
+    cuerpo.querySelector('[data-opcion="ok"]').addEventListener('click', cerrar);
   }
 
   function abrirEditarDistribuidor(d, alGuardar) {

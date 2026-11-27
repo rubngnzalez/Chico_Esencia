@@ -137,6 +137,7 @@ Deno.serve(async (request: Request) => {
     descuentoPct?: unknown;
     zonasTerritorio?: unknown;
     enviarCorreo?: unknown;
+    mostrarContrasena?: unknown;
   };
   try {
     cuerpo = await request.json();
@@ -539,9 +540,13 @@ Deno.serve(async (request: Request) => {
         sobreMarca(correo.html, ajustes.logotipo),
         ajustes.responderA
       );
+      // Con mostrarContrasena el panel muestra la contraseña generada para
+      // poder copiarla y entregarla por otro canal si el correo no llegara.
+      const extra = cuerpo.mostrarContrasena === true ? { contrasena: temporal } : {};
       return new Response(
         JSON.stringify({
           ok: true,
+          ...extra,
           mensaje: envio.enviado
             ? 'Correo de acceso enviado (con contraseña temporal nueva).'
             : `El correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
