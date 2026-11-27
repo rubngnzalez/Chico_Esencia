@@ -5,7 +5,11 @@
 //   · rechazar             → marca la solicitud como rechazada (email opcional).
 //   · descartar            → marca la solicitud como descartada (sin email).
 //   · reenviar-verificacion→ regenera el token y reenvía el correo (banco).
-//   · reenviar-invite      → nuevo enlace de activación de la zona VIP.
+//   · reenviar-invite      → contraseña temporal nueva + correo de marca.
+//   · regenerar-contrasena → contraseña temporal nueva; el correo es OPCIONAL
+//                            (enviarCorreo) y la respuesta devuelve la
+//                            contraseña para que el admin la copie y la
+//                            entregue a mano si lo prefiere.
 //   · notificar-proforma   → avisa al distribuidor de que su transferencia
 //                            llegó y el pedido pasa a preparación.
 //
@@ -458,11 +462,16 @@ Deno.serve(async (request: Request) => {
     );
   }
 
-  // ─── REENVIAR INVITACIÓN DE LA ZONA VIP ─────────────────────────────────
-  // Genera una contraseña temporal nueva y la envía por correo de marca
-  // (el acceso ya no depende de enlaces de sesión: funciona con la
-  // autoconfirmación activa del proyecto).
-  if (accion === 'reenviar-invite') {
+  // ─── REGENERAR CONTRASEÑA / REENVIAR INVITACIÓN DE LA ZONA VIP ──────────
+  // Fija una contraseña temporal NUEVA (la anterior deja de servir) y la
+  // envía por correo de marca si procede. La respuesta incluye SIEMPRE la
+  // contraseña para que el panel la muestre y el admin pueda copiarla.
+  // En «reenviar-invite» el correo va siempre; en «regenerar-contrasena» es
+  // opcional (cuerpo.enviarCorreo). Se confirma también el correo: sin
+  // confirmación el login devolvería «email_not_confirmed» aunque la
+  // contraseña fuera correcta (causa real de los accesos que fallaban).
+  if (accion === 'reenviar-invite' || accion === 'regenerar-contrasena') {
+    const enviarCorreo = accion === 'reenviar-invite' ? true : cuerpo.enviarCorreo === true;
     const distribuidorId = String(cuerpo.distribuidorId || '');
     const { data: encontrados, error: errorDist } = await db
       .from('oms_distribuidores')
@@ -530,21 +539,29 @@ Deno.serve(async (request: Request) => {
         enlace: 'https://omshaddai.com/zona-distribuidor.html',
         descuento: String(Number(distribuidor.descuento_pct) || 0),
       }, DEFECTO_ACEPTACION);
-      const envio = await enviarCorreo(
-        db,
-        claveResend,
-        ajustes.desde,
-        distribuidor.email,
-        correo.asunto,
-        sobreMarca(correo.html, ajustes.logotipo),
-        ajustes.responderA
-      );
+      let envio: { enviado: boolean; detalle?: string } = { enviado: false, detalle: 'no solicitado' };
+      if (enviarCorreo) {
+        envio = await enviarCorreo(
+          db,
+          claveResend,
+          ajustes.desde,
+          distribuidor.email,
+          correo.asunto,
+          sobreMarca(correo.html, ajustes.logotipo),
+          ajustes.responderA
+        );
+      }
       return new Response(
         JSON.stringify({
           ok: true,
-          mensaje: envio.enviado
-            ? 'Correo de acceso enviado (con contraseña temporal nueva).'
-            : `El correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
+          contrasena: temporal,
+          enviado: envio.enviado,
+          ...(envio.detalle && enviarCorreo && !envio.enviado ? { detalle: envio.detalle } : {}),
+          mensaje: !enviarCorreo
+            ? 'Contraseña temporal regenerada (sin envío por email): cópiala y entrégasela al distribuidor.'
+            : envio.enviado
+              ? 'Correo de acceso enviado (con contraseña temporal nueva).'
+              : `El correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
         }),
         { headers: cabeceras(request) }
       );
