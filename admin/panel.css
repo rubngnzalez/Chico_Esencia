@@ -1241,3 +1241,24 @@ video.miniatura-tabla { pointer-events: none; }
 .filtros-stats select {
   min-width: 9rem;
 }
+
+/* ─── Regenerar contraseña de distribuidor ─── */
+.detalle-password {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 1.1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: rgba(201, 164, 95, 0.06);
+}
+.detalle-password code {
+  font-size: 1.6rem;
+  letter-spacing: 0.35em;
+  font-weight: 600;
+  color: var(--tinta);
+  user-select: all;
+}
