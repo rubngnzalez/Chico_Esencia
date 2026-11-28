@@ -773,33 +773,9 @@
 
   // ─── Arranque (detecta sesión del enlace de invitación) ───────────────────
   // ─── MI PERFIL ────────────────────────────────────────────────────────────
-
-  async function llamarPerfil(cuerpo) {
-    const { data: sesion } = await sb.auth.getSession();
-    const token = sesion?.session?.access_token;
-    if (!token) {
-      avisoZona('Tu sesión ha caducado. Vuelve a entrar.');
-      mostrarVista('zona-acceso');
-      return { ok: false, contenido: {} };
-    }
-    const control = new AbortController();
-    const reloj = setTimeout(() => control.abort(), 20000);
-    try {
-      const base = (window.SHADDAI_API_BASE || 'https://shaddai-panel.redes-301dpi.workers.dev').replace(/\/$/, '');
-      const respuesta = await fetch(`${base}/api/distribuidor-perfil`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(cuerpo || {}),
-        signal: control.signal,
-      });
-      const contenido = await respuesta.json().catch(() => ({}));
-      return { ok: respuesta.ok && !contenido.error, contenido };
-    } catch {
-      return { ok: false, contenido: { error: 'No hemos podido conectar. Inténtalo de nuevo.' } };
-    } finally {
-      clearTimeout(reloj);
-    }
-  }
+  // Lectura directa por RLS (cada distribuidor ve solo su fila). El guardado
+  // pasa por la Edge Function «oms-distrib-gestion» (acción «perfil»), porque
+  // la RLS no le permite actualizar su propia ficha.
 
   function pintarPerfil(perfil) {
     const vista = $('zona-vista-perfil');
@@ -917,7 +893,8 @@
     $('zp-guardar').addEventListener('click', async () => {
       const boton = $('zp-guardar');
       boton.disabled = true;
-      const { ok, contenido } = await llamarPerfil({
+      const { ok, contenido } = await conSesion('oms-distrib-gestion', {
+        accion: 'perfil',
         guardar: true,
         campos: {
           empresa: $('zp-empresa').value,
@@ -935,7 +912,7 @@
         },
       });
       boton.disabled = false;
-      if (ok) {
+      if (ok && contenido.perfil) {
         Object.assign(distribuidor, contenido.perfil);
         toastVisual('Tus datos se han guardado.');
         cargarPerfil();
@@ -947,13 +924,23 @@
 
   async function cargarPerfil() {
     const vista = $('zona-vista-perfil');
-    const { ok, contenido } = await llamarPerfil({});
-    if (ok && contenido.perfil) {
-      Object.assign(distribuidor, contenido.perfil);
-      pintarPerfil(contenido.perfil);
-    } else {
-      vista.innerHTML = `<p class="aviso-formulario">${escapar(contenido.error || 'No se pudo cargar tu perfil.')}</p>`;
+    const { data: sesion } = await sb.auth.getSession();
+    const usuario = sesion?.session?.user;
+    if (!usuario) {
+      vista.innerHTML = '<p class="aviso-formulario">Tu sesión ha caducado. Vuelve a entrar.</p>';
+      return;
     }
+    const { data: fila, error } = await sb
+      .from('oms_distribuidores')
+      .select('*')
+      .eq('user_id', usuario.id)
+      .maybeSingle();
+    if (error || !fila) {
+      vista.innerHTML = '<p class="aviso-formulario">No se pudo cargar tu perfil. Inténtalo de nuevo.</p>';
+      return;
+    }
+    Object.assign(distribuidor, fila);
+    pintarPerfil(fila);
   }
 
   sb.auth.onAuthStateChange((evento) => {

@@ -5,7 +5,11 @@
 //   · rechazar             → marca la solicitud como rechazada (email opcional).
 //   · descartar            → marca la solicitud como descartada (sin email).
 //   · reenviar-verificacion→ regenera el token y reenvía el correo (banco).
-//   · reenviar-invite      → nuevo enlace de activación de la zona VIP.
+//   · reenviar-invite      → contraseña temporal nueva + correo de marca.
+//   · regenerar-contrasena → contraseña temporal nueva; el correo es OPCIONAL
+//                            (enviarCorreo) y la respuesta devuelve la
+//                            contraseña para que el admin la copie y la
+//                            entregue a mano si lo prefiere.
 //   · notificar-proforma   → avisa al distribuidor de que su transferencia
 //                            llegó y el pedido pasa a preparación.
 //
@@ -122,13 +126,6 @@ Deno.serve(async (request: Request) => {
   const token = autorizacion.replace(/^Bearer\s+/i, '').trim();
   if (!token) return errorJson('Falta el token de sesión.', 401);
 
-  const panel = await verificarPanel(urlSupabase, claveServicio, token);
-  if (!panel.ok) return panel.respuesta;
-  const db = panel.db;
-
-  // Cliente admin (service_role): necesario para las operaciones auth.admin
-  const admin = createClient(urlSupabase, claveServicio, { auth: { persistSession: false } });
-
   let cuerpo: {
     accion?: string;
     solicitudId?: unknown;
@@ -137,7 +134,8 @@ Deno.serve(async (request: Request) => {
     descuentoPct?: unknown;
     zonasTerritorio?: unknown;
     enviarCorreo?: unknown;
-    mostrarContrasena?: unknown;
+    guardar?: unknown;
+    campos?: unknown;
   };
   try {
     cuerpo = await request.json();
@@ -146,6 +144,76 @@ Deno.serve(async (request: Request) => {
   }
 
   const accion = String(cuerpo.accion || '');
+
+  // ─── PERFIL DEL PROPIO DISTRIBUIDOR (leer / guardar su ficha) ───────────
+  // Va ANTES de verificarPanel: aquí la sesión es del distribuidor (su perfil
+  // de panel está inactivo). La RLS le deja leer su fila pero no actualizarla,
+  // así que la escritura pasa por esta función con lista blanca de campos.
+  if (accion === 'perfil') {
+    const anon = createClient(urlSupabase, Deno.env.get('SUPABASE_ANON_KEY') || claveServicio, {
+      auth: { persistSession: false },
+    });
+    // Cliente con service_role: la fila se lee y se actualiza por su user_id
+    // (la RLS no permite que el distribuidor actualice su propia fila).
+    const servicio = createClient(urlSupabase, claveServicio, { auth: { persistSession: false } });
+    const { data: datosUsuario, error: errorToken } = await anon.auth.getUser(token);
+    const uid = (datosUsuario?.user?.id as string) || '';
+    if (errorToken || !uid) return errorJson('Sesión no válida.', 401);
+
+    const { data: filas, error: errorFilas } = await servicio
+      .from('oms_distribuidores')
+      .select('*')
+      .eq('user_id', uid)
+      .limit(1);
+    if (errorFilas) return errorJson('No se pudo leer tu perfil.', 500, request);
+    const fila = (filas || [])[0] as Record<string, unknown> | undefined;
+    if (!fila) return errorJson('Esta cuenta no pertenece a ningún distribuidor autorizado.', 404);
+    if (fila.acceso_habilitado !== true) {
+      return errorJson('Tu acceso está deshabilitado temporalmente. Contacta con SHADDAI.', 403);
+    }
+
+    if (cuerpo.guardar === true) {
+      const campos = (cuerpo.campos && typeof cuerpo.campos === 'object')
+        ? (cuerpo.campos as Record<string, unknown>)
+        : {};
+      const texto = (valor: unknown, maximo: number) => String(valor ?? '').trim().slice(0, maximo);
+      const dir = (campos.direccion && typeof campos.direccion === 'object')
+        ? (campos.direccion as Record<string, unknown>)
+        : {};
+      const cambios = {
+        empresa: texto(campos.empresa, 120) || String(fila.empresa || ''),
+        razon_social: texto(campos.razon_social, 160),
+        cif: texto(campos.cif, 20),
+        persona_contacto: texto(campos.persona_contacto, 120),
+        telefono: texto(campos.telefono, 30),
+        direccion: {
+          calle: texto(dir.calle, 200),
+          cp: texto(dir.cp, 12),
+          poblacion: texto(dir.poblacion, 120),
+          provincia: texto(dir.provincia, 120),
+          pais: texto(dir.pais, 80) || 'España',
+        },
+      };
+      const { data: actualizada, error: errorUpd } = await servicio
+        .from('oms_distribuidores')
+        .update(cambios)
+        .eq('id', String(fila.id))
+        .select('*')
+        .single();
+      if (errorUpd || !actualizada) return errorJson('No se pudieron guardar tus datos.', 500, request);
+      return new Response(JSON.stringify({ ok: true, perfil: actualizada }), { headers: cabeceras(request) });
+    }
+
+    return new Response(JSON.stringify({ ok: true, perfil: fila }), { headers: cabeceras(request) });
+  }
+
+  const panel = await verificarPanel(urlSupabase, claveServicio, token);
+  if (!panel.ok) return panel.respuesta;
+  const db = panel.db;
+
+  // Cliente admin (service_role): necesario para las operaciones auth.admin
+  const admin = createClient(urlSupabase, claveServicio, { auth: { persistSession: false } });
+
   const ajustes = await cargarAjustesDistrib(db);
   const claveResend = Deno.env.get('RESEND_API_KEY');
 
@@ -459,11 +527,16 @@ Deno.serve(async (request: Request) => {
     );
   }
 
-  // ─── REENVIAR INVITACIÓN DE LA ZONA VIP ─────────────────────────────────
-  // Genera una contraseña temporal nueva y la envía por correo de marca
-  // (el acceso ya no depende de enlaces de sesión: funciona con la
-  // autoconfirmación activa del proyecto).
-  if (accion === 'reenviar-invite') {
+  // ─── REGENERAR CONTRASEÑA / REENVIAR INVITACIÓN DE LA ZONA VIP ──────────
+  // Fija una contraseña temporal NUEVA (la anterior deja de servir) y la
+  // envía por correo de marca si procede. La respuesta incluye SIEMPRE la
+  // contraseña para que el panel la muestre y el admin pueda copiarla.
+  // En «reenviar-invite» el correo va siempre; en «regenerar-contrasena» es
+  // opcional (cuerpo.enviarCorreo). Se confirma también el correo: sin
+  // confirmación el login devolvería «email_not_confirmed» aunque la
+  // contraseña fuera correcta (causa real de los accesos que fallaban).
+  if (accion === 'reenviar-invite' || accion === 'regenerar-contrasena') {
+    const enviarCorreo = accion === 'reenviar-invite' ? true : cuerpo.enviarCorreo === true;
     const distribuidorId = String(cuerpo.distribuidorId || '');
     const { data: encontrados, error: errorDist } = await db
       .from('oms_distribuidores')
@@ -531,25 +604,29 @@ Deno.serve(async (request: Request) => {
         enlace: 'https://omshaddai.com/zona-distribuidor.html',
         descuento: String(Number(distribuidor.descuento_pct) || 0),
       }, DEFECTO_ACEPTACION);
-      const envio = await enviarCorreo(
-        db,
-        claveResend,
-        ajustes.desde,
-        distribuidor.email,
-        correo.asunto,
-        sobreMarca(correo.html, ajustes.logotipo),
-        ajustes.responderA
-      );
-      // Con mostrarContrasena el panel muestra la contraseña generada para
-      // poder copiarla y entregarla por otro canal si el correo no llegara.
-      const extra = cuerpo.mostrarContrasena === true ? { contrasena: temporal } : {};
+      let envio: { enviado: boolean; detalle?: string } = { enviado: false, detalle: 'no solicitado' };
+      if (enviarCorreo) {
+        envio = await enviarCorreo(
+          db,
+          claveResend,
+          ajustes.desde,
+          distribuidor.email,
+          correo.asunto,
+          sobreMarca(correo.html, ajustes.logotipo),
+          ajustes.responderA
+        );
+      }
       return new Response(
         JSON.stringify({
           ok: true,
-          ...extra,
-          mensaje: envio.enviado
-            ? 'Correo de acceso enviado (con contraseña temporal nueva).'
-            : `El correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
+          contrasena: temporal,
+          enviado: envio.enviado,
+          ...(envio.detalle && enviarCorreo && !envio.enviado ? { detalle: envio.detalle } : {}),
+          mensaje: !enviarCorreo
+            ? 'Contraseña temporal regenerada (sin envío por email): cópiala y entrégasela al distribuidor.'
+            : envio.enviado
+              ? 'Correo de acceso enviado (con contraseña temporal nueva).'
+              : `El correo NO se envió (${envio.detalle}); queda en la Bandeja de salida (.eml).`,
         }),
         { headers: cabeceras(request) }
       );

@@ -314,7 +314,7 @@ export default async function (contenedor, contexto) {
     const { cerrar, cuerpo } = abrirModal(
       `Aceptar a «${datos.empresa || s.email}»`,
       `
-      <p class="texto-suave">Se creará su cuenta de zona VIP y recibirá un correo de marca con el enlace para definir su contraseña.</p>
+      <p class="texto-suave">Se creará su cuenta de zona VIP y recibirá un correo de marca con su contraseña temporal (podrá cambiarla después desde su zona).</p>
       <div class="modal-cuerpo-formulario">
         <label>Descuento de distribuidor (%) *</label>
         <input type="number" id="dist-descuento" min="0" max="100" step="0.5" value="10" required>
@@ -475,7 +475,8 @@ export default async function (contenedor, contexto) {
                     <button class="boton boton-fantasma boton-pequeno" data-editar="${escapar(d.id)}" type="button" title="Editar descuento, territorios y notas">✎</button>
                     <button class="boton boton-fantasma boton-pequeno" data-carpetas="${escapar(d.id)}" type="button" title="Carpetas autorizadas">▤</button>
                     <button class="boton boton-fantasma boton-pequeno" data-toggle="${escapar(d.id)}" type="button" title="${d.acceso_habilitado ? 'Deshabilitar acceso puntualmente' : 'Habilitar acceso'}">${d.acceso_habilitado ? '⏸' : '▶'}</button>
-                    <button class="boton boton-fantasma boton-pequeno" data-invite="${escapar(d.id)}" type="button" title="Generar y enviar nueva contraseña temporal">🔑</button>
+                    <button class="boton boton-fantasma boton-pequeno" data-regenerar="${escapar(d.id)}" type="button" title="Regenerar contraseña (enviar por email o copiar)">🔑</button>
+                    <button class="boton boton-fantasma boton-pequeno" data-invite="${escapar(d.id)}" type="button" title="Reenviar email de activación">✉</button>
                   </td>
                 </tr>`;
               })
@@ -521,71 +522,112 @@ export default async function (contenedor, contexto) {
       lista.querySelectorAll('[data-invite]').forEach((boton) => {
         boton.addEventListener('click', async () => {
           const d = porId(boton.dataset.invite);
-          const seguro = await confirmar(
-            'Nueva contraseña temporal',
-            `¿Generar una NUEVA contraseña temporal para «${d.empresa || d.email}» y enviársela a ${d.email}? La contraseña anterior deja de servir y su correo queda confirmado automáticamente.`,
-            'Generar y enviar',
-            false
-          );
+          const seguro = await confirmar('Reenviar acceso', `¿Enviar a «${d.email}» un correo con una contraseña temporal nueva para la zona VIP? La anterior dejará de servir.`, 'Enviar', false);
           if (!seguro) return;
-          boton.disabled = true;
           try {
-            const respuesta = await invocarFuncion('oms-distrib-gestion', {
-              accion: 'reenviar-invite',
-              distribuidorId: d.id,
-              mostrarContrasena: true,
-            });
-            abrirModalContrasena(d, respuesta);
+            const respuesta = await invocarFuncion('oms-distrib-gestion', { accion: 'reenviar-invite', distribuidorId: d.id });
+            toast(respuesta?.mensaje || 'Enlace enviado.');
           } catch (error) {
             toast(error.message, 'error');
-          } finally {
-            boton.disabled = false;
           }
         });
+      });
+
+      lista.querySelectorAll('[data-regenerar]').forEach((boton) => {
+        boton.addEventListener('click', () => abrirRegenerarPassword(porId(boton.dataset.regenerar)));
       });
     } catch (error) {
       lista.innerHTML = etiquetaVacia(`No se pudieron cargar los distribuidores: ${error.message}`);
     }
   }
 
-  // Modal tras generar la contraseña temporal: muestra el estado del envío y
-  // la propia contraseña para copiarla y entregarla por otro canal si el
-  // correo no llegara (quedaría en la Bandeja de salida).
-  function abrirModalContrasena(d, respuesta) {
-    const contrasena = String(respuesta?.contrasena || '');
+  // ─── REGENERAR CONTRASEÑA ─────────────────────────────────────────────────
+  // Contraseña temporal nueva para la zona VIP: opcionalmente se envía por
+  // email y SIEMPRE queda en pantalla para copiarla al portapapeles y
+  // entregársela al distribuidor por el canal que se prefiera.
+  function abrirRegenerarPassword(d) {
     const { cerrar, cuerpo } = abrirModal(
-      `Nueva contraseña — «${d.empresa || d.email}»`,
+      `Regenerar contraseña · ${d.empresa || d.email}`,
       `
-      <p class="texto-suave">${escapar(respuesta?.mensaje || 'Contraseña temporal generada.')}</p>
-      ${contrasena
-        ? `
-      <div class="modal-cuerpo-formulario">
-        <label>Contraseña temporal (enviada por correo; cópiala por si hay que entregarla por otro canal)</label>
-        <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
-          <code style="font-size:1.5rem; letter-spacing:.25em; background:rgba(201,164,95,.12); border:1px solid rgba(201,164,95,.4); padding:.45rem .9rem; border-radius:6px;">${escapar(contrasena)}</code>
-          <button type="button" class="boton boton-fantasma" data-copiar-pass>Copiar</button>
-        </div>
-        <p class="texto-suave" style="margin:.7rem 0 0;">Su correo ya queda confirmado: con esta contraseña puede entrar ahora mismo. En el primer acceso deberá definir la suya desde «Mi perfil».</p>
-      </div>`
-        : ''}
+      <p class="texto-suave">Se creará una <strong>contraseña temporal nueva</strong> para la zona VIP de este distribuidor y la actual dejará de servir enseguida.</p>
+      <label class="formulario-opciones" style="margin:1rem 0;">
+        <input type="checkbox" id="reg-enviar-correo" checked> Enviársela también por email a ${escapar(d.email)}
+      </label>
       <div class="modal-acciones">
-        <button type="button" class="boton boton-primario" data-opcion="ok">Entendido</button>
+        <button type="button" class="boton boton-fantasma" data-opcion="no">Cancelar</button>
+        <button type="button" class="boton boton-primario" data-opcion="si">Regenerar</button>
       </div>`,
       '30rem'
     );
-    const copiar = cuerpo.querySelector('[data-copiar-pass]');
-    if (copiar) {
-      copiar.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(contrasena);
-          copiar.textContent = '¡Copiada!';
-          setTimeout(() => (copiar.textContent = 'Copiar'), 1600);
-        } catch {
-          toast('No se pudo copiar automáticamente: selecciónala y cópiala a mano.', 'error');
-        }
-      });
+    cuerpo.querySelector('[data-opcion="no"]').addEventListener('click', cerrar);
+    cuerpo.querySelector('[data-opcion="si"]').addEventListener('click', async () => {
+      const enviar = cuerpo.querySelector('#reg-enviar-correo').checked;
+      const boton = cuerpo.querySelector('[data-opcion="si"]');
+      boton.disabled = true;
+      boton.textContent = 'Regenerando…';
+      try {
+        const respuesta = await invocarFuncion('oms-distrib-gestion', {
+          accion: 'regenerar-contrasena',
+          distribuidorId: d.id,
+          enviarCorreo: enviar,
+        });
+        cerrar();
+        abrirPasswordRegenerada(d, respuesta, enviar);
+      } catch (error) {
+        toast(error.message, 'error');
+        boton.disabled = false;
+        boton.textContent = 'Regenerar';
+      }
+    });
+  }
+
+  function abrirPasswordRegenerada(d, respuesta, enviar) {
+    const contrasena = String(respuesta?.contrasena || '');
+    const estadoEnvio = !enviar
+      ? 'No se ha enviado por email: cópiala y entrégasela por el canal que prefieras.'
+      : respuesta?.enviado
+        ? `Enviada por email a ${escapar(d.email)}. Por si acaso, también puedes copiarla aquí.`
+        : `NO se pudo enviar por email${respuesta?.detalle ? ` (${escapar(respuesta.detalle)})` : ''}: cópiala y entrégasela directamente.`;
+    const { cerrar: cerrarResultado, cuerpo } = abrirModal(
+      'Contraseña temporal nueva',
+      `
+      <p class="texto-suave">Entrará en <strong>zona-distribuidor.html</strong> con su correo (${escapar(d.email)}) y esta contraseña. Se la cambiará desde Mi perfil cuando quiera.</p>
+      <div class="detalle-password">
+        <code id="reg-password-texto">${escapar(contrasena)}</code>
+        <button type="button" class="boton boton-primario" id="reg-copiar">📋 Copiar al portapapeles</button>
+      </div>
+      <p class="texto-suave">${estadoEnvio}</p>
+      <div class="modal-acciones">
+        <button type="button" class="boton boton-fantasma" data-opcion="cerrar">Cerrar</button>
+      </div>`,
+      '30rem'
+    );
+    cuerpo.querySelector('[data-opcion="cerrar"]').addEventListener('click', cerrarResultado);
+    cuerpo.querySelector('#reg-copiar').addEventListener('click', async () => {
+      const copiado = await copiarAlPortapapeles(contrasena);
+      toast(copiado ? 'Contraseña copiada al portapapeles.' : 'No se pudo copiar automáticamente: selecciónala y cópiala a mano.', copiado ? 'ok' : 'error');
+    });
+  }
+
+  async function copiarAlPortapapeles(texto) {
+    try {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    } catch {
+      try {
+        const area = document.createElement('textarea');
+        area.value = texto;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        const ok = document.execCommand('copy');
+        area.remove();
+        return ok;
+      } catch {
+        return false;
+      }
     }
-    cuerpo.querySelector('[data-opcion="ok"]').addEventListener('click', cerrar);
   }
 
   function abrirEditarDistribuidor(d, alGuardar) {
