@@ -21,6 +21,7 @@
   let catalogo = [];
   let carrito = leerCarrito();
   let accesoConTemporal = false; // entró con la contraseña SHAD-… del email de bienvenida
+  let llegadaRecuperacion = new URLSearchParams(window.location.search).has('recuperar'); // llegó por enlace de «recordar contraseña»
 
   function leerCarrito() {
     try {
@@ -83,7 +84,10 @@
     }
 
     const invitacion = new URLSearchParams(window.location.search).get('invite');
-    if (invitacion === '1') {
+    if (invitacion === '1' || llegadaRecuperacion) {
+      if (llegadaRecuperacion) {
+        $('zona-password').querySelector('.aviso-zona').textContent = 'Define una contraseña nueva para tu cuenta. Después entrarás directamente en tu zona.';
+      }
       mostrarVista('zona-password');
       return;
     }
@@ -103,7 +107,7 @@
       const codigo = error.code || '';
       if (codigo === 'email_not_confirmed' || /not confirmed/i.test(error.message || '')) {
         $('zl-aviso').textContent =
-          'Tu correo aún no está confirmado. Pide a SHADDAI que reenvíe el acceso (botón ✉ del panel) y entra con la contraseña nueva del correo.';
+          'Tu correo aún no está confirmado. Usa «Envíame un enlace de acceso» más abajo y define una contraseña nueva desde el correo que recibirás.';
       } else if (codigo === 'over_request_rate_limit' || codigo === 'over_email_send_rate_limit') {
         $('zl-aviso').textContent = 'Demasiados intentos seguidos. Espera un minuto e inténtalo de nuevo.';
       } else {
@@ -130,7 +134,63 @@
       return;
     }
     toastVisual('Contraseña guardada. Bienvenido al Umbral.');
+    llegadaRecuperacion = false;
+    history.replaceState(null, '', 'zona-distribuidor.html');
     abrirApp();
+  });
+
+  // ─── RECORDAR CONTRASEÑA (enlace de acceso por correo de marca) ───────────
+  // El worker genera un enlace de recuperación (crea sesión incluso con la
+  // autoconfirmación activa) y lo envía envuelto en el correo de marca.
+  $('zona-olvidada').addEventListener('click', (evento) => {
+    evento.preventDefault();
+    $('zona-form-login').hidden = true;
+    $('zona-form-recuperar').hidden = false;
+    $('zr-aviso').textContent = '';
+    $('zl-aviso').textContent = '';
+    $('zr-email').focus();
+  });
+
+  $('zona-volver-acceso').addEventListener('click', (evento) => {
+    evento.preventDefault();
+    $('zona-form-recuperar').hidden = true;
+    $('zona-form-login').hidden = false;
+    $('zl-aviso').textContent = '';
+  });
+
+  $('zona-form-recuperar').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    $('zr-aviso').textContent = '';
+    const correo = $('zr-email').value.trim();
+    const boton = $('zr-boton');
+    boton.disabled = true;
+    boton.textContent = 'Enviando…';
+    const control = new AbortController();
+    const reloj = setTimeout(() => control.abort(), 20000);
+    let respuesta;
+    try {
+      const base = window.SHADDAI_API_BASE || 'https://shaddai-panel.redes-301dpi.workers.dev';
+      respuesta = await fetch(`${base.replace(/\/$/, '')}/api/acceso-zona`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: correo, destino: 'distribuidor', web: $('zr-web').value }),
+        signal: control.signal,
+      });
+    } catch {
+      $('zr-aviso').textContent = 'No hemos podido conectar. Inténtalo de nuevo.';
+    } finally {
+      clearTimeout(reloj);
+    }
+    boton.disabled = false;
+    boton.textContent = 'Enviar enlace de acceso';
+    if (!respuesta) return;
+    const contenido = await respuesta.json().catch(() => ({}));
+    if (respuesta.ok && contenido.ok) {
+      $('zr-aviso').textContent = contenido.mensaje || 'Revisa tu correo: te hemos enviado un enlace para definir tu contraseña. Revisa también la carpeta de spam.';
+      $('zr-email').value = '';
+    } else {
+      $('zr-aviso').textContent = contenido.error || 'No se pudo enviar el enlace. Inténtalo de nuevo en unos minutos.';
+    }
   });
 
   function toastVisual(mensaje) {
@@ -944,6 +1004,7 @@
   }
 
   sb.auth.onAuthStateChange((evento) => {
+    if (evento === 'PASSWORD_RECOVERY') llegadaRecuperacion = true;
     if (evento === 'SIGNED_IN' || evento === 'TOKEN_REFRESHED' || evento === 'PASSWORD_RECOVERY') {
       determinarEstado();
     }

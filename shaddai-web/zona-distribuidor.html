@@ -138,11 +138,31 @@
             </div>
             <p class="aviso-formulario centrar" id="zl-aviso" aria-live="polite"></p>
             <p style="text-align:center;font-size:.9rem;margin-top:1rem;color:#7d7466;">
-              ¿Contraseña olvidada? Escríbenos desde la página de
-              <a href="contacto.html">contacto</a> y te enviaremos un acceso temporal nuevo.
+              ¿Olvidaste tu contraseña?
+              <a href="#" id="zona-olvidada">Envíame un enlace de acceso</a>
             </p>
             <p style="text-align:center;font-size:.85rem;margin-top:.8rem;color:#7d7466;">
               ¿Quieres ser distribuidor? Solicítalo en <a href="distribuidores.html">Hazte distribuidor</a>.
+            </p>
+          </form>
+
+          <!-- RECORDAR CONTRASEÑA (enlace de acceso por correo de marca) -->
+          <form id="zona-form-recuperar" class="formulario" autocomplete="off" hidden>
+            <div class="aviso-zona">Escribe tu correo y te enviaremos un enlace personal para definir una contraseña nueva. El enlace caduca en una hora y sirve una sola vez.</div>
+            <div class="campo">
+              <label for="zr-email">Correo electrónico</label>
+              <input type="email" id="zr-email" placeholder="tu@negocio.com" required>
+            </div>
+            <div class="campo-trampa" aria-hidden="true">
+              <label for="zr-web">No rellenes este campo</label>
+              <input type="text" id="zr-web" name="web" tabindex="-1" autocomplete="off">
+            </div>
+            <div class="centrar">
+              <button type="submit" class="boton boton-lleno" id="zr-boton">Enviar enlace de acceso</button>
+            </div>
+            <p class="aviso-formulario centrar" id="zr-aviso" aria-live="polite"></p>
+            <p style="text-align:center;font-size:.85rem;margin-top:.8rem;color:#7d7466;">
+              <a href="#" id="zona-volver-acceso">Volver al acceso con contraseña</a>
             </p>
           </form>
         </div>
